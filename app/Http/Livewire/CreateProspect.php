@@ -17,7 +17,27 @@ class CreateProspect extends Component
     public $prospectos_correo,$origenes_id,$seguimientos_id,$estatus_id;
     public $prospectos_comentarios,$prospectos_fecha;
 
+    protected $rules = [
+        'prospectos_nombres'=>'required|min:3|max:50',
+        'prospectos_apellidos'=>'required|min:3|max:50',
+        'prospectos_telefono'=>'required|numeric',
+        'prospectos_correo'=>'required|email|max:100',
+        'origenes_id'=>'required',
+        'seguimientos_id'=>'required',
+        'estatus_id'=>'required',
+        'prospectos_comentarios'=>'required|min:7|max:255',
+        'prospectos_fecha'=>'required|date',
+    ];
+
+
+
+    /* public function updated($propertyName){
+        $this->validateOnly($propertyName);
+    } */
+
+
     public function save(){
+        $this->validate();
         Prospecto::create([
             'prospectos_nombres' =>$this->prospectos_nombres,
             'prospectos_apellidos' =>$this->prospectos_apellidos,
@@ -32,7 +52,8 @@ class CreateProspect extends Component
         $this->reset(['open','prospectos_nombres','prospectos_apellidos','prospectos_telefono',
         'prospectos_correo','origenes_id','seguimientos_id','estatus_id',
         'prospectos_comentarios','prospectos_fecha']);
-        $this->emit('render');
+        $this->emitTo('show-prospectos','render');
+        $this->emit('alert','El prospecto fue agregado satifactoriamente');
     }
 
     public function render()

@@ -41,5 +41,15 @@
         @stack('modals')
 
         @livewireScripts
+
+        <script>
+            Livewire.on('alert',function(message){
+                Swal.fire({
+                    title: "Agregado!",
+                    text: message,
+                    icon: "success"
+                });
+            })
+        </script>
     </body>
 </html>
