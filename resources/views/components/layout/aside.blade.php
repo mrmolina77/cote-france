@@ -1,0 +1,42 @@
+<aside class="relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl">
+    <div class="p-6">
+        <a href="index.html" class="text-white text-3xl font-semibold uppercase hover:text-gray-300">Admin</a>
+        <button class="w-full bg-white cta-btn font-semibold py-2 mt-5 rounded-br-lg rounded-bl-lg rounded-tr-lg shadow-lg hover:shadow-xl hover:bg-gray-300 flex items-center justify-center">
+            <i class="fas fa-plus mr-3"></i> New Report
+        </button>
+    </div>
+    <nav class="text-white text-base font-semibold pt-3">
+        <x-layout.aside-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+            <i class="fas fa-tachometer-alt mr-3"></i>
+            {{ __('Dashboard') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="{{ route('prospectos') }}" :active="request()->routeIs('prospectos')">
+            <i class="fas fa-table mr-3"></i>
+            {{ __('Prospects') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+            <i class="fas fa-sticky-note mr-3"></i>
+            {{ __('Consulta') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+            <i class="fas fa-table mr-3"></i>
+            {{ __('Tarea') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+            <i class="fas fa-align-left mr-3"></i>
+            {{ __('Bitácora') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+            <i class="fas fa-tablet-alt mr-3"></i>
+            {{ __('Indicadores') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+            <i class="fas fa-calendar mr-3"></i>
+            Calendar
+        </x-layout.aside-link>
+    </nav>
+    <a href="#" class="absolute w-full upgrade-btn bottom-0 active-nav-link text-white flex items-center justify-center py-4">
+        <i class="fas fa-arrow-circle-up mr-3"></i>
+        Upgrade to Pro!
+    </a>
+</aside>
