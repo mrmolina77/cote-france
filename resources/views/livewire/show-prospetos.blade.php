@@ -1,10 +1,4 @@
 <div>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Prospects') }}
-        </h2>
-    </x-slot>
-
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="px-6 py-4">
             <x-forms.input type="text" class="flex-1 ml-4" wire:model="search"/>
@@ -109,6 +103,11 @@
                 </tbody>
 
             </table>
+            @if ($prospectos->hasPages())
+                <div class="px-6 py-3">
+                    {{$prospectos->links()}}
+                </div>
+            @endif
         </x-table>
     </div>
 
@@ -213,8 +212,4 @@
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
     </x-dialog-modal>
-
-
-
-
 </div>

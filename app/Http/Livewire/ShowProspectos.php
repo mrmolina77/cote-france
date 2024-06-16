@@ -7,9 +7,11 @@ use App\Models\Prospecto;
 use App\Models\Origen;
 use App\Models\Seguimiento;
 use App\Models\Estatu;
+use Livewire\WithPagination;
 
 class ShowProspectos extends Component
 {
+    use WithPagination;
     public $search = "";
     public $sort = 'prospectos_id';
     public $direction = 'asc';
@@ -17,6 +19,8 @@ class ShowProspectos extends Component
 
     public $open_edit = false;
     protected $listeners = ['render' ];
+
+
 
     protected $rules = [
         'prospecto.prospectos_nombres'=>'required|min:3|max:50',
@@ -30,12 +34,16 @@ class ShowProspectos extends Component
         'prospecto.prospectos_fecha'=>'required|date',
     ];
 
+    public function updatingSearch(){
+        $this->resetPage();
+    }
+
     public function render()
     {
         $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
                                ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
                                ->orderBy($this->sort,$this->direction)
-                               ->get();
+                               ->paginate(3);
         $origenes = Origen::all();
         $seguimientos = Seguimiento::all();
         $estatus = Estatu::all();

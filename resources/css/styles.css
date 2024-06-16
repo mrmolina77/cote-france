@@ -1,8 +1,17 @@
 .font-family-karla { font-family: karla; }
-.bg-sidebar { background: #3d68ff; }
+.bg-sidebar { background: #092056; }
 .cta-btn { color: #3d68ff; }
 .upgrade-btn { background: #1947ee; }
 .upgrade-btn:hover { background: #0038fd; }
 .active-nav-link { background: #1947ee; }
 .nav-item:hover { background: #1947ee; }
 .account-link:hover { background: #3d68ff; }
+.fas {
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+}

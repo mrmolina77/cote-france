@@ -15,6 +15,9 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <!-- Styles -->
+        <link rel="stylesheet" href="https://demos.creative-tim.com/notus-js/assets/styles/tailwind.css">
+        <link rel="stylesheet" href="https://demos.creative-tim.com/notus-js/assets/vendor/@fortawesome/fontawesome-free/css/all.min.css">
+
         @livewireStyles
     </head>
     <body class="bg-gray-100 font-family-karla flex">
@@ -35,7 +38,7 @@
         <script>
             Livewire.on('alert',function(message){
                 Swal.fire({
-                    title: "Agregado!",
+                    title: "Exito!",
                     text: message,
                     icon: "success"
                 });
