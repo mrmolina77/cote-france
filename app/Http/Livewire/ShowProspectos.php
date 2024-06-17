@@ -16,9 +16,10 @@ class ShowProspectos extends Component
     public $sort = 'prospectos_id';
     public $direction = 'asc';
     public $prospecto;
+    public $cant = 5;
 
     public $open_edit = false;
-    protected $listeners = ['render' ];
+    protected $listeners = ['render','delete' ];
 
 
 
@@ -43,7 +44,7 @@ class ShowProspectos extends Component
         $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
                                ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
                                ->orderBy($this->sort,$this->direction)
-                               ->paginate(3);
+                               ->paginate($this->cant);
         $origenes = Origen::all();
         $seguimientos = Seguimiento::all();
         $estatus = Estatu::all();
@@ -76,5 +77,10 @@ class ShowProspectos extends Component
         $this->reset(['open_edit']);
         $this->emit('alert','El prospecto fue modificado satifactoriamente');
 
+    }
+
+    public function delete(Prospecto $prospecto){
+        $prospecto->delete();
+        $this->emit('alert','El prospecto fue eliminado satifactoriamente');
     }
 }

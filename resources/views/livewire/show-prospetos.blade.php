@@ -1,10 +1,30 @@
 <div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="px-6 py-4">
-            <x-forms.input type="text" class="flex-1 ml-4" wire:model="search"/>
-        </div>
+
         <x-table>
-            <table class="items-center bg-transparent w-full border-collapse ">
+            <x-slot:header>
+                <div class="flex flex-wrap items-center">
+                    <div class="flex items-center">
+                        <span>Mostrar</span>
+                        <x-select class="mx-2" wire:model="cant">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </x-select>
+                        <span>entradas</span>
+                    </div>
+                    <div class="relative w-full px-4 max-w-full flex-grow flex-1">
+                        <div class="px-6 py-4">
+                            <x-forms.input type="text" placeholder="Buscar..." class="flex-1 ml-4" wire:model="search"/>
+                        </div>
+                    </div>
+                    <div class="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
+                    @livewire('create-prospect')
+                    </div>
+                </div>
+            </x-slot>
+            <table class="items-center bg-transparent w-full border-collapse">
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
@@ -68,7 +88,7 @@
                 </tr>
                 </thead>
 
-                <tbody>
+                <tbody style="max-height: 10px;">
                 @forelse ( $prospectos as $item )
 
                 <tr>
@@ -89,7 +109,7 @@
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4" wire:click="edit({{ $item }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4"></i>
+                        <i class="fas fa-trash text-red-500 mr-4" wire:click="$emit('deleteProspecto',{{$item->prospectos_id}})"></i>
                     </td>
                 </tr>
                 @empty
@@ -212,4 +232,24 @@
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
     </x-dialog-modal>
+
+    @push('js');
+    <script>
+        livewire.on('deleteProspecto',itemId=>{
+            Swal.fire({
+            title: "¿Estas seguro?",
+            text: "¡No podrás revertir esto!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "¡Sí, bórralo!"
+            }).then((result) => {
+            if (result.isConfirmed) {
+                livewire.emitTo('show-prospectos','delete',itemId);
+            }
+            });
+        })
+    </script>
+    @endpush
 </div>
