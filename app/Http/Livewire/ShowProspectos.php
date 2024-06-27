@@ -17,9 +17,10 @@ class ShowProspectos extends Component
     public $direction = 'asc';
     public $prospecto;
     public $cant = 5;
+    public $readyToLoad = false;
 
     public $open_edit = false;
-    protected $listeners = ['render','delete' ];
+    protected $listeners = ['render','delete'];
 
 
 
@@ -41,10 +42,14 @@ class ShowProspectos extends Component
 
     public function render()
     {
-        $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
-                               ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
-                               ->orderBy($this->sort,$this->direction)
-                               ->paginate($this->cant);
+        if($this->readyToLoad){
+            $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
+                                   ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
+                                   ->orderBy($this->sort,$this->direction)
+                                   ->paginate($this->cant);
+        } else {
+            $prospectos = array();
+        }
         $origenes = Origen::all();
         $seguimientos = Seguimiento::all();
         $estatus = Estatu::all();
@@ -52,6 +57,10 @@ class ShowProspectos extends Component
                                               ,'origenes'=>$origenes
                                               ,'seguimientos'=>$seguimientos
                                               ,'estatus'=>$estatus]);
+    }
+
+    public function loadPosts(){
+        $this->readyToLoad = true;
     }
 
     public function order($order){

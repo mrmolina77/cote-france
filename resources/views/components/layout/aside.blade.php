@@ -18,7 +18,7 @@
             <i class="fas fa-sticky-note mr-3"></i>
             {{ __('Consulta') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+        <x-layout.aside-link href="{{ route('tareas') }}" :active="request()->routeIs('tareas')">
             <i class="fas fa-table mr-3"></i>
             {{ __('Tarea') }}
         </x-layout.aside-link>

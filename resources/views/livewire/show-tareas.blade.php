@@ -19,7 +19,7 @@
                         </div>
                     </div>
                     <div class="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
-                    @livewire('create-prospect')
+                    @livewire('create-tarea')
                     </div>
                 </div>
             </x-slot>
@@ -29,7 +29,7 @@
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
                     wire:click="order('prospectos_id')">
                     Id
-                    @if ($sort == 'prospectos_id')
+                    @if ($sort == 'tareas_id')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -40,9 +40,22 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_nombres')">
-                    Nombre
-                    @if ($sort == 'prospectos_nombres')
+                    wire:click="order('tareas_descripcion')">
+                    Fecha
+                    @if ($sort == 'tareas_fecha')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
+                <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('tareas_descripcion')">
+                    Descripción
+                    @if ($sort == 'tareas_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -53,22 +66,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('origenes_id')">
-                    Origen
-                    @if ($sort == 'origenes_id')
-                        @if ($direction == 'asc')
-                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
-                        @else
-                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
-                        @endif
-                    @else
-                        <i class="fas fa-sort float-right mt-1"></i>
-                    @endif
-                    </th>
-                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('estatus_id')">
+                    wire:click="order('est_tareas_id')">
                     Estatus
-                    @if ($sort == 'estatus_id')
+                    @if ($sort == 'est_tareas_id')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -77,9 +77,6 @@
                     @else
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
-                    </th>
-                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                    Teléfono
                     </th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                     Acción
@@ -88,34 +85,34 @@
                 </thead>
 
                 <tbody style="max-height: 10px;">
-                @forelse ( $prospectos as $item )
+                @forelse ( $tareas as $item )
 
                 <tr>
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                        {{$item->prospectos_id}}
+                        {{$item->tareas_id}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
+                        {{$item->tareas_fecha}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->origenes_id}} {{$item->origen->origenes_descripcion}}
+                        {{$item->tareas_descripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->estatus_id}} {{$item->estatu->estatus_descripcion}}
+                        {{$item->prospectos_id}} {{$item->prospecto->prospectos_nombres}} {{$item->prospecto->prospectos_apellidos}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_telefono}}
+                        {{$item->est_tareas_id}} {{$item->estatus->est_tareas_descripcion}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteProspecto',{{$item->prospectos_id}})"></i>
+                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteTarea',{{$item->tareas_id}})"></i>
                     </td>
                 </tr>
                 @empty
                 @if ($readyToLoad)
                 <tr>
                     <th colspan="5" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                        No hay propectos cargados
+                        No hay tareas cargadas
                     </th>
                 </tr>
                 @else
@@ -164,9 +161,9 @@
                 </tbody>
 
             </table>
-            @if (count($prospectos) > 0 and !is_array($prospectos) and $prospectos->hasPages())
+            @if (count($tareas) > 0 and !is_array($tareas) and $tareas->hasPages())
                 <div class="px-6 py-3">
-                    {{$prospectos->links()}}
+                    {{$tareas->links()}}
                 </div>
             @endif
         </x-table>
@@ -176,93 +173,58 @@
 
     <x-dialog-modal wire:model="open_edit">
         <x-slot name="title">
-            Actualizar prospecto
+            Actualizar tarea
         </x-slot>
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Nombres: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_nombres"/>
-                </div>
-                <x-forms.input-error for="prospectos_nombres"/>
-           </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Apellidos: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_apellidos"/>
-                </div>
-                <x-forms.input-error for="prospectos_apellidos"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Telefono: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_telefono"/>
-                </div>
-                <x-forms.input-error for="prospectos_telefono"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Correo: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_correo"/>
-                </div>
-                <x-forms.input-error for="prospectos_correo"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Origenes: " />
-                    <x-select class="flex-1 ml-4" wire:model="prospecto.origenes_id">
+                    <x-forms.label value="Prospecto: " />
+                    <x-select class="flex-1 ml-4" wire:model="tarea.prospectos_id">
                         <option value="">Seleccionar</option>
-                        @forelse ($origenes as $item)
-                        <option value="{{$item->origenes_id}}">{{$item->origenes_descripcion}}</option>
+                        @forelse ($prospectos as $item)
+                        <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}</option>
                         @empty
-                        <option value="">Sin origenes</option>
+                        <option value="">Sin prospectos</option>
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="origenes_id"/>
+                <x-forms.input-error for="prospectos_id"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Seguimientos: " />
-                    <x-select class="flex-1 ml-4" wire:model="prospecto.seguimientos_id">
+                    <x-forms.label value="Fecha: " />
+                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="tarea.tareas_fecha"/>
+                </div>
+                <x-forms.input-error for="tareas_fecha"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="Tarea: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="tarea.tareas_descripcion"/>
+                </div>
+                <x-forms.input-error for="tareas_descripcion"/>
+           </div>
+           <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="Comentario: " />
+                    <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="tarea.tareas_comentario">
+                    </x-forms.textarea>
+                </div>
+                <x-forms.input-error for="tareas_comentario"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="Estatus: " />
+                    <x-select class="flex-1 ml-4" wire:model="tarea.est_tareas_id">
                         <option value="">Seleccionar</option>
-                        @forelse ($seguimientos as $item)
-                        <option value="{{$item->seguimientos_id}}">{{$item->seguimientos_descripcion}}</option>
+                        @forelse ($estatus as $item)
+                        <option value="{{$item->est_tareas_id}}">{{$item->est_tareas_descripcion}}</option>
                         @empty
                         <option value="">Sin segumientos</option>
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="seguimientos_id"/>
-            </div>
-            <div>
-                <div class="mb-4 flex" >
-                    <x-forms.label value="Origenes: " />
-                    <x-select class="flex-1 ml-4" wire:model="prospecto.estatus_id">
-                        <option value="">Seleccionar</option>
-                        @forelse ($estatus as $item)
-                        <option value="{{$item->estatus_id}}">{{$item->estatus_descripcion}}</option>
-                        @empty
-                        <option value="">Sin origenes</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="estatus_id"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Comentario: " />
-                    <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="prospecto.prospectos_comentarios">
-                    </x-forms.textarea>
-                </div>
-                <x-forms.input-error for="prospectos_comentarios"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
-                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="prospecto.prospectos_fecha"/>
-                </div>
-                <x-forms.input-error for="prospectos_fecha"/>
+                <x-forms.input-error for="est_tareas_id"/>
             </div>
         </x-slot>
         <x-slot name="footer">
@@ -278,7 +240,7 @@
 
     @push('js');
     <script>
-        livewire.on('deleteProspecto',itemId=>{
+        livewire.on('deleteTarea',itemId=>{
             Swal.fire({
             title: "¿Estas seguro?",
             text: "¡No podrás revertir esto!",
@@ -289,7 +251,7 @@
             confirmButtonText: "¡Sí, bórralo!"
             }).then((result) => {
             if (result.isConfirmed) {
-                livewire.emitTo('show-prospectos','delete',itemId);
+                livewire.emitTo('show-tareas','delete',itemId);
             }
             });
         })

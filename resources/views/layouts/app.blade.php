@@ -22,7 +22,7 @@
     </head>
     <body class="bg-gray-100 font-family-karla flex">
         <x-layout.aside />
-        <div class="relative w-full flex flex-col h-screen overflow-y-hidden">
+        <div class="relative w-full flex flex-col h-screen">
             <!-- Desktop Header -->
             <x-layout.desktop-header />
             <!-- Mobile Header & Nav -->

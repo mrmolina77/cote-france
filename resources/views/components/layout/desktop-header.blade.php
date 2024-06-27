@@ -1,5 +1,5 @@
 <header class="w-full items-center bg-white py-2 px-6 hidden sm:!flex">
-    <div class="w-1/2 font-semibold text-xl text-gray-800 leading-tight"></div>
+    <div class="w-1/2 font-semibold text-sm text-gray-500 leading-tight">Prueba</div>
     <div x-data="{ isOpen: false }" class="relative w-1/2 flex justify-end">
         <span class="inline-flex rounded-md">
             <x-dropdown align="right" width="48">

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Livewire\ShowProspectos;
+use App\Http\Livewire\ShowTareas;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,4 +33,9 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/prospectos', ShowProspectos::class )->name('prospectos');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/tareas', ShowTareas::class )->name('tareas');
 
