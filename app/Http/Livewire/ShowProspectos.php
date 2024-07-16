@@ -22,8 +22,6 @@ class ShowProspectos extends Component
     public $open_edit = false;
     protected $listeners = ['render','delete'];
 
-
-
     protected $rules = [
         'prospecto.prospectos_nombres'=>'required|min:3|max:50',
         'prospecto.prospectos_apellidos'=>'required|min:3|max:50',

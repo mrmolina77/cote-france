@@ -14,9 +14,9 @@
             <i class="fas fa-table mr-3"></i>
             {{ __('Prospects') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+        <x-layout.aside-link href="{{ route('clasespruebas') }}" :active="request()->routeIs('clasespruebas')">
             <i class="fas fa-sticky-note mr-3"></i>
-            {{ __('Consulta') }}
+            {{ __('Test Classes') }}
         </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('tareas') }}" :active="request()->routeIs('tareas')">
             <i class="fas fa-table mr-3"></i>

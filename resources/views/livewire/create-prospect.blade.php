@@ -1,9 +1,9 @@
-<div>   
-    
+<div>
+
     <button wire:click="$set('open',true)" class="bg-indigo-500 text-white active:bg-indigo-600 text-xs font-bold uppercase px-3 py-1 rounded outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150" type="button">
         Agregar Prospecto
-    </button>  
-    
+    </button>
+
     <x-dialog-modal wire:model="open">
         <x-slot name="title">
             Crear prospecto
@@ -12,7 +12,7 @@
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="Nombres: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_nombres"/>                
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_nombres"/>
                 </div>
                 <x-forms.input-error for="prospectos_nombres"/>
            </div>
@@ -100,7 +100,7 @@
                 Cancelar
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                Crear Prospecto
+                Crear Clase de Prueba
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
