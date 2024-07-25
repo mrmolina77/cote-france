@@ -2,32 +2,30 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Asistencia;
 use App\Models\ClasePrueba;
-use App\Models\Profesor;
+use App\Models\Prospecto;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class ShowClasesPruebas extends Component
+class ShowAsistencias extends Component
 {
     use WithPagination;
     public $search = "";
-    public $sort = 'clasespruebas_id';
+    public $sort = 'asistencias_id';
     public $direction = 'asc';
-    public $claseprueba;
+    public $asistencia;
     public $cant = 5;
     public $readyToLoad = false;
 
     public $open_edit = false;
     protected $listeners = ['render','delete'];
 
-
-
     protected $rules = [
-        'claseprueba.clasespruebas_fecha'=>'required|date',
-        'claseprueba.clasespruebas_descripcion'=>'required|min:3|max:50',
-        'claseprueba.clasespruebas_hora_inicio'=>'required',
-        'claseprueba.clasespruebas_hora_fin'=>'required',
-        'claseprueba.profesores_id'=>'required',
+        'asistencia.prospectos_id'=>'required',
+        'asistencia.clasespruebas_id'=>'required',
+        'asistencia.asistencias_fecha'=>'required|date',
+        'asistencia.asistencias'=>'required|boolean',
     ];
 
     public function updatingSearch(){
@@ -37,19 +35,21 @@ class ShowClasesPruebas extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
+            $asistencias = Asistencia::orderBy($this->sort,$this->direction)
                                         ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
             //                        ->orderBy($this->sort,$this->direction)
             //                        ->paginate($this->cant);
         } else {
-            $clasespruebas = array();
+            $asistencias = array();
         }
 
-        $profesores = Profesor::all();
-        return view('livewire.show-clases-pruebas',['clasespruebas'=>$clasespruebas
-                                                  , 'profesores'=>$profesores]);
+        $prospectos = Prospecto::all();
+        $clasespruebas = ClasePrueba::all();
+        return view('livewire.show-asistencias',['asistencias'=>$asistencias
+                                                  , 'prospectos'=>$prospectos
+                                                  , 'clasespruebas'=>$clasespruebas]);
     }
 
     public function loadPosts(){
@@ -69,20 +69,24 @@ class ShowClasesPruebas extends Component
         }
     }
 
-    public function edit(ClasePrueba $claseprueba){
-        $this->claseprueba = $claseprueba;
+    public function edit(Asistencia $asistencia){
+        $this->asistencia = $asistencia;
         $this->open_edit = true;
     }
 
     public function update(){
-        $this->claseprueba->save();
+        $this->asistencia->save();
         $this->reset(['open_edit']);
-        $this->emit('alert','La clase fue modificado satifactoriamente');
+        $this->emit('alert','La asistencia fue modificado satifactoriamente');
 
     }
 
-    public function delete(ClasePrueba $claseprueba){
-        $claseprueba->delete();
-        $this->emit('alert','La clase de pruebas fue eliminado satifactoriamente');
+    public function delete(Asistencia $asistencia){
+        $asistencia->delete();
+        $this->emit('alert','La asistencia fue eliminado satifactoriamente');
     }
+
+
+
+
 }

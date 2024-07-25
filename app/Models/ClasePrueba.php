@@ -15,7 +15,7 @@ class ClasePrueba extends Model
     */
    protected $table = 'clases_pruebas';
 
-   protected $fillable = ['clasespruebas_fecha','clasespruebas_hora_inicio',
+   protected $fillable = ['clasespruebas_fecha','clasespruebas_descripcion','clasespruebas_hora_inicio',
                           'clasespruebas_hora_fin','profesores_id'];
 
    /**

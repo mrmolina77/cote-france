@@ -1,5 +1,4 @@
 <div>
-
     <button wire:click="$set('open',true)" class="bg-indigo-500 text-white active:bg-indigo-600 text-xs font-bold uppercase px-3 py-1 rounded outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150" type="button">
         Agregar Clase de Prueba
     </button>
@@ -15,6 +14,13 @@
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="clasespruebas_fecha"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_fecha"/>
+           </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="Descripción: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="clasespruebas_descripcion"/>
+                </div>
+                <x-forms.input-error for="clasespruebas_descripcion"/>
            </div>
             <div>
                 <div class="mb-4 flex">

@@ -10,11 +10,12 @@ class CreateClasesPruebas extends Component
 {
     public $open = false;
 
-    public $clasespruebas_fecha, $clasespruebas_hora_inicio;
+    public $clasespruebas_fecha,$clasespruebas_descripcion, $clasespruebas_hora_inicio;
     public $clasespruebas_hora_fin, $profesores_id;
 
     protected $rules = [
         'clasespruebas_fecha'=>'required|date',
+        'clasespruebas_descripcion'=>'required|min:3|max:50',
         'clasespruebas_hora_inicio'=>'required',
         'clasespruebas_hora_fin'=>'required',
         'profesores_id'=>'required',
@@ -24,11 +25,12 @@ class CreateClasesPruebas extends Component
         $this->validate();
         ClasePrueba::create([
             'clasespruebas_fecha' =>$this->clasespruebas_fecha,
+            'clasespruebas_descripcion' =>$this->clasespruebas_descripcion,
             'clasespruebas_hora_inicio' =>$this->clasespruebas_hora_inicio,
             'clasespruebas_hora_fin' =>$this->clasespruebas_hora_fin,
             'profesores_id' =>$this->profesores_id
         ]);
-        $this->reset(['open','clasespruebas_fecha','clasespruebas_hora_inicio','clasespruebas_hora_fin',
+        $this->reset(['open','clasespruebas_fecha','clasespruebas_descripcion','clasespruebas_hora_inicio','clasespruebas_hora_fin',
         'profesores_id']);
         $this->emitTo('show-clases-pruebas','render');
         $this->emit('alert','La clase de prueba fue agregado satifactoriamente');

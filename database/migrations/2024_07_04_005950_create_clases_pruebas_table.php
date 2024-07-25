@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::create('clases_pruebas', function (Blueprint $table) {
             $table->id('clasespruebas_id');
+            $table->string('clasespruebas_descripcion',150);
             $table->date('clasespruebas_fecha');
             $table->time('clasespruebas_hora_inicio');
             $table->time('clasespruebas_hora_fin');

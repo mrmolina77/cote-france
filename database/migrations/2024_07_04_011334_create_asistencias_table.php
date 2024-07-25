@@ -17,8 +17,8 @@ return new class extends Migration
             $table->id('asistencias_id');
             $table->unsignedBigInteger('prospectos_id');
             $table->unsignedBigInteger('clasespruebas_id');
-            $table->boolean('asistencia');
-            $table->dateTime('fecha_asistencia');
+            $table->boolean('asistencias');
+            $table->date('asistencias_fecha');
             $table->foreign('prospectos_id')->references('prospectos_id')->on('prospectos');
             $table->foreign('clasespruebas_id')->references('clasespruebas_id')->on('clases_pruebas');
             $table->timestamps();

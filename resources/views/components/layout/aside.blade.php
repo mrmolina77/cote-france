@@ -18,13 +18,13 @@
             <i class="fas fa-sticky-note mr-3"></i>
             {{ __('Test Classes') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="{{ route('tareas') }}" :active="request()->routeIs('tareas')">
+        <x-layout.aside-link href="{{ route('asistencias') }}" :active="request()->routeIs('asistencias')">
             <i class="fas fa-table mr-3"></i>
-            {{ __('Tarea') }}
+            {{ __('Attendance') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+        <x-layout.aside-link href="{{ route('tareas') }}" :active="request()->routeIs('tareas')">
             <i class="fas fa-align-left mr-3"></i>
-            {{ __('Bitácora') }}
+            {{ __('Homework') }}
         </x-layout.aside-link>
         <x-layout.aside-link href="" :active="request()->routeIs('x')">
             <i class="fas fa-tablet-alt mr-3"></i>
