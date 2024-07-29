@@ -15,10 +15,23 @@ class Inscripcion extends Model
     */
    protected $table = 'inscripciones';
 
+   protected $fillable = ['fecha_inscripcion','prospectos_id','cursos_id'];
+
    /**
     * The primary key associated with the table.
     *
     * @var string
     */
    protected $primaryKey = 'inscripciones_id';
+
+    public function prospecto()
+    {
+        return $this->belongsTo(Prospecto::class,'prospectos_id','prospectos_id');
+    }
+
+    public function cursos()
+    {
+        return $this->belongsTo(Curso::class,'cursos_id','cursos_id');
+    }
+
 }

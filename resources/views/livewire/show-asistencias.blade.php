@@ -27,7 +27,7 @@
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_id')">
+                    wire:click="order('asistencias_id')">
                     Id
                     @if ($sort == 'asistencias_id')
                         @if ($direction == 'asc')
@@ -245,7 +245,7 @@
 
     @push('js');
     <script>
-        livewire.on('deleteTarea',itemId=>{
+        livewire.on('deleteAsistencias',itemId=>{
             Swal.fire({
             title: "¿Estas seguro?",
             text: "¡No podrás revertir esto!",
@@ -256,7 +256,7 @@
             confirmButtonText: "¡Sí, bórralo!"
             }).then((result) => {
             if (result.isConfirmed) {
-                livewire.emitTo('show-tareas','delete',itemId);
+                livewire.emitTo('show-asistencias','delete',itemId);
             }
             });
         })

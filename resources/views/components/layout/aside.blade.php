@@ -26,9 +26,9 @@
             <i class="fas fa-align-left mr-3"></i>
             {{ __('Homework') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="" :active="request()->routeIs('x')">
+        <x-layout.aside-link href="{{ route('inscripciones') }}" :active="request()->routeIs('inscripciones')">
             <i class="fas fa-tablet-alt mr-3"></i>
-            {{ __('Indicadores') }}
+            {{ __('Enrollment') }}
         </x-layout.aside-link>
         <x-layout.aside-link href="" :active="request()->routeIs('x')">
             <i class="fas fa-calendar mr-3"></i>
