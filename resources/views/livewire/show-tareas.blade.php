@@ -258,7 +258,7 @@
     <script>
         livewire.on('deleteTarea',itemId=>{
             Swal.fire({
-            title: "¿Estas seguro?",
+            title: "¿Está seguro que desea eliminar el registro?",
             text: "¡No podrás revertir esto!",
             icon: "warning",
             showCancelButton: true,
