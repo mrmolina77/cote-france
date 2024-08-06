@@ -217,7 +217,7 @@
                 Cancelar
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
-                Modificar Asistencia
+                Modificar inscripción
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
