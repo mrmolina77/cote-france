@@ -1,4 +1,7 @@
 <x-app-layout>
+    @section('content')
+    <p>{{ __('Dashboard') }}</p>
+    @endsection
     <div class="flex mt-20 justify-center items-center">
         <img src="{{asset("images/cote_logo.png")}}" alt="" srcset="">
     </div>
