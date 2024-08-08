@@ -56,9 +56,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('origenes_id')">
+                    wire:click="order('origenes_descripcion')">
                     Origen
-                    @if ($sort == 'origenes_id')
+                    @if ($sort == 'origenes_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -69,9 +69,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('estatus_id')">
+                    wire:click="order('estatus_descripcion')">
                     Estatus
-                    @if ($sort == 'estatus_id')
+                    @if ($sort == 'estatus_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -80,10 +80,20 @@
                     @else
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
-                    </th>
-                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                </th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('prospectos_telefono')">
                     Teléfono
-                    </th>
+                    @if ($sort == 'prospectos_telefono')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                </th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                     Acción
                     </th>
@@ -92,7 +102,6 @@
 
                 <tbody style="max-height: 10px;">
                 @forelse ( $prospectos as $item )
-
                 <tr>
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                         {{$item->prospectos_id}}
@@ -101,16 +110,16 @@
                         {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->origenes_id}} {{$item->origen->origenes_descripcion}}
+                        {{$item->origenes_descripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->estatus_id}} {{$item->estatu->estatus_descripcion}}
+                        {{$item->estatus_descripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_telefono}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item }})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteProspecto',{{$item->prospectos_id}})"></i>
                     </td>
                 </tr>

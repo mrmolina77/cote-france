@@ -7,6 +7,7 @@ use App\Models\Prospecto;
 use App\Models\Origen;
 use App\Models\Seguimiento;
 use App\Models\Estatu;
+use Illuminate\Support\Facades\DB;
 use Livewire\WithPagination;
 
 class ShowProspectos extends Component
@@ -41,10 +42,23 @@ class ShowProspectos extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
-                                   ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
-                                   ->orderBy($this->sort,$this->direction)
-                                   ->paginate($this->cant);
+            // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
+            //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
+            //                        ->where('origenes_descripcion','like', '%'.trim($this->search).'%')
+            //                        ->where('estatus_descripcion','like', '%'.trim($this->search).'%')
+            //                        ->orderBy($this->sort,$this->direction)
+            //                        ->paginate($this->cant);
+
+            $prospectos = DB::table('prospectos')
+                        ->select('prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono','origenes_descripcion','estatus_descripcion')
+                        ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
+                        ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
+                        ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+                        ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+                        ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%')
+                        ->orWhere('estatus.estatus_descripcion','like','%'.trim($this->search).'%')
+                        ->orderBy($this->sort,$this->direction)
+                        ->paginate($this->cant);
         } else {
             $prospectos = array();
         }
@@ -74,7 +88,8 @@ class ShowProspectos extends Component
         }
     }
 
-    public function edit(Prospecto $prospecto){
+    public function edit($id){
+        $prospecto = Prospecto::find($id);
         $this->prospecto = $prospecto;
         $this->open_edit = true;
     }

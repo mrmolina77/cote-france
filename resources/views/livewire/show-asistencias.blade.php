@@ -43,9 +43,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('clasespruebas_id')">
+                    wire:click="order('clasespruebas_descripcion')">
                     Clase Pruebas
-                    @if ($sort == 'clasespruebas_id')
+                    @if ($sort == 'clasespruebas_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -56,9 +56,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('asistencia')">
+                    wire:click="order('asistio')">
                     Asistio
-                    @if ($sort == 'asistencia')
+                    @if ($sort == 'asistio')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -82,9 +82,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_id')">
+                    wire:click="order('prospectos_nombres')">
                     Propesto
-                    @if ($sort == 'prospectos_id')
+                    @if ($sort == 'prospectos_nombres')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -102,26 +102,25 @@
 
                 <tbody style="max-height: 10px;">
                 @forelse ( $asistencias as $item )
-
                 <tr>
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                         {{$item->asistencias_id}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->claseprueba->clasespruebas_descripcion}} {{$item->claseprueba->clasespruebas_fecha}} {{$item->claseprueba->clasespruebas_hora_inicio}}
+                        {{$item->clasespruebas_descripcion}} {{$item->clasespruebas_fecha}} {{$item->clasespruebas_hora_inicio}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->asistio()}}
+                        {{$item->asistio}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->asistencias_fecha}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospecto->prospectos_nombres}} {{$item->prospecto->prospectos_apellidos}}
+                        {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteTarea',{{$item->tareas_id}})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->asistencias_id }})"></i>
+                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteAsistencia',{{$item->asistencias_id}})"></i>
                     </td>
                 </tr>
                 @empty
@@ -248,7 +247,7 @@
 
     @push('js');
     <script>
-        livewire.on('deleteAsistencias',itemId=>{
+        livewire.on('deleteAsistencia',itemId=>{
             Swal.fire({
             title: "¿Está seguro que desea eliminar el registro?",
             text: "¡No podrás revertir esto!",

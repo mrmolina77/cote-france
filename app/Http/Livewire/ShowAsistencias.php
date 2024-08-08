@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Asistencia;
 use App\Models\ClasePrueba;
 use App\Models\Prospecto;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -35,8 +36,22 @@ class ShowAsistencias extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $asistencias = Asistencia::orderBy($this->sort,$this->direction)
-                                        ->paginate($this->cant);
+            // $asistencias = Asistencia::orderBy($this->sort,$this->direction)
+            //                             ->paginate($this->cant);
+            $asistencias = DB::table('asistencias')
+              ->join('prospectos','prospectos.prospectos_id','=','asistencias.prospectos_id')
+              ->join('clases_pruebas','asistencias.clasespruebas_id','=','clases_pruebas.clasespruebas_id')
+              ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
+              ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+              ->orWhere('asistencias.asistencias_fecha','like','%'.trim($this->search).'%')
+              ->orWhere('clases_pruebas.clasespruebas_descripcion','like','%'.trim($this->search).'%')
+              ->orWhere(DB::raw('if(asistencias.asistencias,"Si","No")'),'like','%'.trim($this->search).'%')
+              ->select(DB::raw('if(asistencias.asistencias,"Si","No") as asistio'),'asistencias.asistencias_fecha'
+                       ,'clases_pruebas.clasespruebas_descripcion','clases_pruebas.clasespruebas_fecha'
+                       ,'clases_pruebas.clasespruebas_hora_inicio','prospectos.prospectos_nombres'
+                       ,'prospectos.prospectos_apellidos','asistencias.asistencias_id')
+                ->orderBy($this->sort,$this->direction)
+                ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
             //                        ->orderBy($this->sort,$this->direction)
@@ -69,7 +84,8 @@ class ShowAsistencias extends Component
         }
     }
 
-    public function edit(Asistencia $asistencia){
+    public function edit($id){
+        $asistencia = Asistencia::find($id);
         $this->asistencia = $asistencia;
         $this->open_edit = true;
     }
