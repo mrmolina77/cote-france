@@ -7,18 +7,18 @@
             <x-slot:header>
                 <div class="flex flex-wrap items-center">
                     <div class="flex items-center">
-                        <span>Mostrar</span>
+                        <span>{{__('Show')}}</span>
                         <x-select class="mx-2" wire:model="cant">
                             <option value="5">5</option>
                             <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
                         </x-select>
-                        <span>entradas</span>
+                        <span>{{__('rows')}}</span>
                     </div>
                     <div class="relative w-full px-4 max-w-full flex-grow flex-1">
                         <div class="px-6 py-4">
-                            <x-forms.input type="text" placeholder="Buscar..." class="flex-1 ml-4" wire:model="search"/>
+                            <x-forms.input type="text" placeholder="{{__('Search')}}..." class="flex-1 ml-4" wire:model="search"/>
                         </div>
                     </div>
                     <div class="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
@@ -258,13 +258,14 @@
     <script>
         livewire.on('deleteTarea',itemId=>{
             Swal.fire({
-            title: "¿Está seguro que desea eliminar el registro?",
-            text: "¡No podrás revertir esto!",
+            title: "{{__('Are you sure you want to delete the record?')}}",
+            text: "{{__('You will not be able to reverse this!')}}",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
             cancelButtonColor: "#d33",
-            confirmButtonText: "¡Sí, bórralo!"
+            cancelButtonText: "{{__('Cancel')}}",
+            confirmButtonText: "{{__('Yes, delete it!')}}"
             }).then((result) => {
             if (result.isConfirmed) {
                 livewire.emitTo('show-tareas','delete',itemId);
