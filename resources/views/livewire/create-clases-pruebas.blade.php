@@ -5,40 +5,40 @@
 
     <x-dialog-modal wire:model="open">
         <x-slot name="title">
-            Crear clase de prueba
+            {{__('Create test class')}}
         </x-slot>
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="clasespruebas_fecha"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_fecha"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Descripción: " />
+                    <x-forms.label value="{{__('Description')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="clasespruebas_descripcion"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_descripcion"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Hora de Inicio: " />
+                    <x-forms.label value="{{__('Start Time')}}: " />
                     <x-forms.input type="time" class="flex-1 ml-4" wire:model="clasespruebas_hora_inicio"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_hora_inicio"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Hora de Fin: " />
+                    <x-forms.label value="{{__('End time')}}: " />
                     <x-forms.input type="time" class="flex-1 ml-4" wire:model="clasespruebas_hora_fin"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_hora_fin"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Profesor: " />
+                    <x-forms.label value="{{__('Teacher')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="profesores_id">
                         <option value="">Seleccionar</option>
                         @forelse ($profesores as $item)
@@ -53,10 +53,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                Crear Clases de Pruebas
+                {{__('Create test class')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>

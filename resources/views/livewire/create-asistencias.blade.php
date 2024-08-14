@@ -4,12 +4,12 @@
     </button>
     <x-dialog-modal wire:model="open">
         <x-slot name="title">
-            Crear clase de prueba
+            {{__('Create assistance')}}
         </x-slot>
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Prospecto: " />
+                    <x-forms.label value="{{__('Prospects')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospectos_id">
                         <option value="">Seleccionar</option>
                         @forelse ($prospectos as $item)
@@ -23,7 +23,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Clase de pruebas: " />
+                    <x-forms.label value="{{__('Test classes')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="clasespruebas_id">
                         <option value="">Seleccionar</option>
                         @forelse ($clasespruebas as $item)
@@ -37,14 +37,14 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Asistió: " />
+                    <x-forms.label value="{{__('Attended')}}: " />
                     <x-forms.toggle wire:model="asistencias"/>
                 </div>
                 <x-forms.input-error for="asistencias"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="asistencias_fecha"/>
                 </div>
                 <x-forms.input-error for="asistencias_fecha"/>
@@ -52,10 +52,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                Crear asistencia
+                {{__('Create assistance')}}
             </x-forms.blue-button>
         </x-slot>
     </x-dialog-modal>
