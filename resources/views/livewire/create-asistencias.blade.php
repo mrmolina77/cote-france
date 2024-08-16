@@ -11,11 +11,11 @@
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Prospects')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospectos_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($prospectos as $item)
                         <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}</option>
                         @empty
-                        <option value="">Sin prospectos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -25,11 +25,11 @@
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Test classes')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="clasespruebas_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($clasespruebas as $item)
                         <option value="{{$item->clasespruebas_id}}">{{$item->clasespruebas_descripcion}} {{$item->clasespruebas_fecha}} {{$item->clasespruebas_hora_inicio}}</option>
                         @empty
-                        <option value="">Sin clases de pruebas</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>

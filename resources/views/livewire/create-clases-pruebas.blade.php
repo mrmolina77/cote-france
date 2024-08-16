@@ -40,11 +40,11 @@
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Teacher')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="profesores_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($profesores as $item)
                         <option value="{{$item->profesores_id}}">{{$item->profesores_nombres}} {{$item->profesores_apellidos}}</option>
                         @empty
-                        <option value="">Sin profesores</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>

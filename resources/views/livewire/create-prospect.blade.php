@@ -11,41 +11,41 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Nombres: " />
+                    <x-forms.label value="{{__('Names')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_nombres"/>
                 </div>
                 <x-forms.input-error for="prospectos_nombres"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Apellidos: " />
+                    <x-forms.label value="{{__('Surname')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_apellidos"/>
                 </div>
                 <x-forms.input-error for="prospectos_apellidos"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Telefono: " />
+                    <x-forms.label value="{{__('Phone')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_telefono"/>
                 </div>
                 <x-forms.input-error for="prospectos_telefono"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Correo: " />
+                    <x-forms.label value="{{__('Mail')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_correo"/>
                 </div>
                 <x-forms.input-error for="prospectos_correo"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Origenes: " />
+                    <x-forms.label value="{{__('Origins')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="origenes_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($origenes as $item)
                         <option value="{{$item->origenes_id}}">{{$item->origenes_descripcion}}</option>
                         @empty
-                        <option value="">Sin origenes</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -53,13 +53,13 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Seguimientos: " />
+                    <x-forms.label value="{{__('Follow-ups')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="seguimientos_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($seguimientos as $item)
                         <option value="{{$item->seguimientos_id}}">{{$item->seguimientos_descripcion}}</option>
                         @empty
-                        <option value="">Sin segumientos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -67,13 +67,13 @@
             </div>
             <div>
                 <div class="mb-4 flex" >
-                    <x-forms.label value="Origenes: " />
+                    <x-forms.label value="{{__('Status')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="estatus_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($estatus as $item)
                         <option value="{{$item->estatus_id}}">{{$item->estatus_descripcion}}</option>
                         @empty
-                        <option value="">Sin origenes</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -81,7 +81,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Comentario: " />
+                    <x-forms.label value="{{__('Comment')}}: " />
                     <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="prospectos_comentarios">
                     </x-forms.textarea>
                 </div>

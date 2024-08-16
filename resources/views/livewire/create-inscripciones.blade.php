@@ -4,18 +4,18 @@
     </button>
     <x-dialog-modal wire:model="open">
         <x-slot name="title">
-            Crear inscripción
+            {{__('Create registration')}}
         </x-slot>
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Prospecto: " />
+                    <x-forms.label value="{{__('Prospect')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospectos_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($prospectos as $item)
                         <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}</option>
                         @empty
-                        <option value="">Sin prospectos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -25,11 +25,11 @@
                 <div class="mb-4 flex">
                     <x-forms.label value="Cursos: " />
                     <x-select class="flex-1 ml-4" wire:model="cursos_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($cursos as $item)
                         <option value="{{$item->cursos_id}}">{{$item->cursos_descripcion}}</option>
                         @empty
-                        <option value="">Sin cursos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
