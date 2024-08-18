@@ -113,10 +113,10 @@
                         {{$item->clasespruebas_hora_fin}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->profesor->profesores_nombres}} {{$item->profesor->profesores_apellidos}}
+                        {{$item->profesores_nombres}} {{$item->profesores_apellidos}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item }})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->clasespruebas_id }})"></i>
                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteProspecto',{{$item->clasespruebas_id}})"></i>
                     </td>
                 </tr>

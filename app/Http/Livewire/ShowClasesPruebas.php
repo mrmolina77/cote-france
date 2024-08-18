@@ -4,6 +4,7 @@ namespace App\Http\Livewire;
 
 use App\Models\ClasePrueba;
 use App\Models\Profesor;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -37,8 +38,21 @@ class ShowClasesPruebas extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
-                                        ->paginate($this->cant);
+            // $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
+            //                             ->paginate($this->cant);
+            $clasespruebas = DB::table('clases_pruebas')
+            ->join('profesores','profesores.profesores_id','=','clases_pruebas.profesores_id')
+            ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
+            ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_descripcion','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_fecha','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_hora_inicio','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_hora_fin','like','%'.trim($this->search).'%')
+            ->select('clases_pruebas.clasespruebas_descripcion','clases_pruebas.clasespruebas_fecha'
+            ,'clases_pruebas.clasespruebas_hora_inicio','clases_pruebas.clasespruebas_hora_fin'
+            ,'profesores.profesores_nombres','profesores.profesores_apellidos'
+            ,'clases_pruebas.clasespruebas_id')
+            ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
             //                        ->orderBy($this->sort,$this->direction)
@@ -69,7 +83,8 @@ class ShowClasesPruebas extends Component
         }
     }
 
-    public function edit(ClasePrueba $claseprueba){
+    public function edit($id){
+        $claseprueba = ClasePrueba::find($id);
         $this->claseprueba = $claseprueba;
         $this->open_edit = true;
     }

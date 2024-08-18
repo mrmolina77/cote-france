@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\EstatuTarea;
 use App\Models\Prospecto;
 use App\Models\Tarea;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -36,9 +37,23 @@ class ShowTareas extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $tareas = Tarea::where('tareas_descripcion','like','%'.trim($this->search).'%')
-                                   ->orderBy($this->sort,$this->direction)
-                                   ->paginate($this->cant);
+            // $tareas = Tarea::where('tareas_descripcion','like','%'.trim($this->search).'%')
+            //                        ->orderBy($this->sort,$this->direction)
+            //                        ->paginate($this->cant);
+            $tareas = DB::table('clases_pruebas')
+            ->join('profesores','profesores.profesores_id','=','clases_pruebas.profesores_id')
+            ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
+            ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_descripcion','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_fecha','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_hora_inicio','like','%'.trim($this->search).'%')
+            ->orWhere('clases_pruebas.clasespruebas_hora_fin','like','%'.trim($this->search).'%')
+            ->select('clases_pruebas.clasespruebas_descripcion','clases_pruebas.clasespruebas_fecha'
+            ,'clases_pruebas.clasespruebas_hora_inicio','clases_pruebas.clasespruebas_hora_fin'
+            ,'profesores.profesores_nombres','profesores.profesores_apellidos'
+            ,'clases_pruebas.clasespruebas_id')
+            ->paginate($this->cant);
+
         } else {
             $tareas = array();
         }
@@ -66,7 +81,8 @@ class ShowTareas extends Component
         }
     }
 
-    public function edit(Tarea $tarea){
+    public function edit($id){
+        $tarea = Tarea::find($id);
         $this->tarea = $tarea;
         $this->open_edit = true;
     }

@@ -98,13 +98,13 @@
                         {{$item->fecha_inscripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->cursos->cursos_descripcion}}
+                        {{$item->cursos_descripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospecto->prospectos_nombres}} {{$item->prospecto->prospectos_apellidos}}
+                        {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item }})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->inscripciones_id }})"></i>
                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteInscripcion',{{$item->inscripciones_id}})"></i>
                     </td>
                 </tr>

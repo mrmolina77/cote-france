@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -34,8 +35,19 @@ class ShowInscripciones extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $inscripciones = Inscripcion::orderBy($this->sort,$this->direction)
-                                        ->paginate($this->cant);
+            // $inscripciones = Inscripcion::orderBy($this->sort,$this->direction)
+            //                             ->paginate($this->cant);
+            $inscripciones = DB::table('inscripciones')
+            ->join('prospectos','prospectos.prospectos_id','=','inscripciones.prospectos_id')
+            ->join('cursos','cursos.cursos_id','=','inscripciones.cursos_id')
+            ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
+            ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+            ->orWhere('cursos.cursos_descripcion','like','%'.trim($this->search).'%')
+            ->orWhere('inscripciones.fecha_inscripcion','like','%'.trim($this->search).'%')
+            ->select('inscripciones.fecha_inscripcion','prospectos.prospectos_nombres'
+            ,'prospectos.prospectos_apellidos','cursos.cursos_descripcion',
+            'inscripciones.inscripciones_id')
+            ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
             //                        ->orderBy($this->sort,$this->direction)
@@ -68,7 +80,8 @@ class ShowInscripciones extends Component
         }
     }
 
-    public function edit(Inscripcion $inscripcion){
+    public function edit($id){
+        $inscripcion = Inscripcion::find($id);
         $this->inscripcion = $inscripcion;
         $this->open_edit = true;
     }
