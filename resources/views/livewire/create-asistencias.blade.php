@@ -55,7 +55,7 @@
                 {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                {{__('Create assistance')}}
+                {{__('Create')}}
             </x-forms.blue-button>
         </x-slot>
     </x-dialog-modal>

@@ -178,7 +178,7 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Prospecto: " />
+                    <x-forms.label value="{{__('Prospect')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="inscripcion.prospectos_id">
                         <option value="">Seleccionar</option>
                         @forelse ($prospectos as $item)
@@ -192,13 +192,13 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Cursos: " />
+                    <x-forms.label value="{{__('Course')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="inscripcion.cursos_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($cursos as $item)
                         <option value="{{$item->cursos_id}}">{{$item->cursos_descripcion}}</option>
                         @empty
-                        <option value="">Sin cursos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -206,7 +206,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="inscripcion.fecha_inscripcion"/>
                 </div>
                 <x-forms.input-error for="fecha_inscripcion"/>
@@ -214,10 +214,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
-                Modificar inscripción
+                {{__('Modify')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>

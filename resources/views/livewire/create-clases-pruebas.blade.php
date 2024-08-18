@@ -10,17 +10,17 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Date')}}: " />
-                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="clasespruebas_fecha"/>
-                </div>
-                <x-forms.input-error for="clasespruebas_fecha"/>
-           </div>
-            <div>
-                <div class="mb-4 flex">
                     <x-forms.label value="{{__('Description')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="clasespruebas_descripcion"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_descripcion"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Date')}}: " />
+                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="clasespruebas_fecha"/>
+                </div>
+                <x-forms.input-error for="clasespruebas_fecha"/>
            </div>
             <div>
                 <div class="mb-4 flex">
@@ -56,7 +56,7 @@
                 {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                {{__('Create test class')}}
+                {{__('Create')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>

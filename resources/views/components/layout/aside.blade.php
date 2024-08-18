@@ -24,7 +24,7 @@
         </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('tareas') }}" :active="request()->routeIs('tareas')">
             <i class="fas fa-align-left mr-3"></i>
-            {{ __('Homework') }}
+            {{ __('Homeworks') }}
         </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('inscripciones') }}" :active="request()->routeIs('inscripciones')">
             <i class="fas fa-tablet-alt mr-3"></i>

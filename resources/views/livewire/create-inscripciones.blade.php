@@ -23,7 +23,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Cursos: " />
+                    <x-forms.label value="{{__('Course')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="cursos_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($cursos as $item)
@@ -37,7 +37,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="fecha_inscripcion"/>
                 </div>
                 <x-forms.input-error for="fecha_inscripcion"/>
@@ -45,10 +45,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                Crear inscripción
+                {{__('Create')}}
             </x-forms.blue-button>
         </x-slot>
     </x-dialog-modal>

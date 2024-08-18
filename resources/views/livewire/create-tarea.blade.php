@@ -11,7 +11,7 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Prospecto: " />
+                    <x-forms.label value="{{__('Prospect')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospectos_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($prospectos as $item)
@@ -25,21 +25,21 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="tareas_fecha"/>
                 </div>
                 <x-forms.input-error for="tareas_fecha"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Tarea: " />
+                    <x-forms.label value="{{ __('Homework') }}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="tareas_descripcion"/>
                 </div>
                 <x-forms.input-error for="tareas_descripcion"/>
            </div>
            <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Comentario: " />
+                    <x-forms.label value="{{__('Comment')}}: " />
                     <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="tareas_comentario">
                     </x-forms.textarea>
                 </div>
@@ -47,7 +47,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Estatus: " />
+                    <x-forms.label value="{{__('Status')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="est_tareas_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($estatus as $item)
@@ -62,10 +62,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:target="save" class="disabled:opacity-65">
-                Crear tarea
+                {{__('Create')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>

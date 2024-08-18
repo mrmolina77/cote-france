@@ -193,7 +193,7 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Prospecto: " />
+                    <x-forms.label value="{{__('Prospects')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="asistencia.prospectos_id">
                         <option value="">Seleccionar</option>
                         @forelse ($prospectos as $item)
@@ -207,13 +207,13 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Clase de pruebas: " />
+                    <x-forms.label value="{{__('Test classes')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="asistencia.clasespruebas_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($clasespruebas as $item)
                         <option value="{{$item->clasespruebas_id}}">{{$item->clasespruebas_descripcion}} {{$item->clasespruebas_fecha}} {{$item->clasespruebas_hora_inicio}}</option>
                         @empty
-                        <option value="">Sin clases de pruebas</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -221,14 +221,14 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Asistió: " />
+                    <x-forms.label value="{{__('Attended')}}: " />
                     <x-forms.toggle wire:model="asistencia.asistencias"/>
                 </div>
                 <x-forms.input-error for="asistencias"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="asistencia.asistencias_fecha"/>
                 </div>
                 <x-forms.input-error for="asistencias_fecha"/>
@@ -236,10 +236,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
-                Modificar Asistencia
+                {{__('Modify')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>

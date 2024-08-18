@@ -1,6 +1,6 @@
 <div wire:init="loadPosts">
     @section('content')
-    <p>{{ __('Homework') }}</p>
+    <p>{{ __('Homeworks') }}</p>
     @endsection
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <x-table>
@@ -194,13 +194,13 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Prospecto: " />
+                    <x-forms.label value="{{__('Prospect')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="tarea.prospectos_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($prospectos as $item)
                         <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}</option>
                         @empty
-                        <option value="">Sin prospectos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -208,21 +208,21 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Fecha: " />
+                    <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="tarea.tareas_fecha"/>
                 </div>
                 <x-forms.input-error for="tareas_fecha"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Tarea: " />
+                    <x-forms.label value="{{ __('Homework') }}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="tarea.tareas_descripcion"/>
                 </div>
                 <x-forms.input-error for="tareas_descripcion"/>
            </div>
            <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Comentario: " />
+                    <x-forms.label value="{{__('Comment')}}: " />
                     <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="tarea.tareas_comentario">
                     </x-forms.textarea>
                 </div>
@@ -230,13 +230,13 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="Estatus: " />
+                    <x-forms.label value="{{__('Status')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="tarea.est_tareas_id">
-                        <option value="">Seleccionar</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($estatus as $item)
                         <option value="{{$item->est_tareas_id}}">{{$item->est_tareas_descripcion}}</option>
                         @empty
-                        <option value="">Sin segumientos</option>
+                        <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
@@ -245,10 +245,10 @@
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
-                Cancelar
+                {{__('Cancel')}}
             </x-forms.red-button>
             <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
-                Modificar Prospecto
+                {{__('Modify')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
