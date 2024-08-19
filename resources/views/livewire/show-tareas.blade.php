@@ -108,19 +108,19 @@
                         {{$item->tareas_id}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->tareas_fecha}}
+                        {{\Carbon\Carbon::parse($item->tareas_fecha)->format('d-m-Y')}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->tareas_descripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_id}} {{$item->prospecto->prospectos_nombres}} {{$item->prospecto->prospectos_apellidos}}
+                        {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->est_tareas_id}} {{$item->estatus->est_tareas_descripcion}}
+                         {{$item->est_tareas_descripcion}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item }})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->tareas_id }})"></i>
                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteTarea',{{$item->tareas_id}})"></i>
                     </td>
                 </tr>

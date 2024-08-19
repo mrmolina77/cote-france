@@ -95,7 +95,7 @@
                         {{$item->inscripciones_id}}
                     </th>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->fecha_inscripcion}}
+                        {{\Carbon\Carbon::parse($item->fecha_inscripcion)->format('d-m-Y')}}
                     </td>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
                         {{$item->cursos_descripcion}}

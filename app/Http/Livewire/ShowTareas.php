@@ -40,18 +40,17 @@ class ShowTareas extends Component
             // $tareas = Tarea::where('tareas_descripcion','like','%'.trim($this->search).'%')
             //                        ->orderBy($this->sort,$this->direction)
             //                        ->paginate($this->cant);
-            $tareas = DB::table('clases_pruebas')
-            ->join('profesores','profesores.profesores_id','=','clases_pruebas.profesores_id')
-            ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
-            ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
-            ->orWhere('clases_pruebas.clasespruebas_descripcion','like','%'.trim($this->search).'%')
-            ->orWhere('clases_pruebas.clasespruebas_fecha','like','%'.trim($this->search).'%')
-            ->orWhere('clases_pruebas.clasespruebas_hora_inicio','like','%'.trim($this->search).'%')
-            ->orWhere('clases_pruebas.clasespruebas_hora_fin','like','%'.trim($this->search).'%')
-            ->select('clases_pruebas.clasespruebas_descripcion','clases_pruebas.clasespruebas_fecha'
-            ,'clases_pruebas.clasespruebas_hora_inicio','clases_pruebas.clasespruebas_hora_fin'
-            ,'profesores.profesores_nombres','profesores.profesores_apellidos'
-            ,'clases_pruebas.clasespruebas_id')
+            $tareas = DB::table('tareas')
+            ->join('prospectos','prospectos.prospectos_id','=','tareas.prospectos_id')
+            ->join('estatu_tareas','estatu_tareas.est_tareas_id','=','tareas.est_tareas_id')
+            ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
+            ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+            ->orWhere('estatu_tareas.est_tareas_descripcion','like','%'.trim($this->search).'%')
+            ->orWhere('tareas.tareas_descripcion','like','%'.trim($this->search).'%')
+            ->orWhere('tareas.tareas_fecha','like','%'.trim($this->search).'%')
+            ->select('tareas.tareas_id','tareas.tareas_fecha'
+            ,'prospectos.prospectos_nombres','prospectos.prospectos_apellidos'
+            ,'estatu_tareas.est_tareas_descripcion','tareas.tareas_descripcion')
             ->paginate($this->cant);
 
         } else {

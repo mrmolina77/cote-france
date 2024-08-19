@@ -57,6 +57,7 @@ class ShowProspectos extends Component
                         ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
                         ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%')
                         ->orWhere('estatus.estatus_descripcion','like','%'.trim($this->search).'%')
+                        ->orWhere('prospectos.prospectos_telefono','like','%'.trim($this->search).'%')
                         ->orderBy($this->sort,$this->direction)
                         ->paginate($this->cant);
         } else {

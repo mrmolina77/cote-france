@@ -107,13 +107,13 @@
                         {{$item->asistencias_id}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->clasespruebas_descripcion}} {{$item->clasespruebas_fecha}} {{$item->clasespruebas_hora_inicio}}
+                        {{$item->clasespruebas_descripcion}} {{\Carbon\Carbon::parse($item->clasespruebas_fecha)->format('d-m-Y')}} {{$item->clasespruebas_hora_inicio}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->asistio}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->asistencias_fecha}}
+                        {{ \Carbon\Carbon::parse($item->asistencias_fecha)->format('d-m-Y')}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
