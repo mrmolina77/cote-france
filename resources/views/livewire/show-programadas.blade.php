@@ -1,6 +1,6 @@
 <div wire:init="loadPosts">
     @section('content')
-    <p>{{ __('Prospects') }}</p>
+    <p>{{ __('Scheduled Classes') }}</p>
     @endsection
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <x-table>
@@ -98,7 +98,7 @@
                 @forelse ( $prospectos as $item )
                 <tr>
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                        {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}} 
+                        {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
                         {{$item->prospectos_clase_hora}}
