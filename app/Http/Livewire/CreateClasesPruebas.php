@@ -21,6 +21,11 @@ class CreateClasesPruebas extends Component
         'profesores_id'=>'required',
     ];
 
+    public function mount()
+    {
+        $this->clasespruebas_fecha = date('Y-m-d');
+    }
+
     public function save(){
         $this->validate();
         ClasePrueba::create([

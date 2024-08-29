@@ -45,6 +45,8 @@ class ShowAsistencias extends Component
               ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
               ->orWhere('asistencias.asistencias_fecha','like','%'.trim($this->search).'%')
               ->orWhere('clases_pruebas.clasespruebas_descripcion','like','%'.trim($this->search).'%')
+              ->orWhere(DB::raw('DATE_FORMAT(clases_pruebas.clasespruebas_fecha,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
+              ->orWhere('clases_pruebas.clasespruebas_hora_inicio','like','%'.trim($this->search).'%')
               ->orWhere(DB::raw('if(asistencias.asistencias,"Si","No")'),'like','%'.trim($this->search).'%')
               ->select(DB::raw('if(asistencias.asistencias,"Si","No") as asistio'),'asistencias.asistencias_fecha'
                        ,'clases_pruebas.clasespruebas_descripcion','clases_pruebas.clasespruebas_fecha'

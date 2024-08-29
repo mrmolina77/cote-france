@@ -1,0 +1,99 @@
+<?php
+
+namespace App\Http\Livewire;
+
+use App\Models\User;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+
+class ShowUsuarios extends Component
+{
+    use WithPagination;
+    public $search = "";
+    public $sort = 'id';
+    public $direction = 'asc';
+    public $user;
+    public $cant = 5;
+    public $readyToLoad = false;
+
+    public $open_edit = false;
+    protected $listeners = ['render','delete'];
+
+    public $name,$email,$password,$password_confirmation;
+
+    protected $rules = [
+        'name'=>'required|min:10|max:250',
+        'email'=>'required|unique:posts|email',
+        'password'=>'required|min:10|max:512|confirmed',
+    ];
+
+    public function updatingSearch(){
+        $this->resetPage();
+    }
+
+    public function render()
+    {
+        if($this->readyToLoad){
+            // $users = User::where('tareas_descripcion','like','%'.trim($this->search).'%')
+            //                        ->orderBy($this->sort,$this->direction)
+            //                        ->paginate($this->cant);
+            $users = DB::table('users')
+            ->orWhere('users.id','like','%'.trim($this->search).'%')
+            ->orWhere('users.name','like','%'.trim($this->search).'%')
+            ->orWhere('users.email','like','%'.trim($this->search).'%')
+            ->select('users.id','users.name','users.email')
+            ->paginate($this->cant);
+
+        } else {
+            $users = array();
+        }
+        return view('livewire.show-usuarios',['users'=>$users]);
+    }
+
+    public function loadPosts(){
+        $this->readyToLoad = true;
+    }
+
+    public function order($order){
+        if ($this->sort== $order) {
+            if ($this->direction == 'desc') {
+                $this->direction = 'asc';
+            } else {
+                $this->direction = 'desc';
+            }
+        } else {
+            $this->sort= $order;
+            $this->direction = 'asc';
+        }
+    }
+
+    public function edit($id){
+        $user = User::find($id);
+        $this->user = $user;
+        $this->name = $this->user->name;
+        $this->email = $this->user->email;
+        $this->open_edit = true;
+    }
+
+    public function update(){
+        // $this->user->password = Hash::make($this->user->password);
+        // $this->user->save();
+        // $this->validate();
+        $this->user->forceFill([
+            'name' => $this->name,
+            'email' => $this->email,
+            'password' => Hash::make($this->password),
+        ])->save();
+        unset($this->user);
+        $this->reset(['open_edit']);
+        $this->emit('alert','El usuario fue modificado satifactoriamente');
+
+    }
+
+    public function delete(User $user){
+        $user->delete();
+        $this->emit('alert','El usuario fue eliminado satifactoriamente');
+    }
+}

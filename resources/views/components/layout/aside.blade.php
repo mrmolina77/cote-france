@@ -14,6 +14,10 @@
             <i class="fas fa-table mr-3"></i>
             {{ __('Prospects') }}
         </x-layout.aside-link>
+        <x-layout.aside-link href="{{ route('programadas') }}" :active="request()->routeIs('prospectos')">
+            <i class="fas fa-chalkboard mr-3"></i>
+            {{ __('Scheduled') }}
+        </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('clasespruebas') }}" :active="request()->routeIs('clasespruebas')">
             <i class="fas fa-sticky-note mr-3"></i>
             {{ __('Test classes') }}
@@ -29,6 +33,10 @@
         <x-layout.aside-link href="{{ route('inscripciones') }}" :active="request()->routeIs('inscripciones')">
             <i class="fas fa-tablet-alt mr-3"></i>
             {{ __('Enrollment') }}
+        </x-layout.aside-link>
+        <x-layout.aside-link href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
+            <i class="fas fa-user-alt mr-3"></i>
+            {{ __('Users') }}
         </x-layout.aside-link>
         {{-- <x-layout.aside-link href="" :active="request()->routeIs('x')">
             <i class="fas fa-calendar mr-3"></i>

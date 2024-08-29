@@ -33,6 +33,8 @@ class ShowProspectos extends Component
         'prospecto.estatus_id'=>'required',
         'prospecto.prospectos_comentarios'=>'required|min:7|max:255',
         'prospecto.prospectos_fecha'=>'required|date',
+        'prospecto.prospectos_clase_fecha'=>'date|required_if:seguimientos_id,2',
+        'prospecto.prospectos_clase_hora'=>'required_if:seguimientos_id,2',
     ];
 
     public function updatingSearch(){
@@ -53,7 +55,7 @@ class ShowProspectos extends Component
                         ->select('prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono','origenes_descripcion','estatus_descripcion')
                         ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
                         ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
-                        ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+                        ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
                         ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
                         ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%')
                         ->orWhere('estatus.estatus_descripcion','like','%'.trim($this->search).'%')

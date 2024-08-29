@@ -24,6 +24,8 @@ return new class extends Migration
             $table->unsignedBigInteger('estatus_id');
             $table->text('prospectos_comentarios');
             $table->date('prospectos_fecha');
+            $table->date('prospectos_clase_fecha')->nullable();
+            $table->time('prospectos_clase_hora')->nullable();
             $table->foreign('seguimientos_id')->references('seguimientos_id')->on('seguimientos');
             $table->foreign('origenes_id')->references('origenes_id')->on('origenes');
             $table->foreign('estatus_id')->references('estatus_id')->on('estatus');

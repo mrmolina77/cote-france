@@ -17,8 +17,8 @@ class OrigenSeeder extends Seeder
     {
         //
         Origen::create([
-            'origenes_descripcion' =>'Instagran',
-        ]);        
+            'origenes_descripcion' =>'Instagram',
+        ]);
         Origen::create([
             'origenes_descripcion' =>'WhatsApp',
         ]);

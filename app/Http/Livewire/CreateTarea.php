@@ -21,6 +21,11 @@ class CreateTarea extends Component
         'est_tareas_id'=>'required',
     ];
 
+    public function mount()
+    {
+        $this->tareas_fecha = date('Y-m-d');
+    }
+
     public function save(){
         $this->validate();
         Tarea::create([

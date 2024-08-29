@@ -19,6 +19,11 @@ class CreateInscripciones extends Component
         'fecha_inscripcion'=>'required|date',
     ];
 
+    public function mount()
+    {
+        $this->fecha_inscripcion = date('Y-m-d');
+    }
+
     public function save(){
         $this->validate();
         Inscripcion::create([

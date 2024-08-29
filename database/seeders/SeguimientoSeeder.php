@@ -23,7 +23,7 @@ class SeguimientoSeeder extends Seeder
             'seguimientos_descripcion' =>'Viene a clase de prueba',
         ]);
         Seguimiento::create([
-            'seguimientos_descripcion' =>'falto a clase de prueba',
+            'seguimientos_descripcion' =>'Falto a clase de prueba',
         ]);
         Seguimiento::create([
             'seguimientos_descripcion' =>'Vinó a clase',

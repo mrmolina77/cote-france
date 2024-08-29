@@ -21,6 +21,10 @@ class CreateAsistencias extends Component
         'asistencias_fecha'=>'required|date',
     ];
 
+    public function mount()
+    {
+        $this->asistencias_fecha = date('Y-m-d');
+    }
     public function save(){
         $this->validate();
         Asistencia::create([

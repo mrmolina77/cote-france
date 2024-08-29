@@ -3,9 +3,11 @@
 use App\Http\Livewire\ShowAsistencias;
 use App\Http\Livewire\ShowClasesPruebas;
 use App\Http\Livewire\ShowInscripciones;
+use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
 use App\Http\Livewire\ShowProspectos;
 use App\Http\Livewire\ShowTareas;
+use App\Http\Livewire\ShowUsuarios;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,4 +58,14 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/inscripciones', ShowInscripciones::class )->name('inscripciones');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/usuarios', ShowUsuarios::class )->name('usuarios');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/programadas', ShowProgramadas::class )->name('programadas');
 
