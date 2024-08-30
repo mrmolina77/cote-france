@@ -44,7 +44,7 @@
         </div>
         <div class="justify-center  min-h-screen bg-gray-100 dark:bg-gray-900 sm:items-center py-4 sm:pt-0">
             <div class="flex mt-60 justify-center items-center">
-                <img src="{{asset("images/cote_logo.png")}}" alt="" srcset="">
+                <img src="{{asset("images/cote_logo.png")}}" width="50%" alt="" srcset="">
             </div>
             <footer class="relative pt-8 pb-6 mt-16">
                 <div class="container mx-auto px-4">
