@@ -14,7 +14,7 @@
             <i class="fas fa-table mr-3"></i>
             {{ __('Prospects') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="{{ route('programadas') }}" :active="request()->routeIs('prospectos')">
+        <x-layout.aside-link href="{{ route('programadas') }}" :active="request()->routeIs('programadas')">
             <i class="fas fa-chalkboard mr-3"></i>
             {{ __('Scheduled') }}
         </x-layout.aside-link>
