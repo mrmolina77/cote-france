@@ -30,7 +30,7 @@
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_id')">
+                    wire:click="order('tareas_id')">
                     Id
                     @if ($sort == 'tareas_id')
                         @if ($direction == 'asc')
@@ -42,8 +42,23 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                     </th>
+                @if ($user->role->roles_codigo == 'admin')
+                <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('name')">
+                    Creado por
+                    @if ($sort == 'name')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
+                @endif
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('tareas_descripcion')">
+                    wire:click="order('tareas_fecha')">
                     Fecha
                     @if ($sort == 'tareas_fecha')
                         @if ($direction == 'asc')
@@ -107,6 +122,11 @@
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                         {{$item->tareas_id}}
                     </th>
+                    @if ($user->role->roles_codigo == 'admin')
+                    <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
+                        {{$item->name}}
+                    </th>
+                    @endif
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
                         {{\Carbon\Carbon::parse($item->tareas_fecha)->format('d-m-Y')}}
                     </td>

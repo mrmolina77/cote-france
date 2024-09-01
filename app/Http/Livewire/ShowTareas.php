@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\EstatuTarea;
 use App\Models\Prospecto;
 use App\Models\Tarea;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -36,22 +37,48 @@ class ShowTareas extends Component
 
     public function render()
     {
+        $user = Auth::user();
         if($this->readyToLoad){
             // $tareas = Tarea::where('tareas_descripcion','like','%'.trim($this->search).'%')
             //                        ->orderBy($this->sort,$this->direction)
             //                        ->paginate($this->cant);
-            $tareas = DB::table('tareas')
-            ->join('prospectos','prospectos.prospectos_id','=','tareas.prospectos_id')
-            ->join('estatu_tareas','estatu_tareas.est_tareas_id','=','tareas.est_tareas_id')
-            ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
-            ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
-            ->orWhere('estatu_tareas.est_tareas_descripcion','like','%'.trim($this->search).'%')
-            ->orWhere('tareas.tareas_descripcion','like','%'.trim($this->search).'%')
-            ->orWhere('tareas.tareas_fecha','like','%'.trim($this->search).'%')
-            ->select('tareas.tareas_id','tareas.tareas_fecha'
-            ,'prospectos.prospectos_nombres','prospectos.prospectos_apellidos'
-            ,'estatu_tareas.est_tareas_descripcion','tareas.tareas_descripcion')
-            ->paginate($this->cant);
+            if ($user->role->roles_codigo == 'admin') {
+                # code...
+                $tareas = DB::table('tareas')
+                ->join('prospectos','prospectos.prospectos_id','=','tareas.prospectos_id')
+                ->join('estatu_tareas','estatu_tareas.est_tareas_id','=','tareas.est_tareas_id')
+                ->join('users','users.id','=','tareas.user_id')
+                ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
+                ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+                ->orWhere('estatu_tareas.est_tareas_descripcion','like','%'.trim($this->search).'%')
+                ->orWhere('tareas.tareas_descripcion','like','%'.trim($this->search).'%')
+                ->orWhere('tareas.tareas_fecha','like','%'.trim($this->search).'%')
+                ->orWhere('users.name','like','%'.trim($this->search).'%')
+                ->select('tareas.tareas_id','tareas.tareas_fecha'
+                ,'prospectos.prospectos_nombres','prospectos.prospectos_apellidos'
+                ,'estatu_tareas.est_tareas_descripcion','tareas.tareas_descripcion'
+                ,'users.name')
+                ->orderBy($this->sort,$this->direction)
+                ->paginate($this->cant);
+            } else {
+                $tareas = DB::table('tareas')
+                ->join('prospectos','prospectos.prospectos_id','=','tareas.prospectos_id')
+                ->join('estatu_tareas','estatu_tareas.est_tareas_id','=','tareas.est_tareas_id')
+                ->where('user_id',Auth::id())
+                ->where(function ($query) {
+                    $query->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
+                    ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
+                    ->orWhere('estatu_tareas.est_tareas_descripcion','like','%'.trim($this->search).'%')
+                    ->orWhere('tareas.tareas_descripcion','like','%'.trim($this->search).'%')
+                    ->orWhere('tareas.tareas_fecha','like','%'.trim($this->search).'%');
+                })
+                ->select('tareas.tareas_id','tareas.tareas_fecha'
+                ,'prospectos.prospectos_nombres','prospectos.prospectos_apellidos'
+                ,'estatu_tareas.est_tareas_descripcion','tareas.tareas_descripcion')
+                ->orderBy($this->sort,$this->direction)
+                ->paginate($this->cant);
+
+            }
 
         } else {
             $tareas = array();
@@ -60,6 +87,7 @@ class ShowTareas extends Component
         $estatus = EstatuTarea::all();
         return view('livewire.show-tareas',['tareas'=>$tareas
                                            ,'prospectos'=>$prospectos
+                                           ,'user'=>$user
                                            ,'estatus'=>$estatus]);
     }
 

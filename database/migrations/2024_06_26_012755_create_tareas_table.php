@@ -22,6 +22,8 @@ return new class extends Migration
             $table->foreign('prospectos_id')->references('prospectos_id')->on('prospectos');
             $table->unsignedBigInteger('est_tareas_id');
             $table->foreign('est_tareas_id')->references('est_tareas_id')->on('estatu_tareas');
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
             $table->softDeletes();
         });

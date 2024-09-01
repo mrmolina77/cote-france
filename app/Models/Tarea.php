@@ -24,7 +24,7 @@ class Tarea extends Model
    protected $primaryKey = 'tareas_id';
 
    protected $fillable = ['tareas_descripcion','tareas_fecha','tareas_comentario',
-                           'prospectos_id','est_tareas_id'];
+                           'prospectos_id','est_tareas_id','user_id'];
 
     public function prospecto()
     {

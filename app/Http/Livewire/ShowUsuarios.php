@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Role;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,12 +22,13 @@ class ShowUsuarios extends Component
     public $open_edit = false;
     protected $listeners = ['render','delete'];
 
-    public $name,$email,$password,$password_confirmation;
+    public $name,$email,$password,$password_confirmation,$roles_id;
 
     protected $rules = [
         'name'=>'required|min:10|max:250',
         'email'=>'required|unique:posts|email',
         'password'=>'required|min:10|max:512|confirmed',
+        'roles_id'=>'required',
     ];
 
     public function updatingSearch(){
@@ -40,16 +42,20 @@ class ShowUsuarios extends Component
             //                        ->orderBy($this->sort,$this->direction)
             //                        ->paginate($this->cant);
             $users = DB::table('users')
+            ->join('roles','users.roles_id','=','roles.roles_id')
             ->orWhere('users.id','like','%'.trim($this->search).'%')
             ->orWhere('users.name','like','%'.trim($this->search).'%')
             ->orWhere('users.email','like','%'.trim($this->search).'%')
-            ->select('users.id','users.name','users.email')
+            ->orWhere('roles.roles_nombre','like','%'.trim($this->search).'%')
+            ->select('users.id','users.name','users.email','roles.roles_nombre')
             ->paginate($this->cant);
 
         } else {
             $users = array();
         }
-        return view('livewire.show-usuarios',['users'=>$users]);
+        $roles = Role::all();
+        return view('livewire.show-usuarios',['users'=>$users,
+                                              'roles'=>$roles]);
     }
 
     public function loadPosts(){
@@ -74,6 +80,7 @@ class ShowUsuarios extends Component
         $this->user = $user;
         $this->name = $this->user->name;
         $this->email = $this->user->email;
+        $this->roles_id = $this->user->roles_id;
         $this->open_edit = true;
     }
 
@@ -84,6 +91,7 @@ class ShowUsuarios extends Component
         $this->user->forceFill([
             'name' => $this->name,
             'email' => $this->email,
+            'roles_id' => $this->roles_id,
             'password' => Hash::make($this->password),
         ])->save();
         unset($this->user);

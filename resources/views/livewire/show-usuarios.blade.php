@@ -68,6 +68,19 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                     </th>
+                <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('tareas_descripcion')">
+                    Roles
+                    @if ($sort == 'roles_nombre')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                     Acción
                     </th>
@@ -86,6 +99,9 @@
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->email}}
+                    </td>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{$item->roles_nombre}}
                     </td>
 
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
@@ -188,7 +204,21 @@
                     <x-forms.input type="password" class="flex-1 ml-4" wire:model="password_confirmation"/>
                 </div>
                 <x-forms.input-error for="password"/>
-            </div>
+           </div>
+           <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Roles')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="roles_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($roles as $item)
+                        <option value="{{$item->roles_id}}">{{$item->roles_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="roles_id"/>
+        </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">

@@ -37,6 +37,20 @@
                 </div>
                 <x-forms.input-error for="password"/>
             </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Roles')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="roles_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($roles as $item)
+                        <option value="{{$item->roles_id}}">{{$item->roles_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="roles_id"/>
+            </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">

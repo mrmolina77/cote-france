@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\EstatuTarea;
 use App\Models\Prospecto;
 use App\Models\Tarea;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class CreateTarea extends Component
@@ -33,7 +34,8 @@ class CreateTarea extends Component
             'tareas_fecha' =>$this->tareas_fecha,
             'tareas_comentario' =>$this->tareas_comentario,
             'prospectos_id' =>$this->prospectos_id,
-            'est_tareas_id' =>$this->est_tareas_id
+            'est_tareas_id' =>$this->est_tareas_id,
+            'user_id' =>Auth::id()
         ]);
         $this->reset(['open','tareas_descripcion','tareas_fecha','tareas_comentario',
         'prospectos_id','est_tareas_id']);

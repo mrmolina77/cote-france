@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
@@ -36,6 +37,7 @@ class CreateUsuarios extends Component
 
     public function render()
     {
-        return view('livewire.create-usuarios');
+        $roles = Role::all();
+        return view('livewire.create-usuarios',['roles'=>$roles]);
     }
 }
