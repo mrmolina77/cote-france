@@ -248,7 +248,7 @@
                 <x-forms.input-error for="seguimientos_id"/>
             </div>
 
-            @if ($this->open_edit and isset($this->prospecto->seguimientos_id) and $this->prospecto->seguimientos_id === 2)
+            @if ($this->open_edit and isset($this->prospecto->seguimientos_id) and (int)$this->prospecto->seguimientos_id === 2)
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Date')}}: " />
