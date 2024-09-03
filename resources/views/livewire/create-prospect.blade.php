@@ -68,14 +68,14 @@
             @if ($seguimientos_id === '2')
                 <div>
                     <div class="mb-4 flex">
-                        <x-forms.label value="{{__('Date class')}}: " />
+                        <x-forms.label value="{{__('Class date')}}: " />
                         <x-forms.input type="date" class="flex-1 ml-4" wire:model="prospectos_clase_fecha"/>
                     </div>
                     <x-forms.input-error for="prospectos_clase_fecha"/>
                 </div>
                 <div>
                     <div class="mb-4 flex">
-                        <x-forms.label value="{{__('Time class')}}: " />
+                        <x-forms.label value="{{__('Class time')}}: " />
                         <x-forms.input type="time" class="flex-1 ml-4" wire:model="prospectos_clase_hora"/>
                     </div>
                     <x-forms.input-error for="prospectos_clase_hora"/>

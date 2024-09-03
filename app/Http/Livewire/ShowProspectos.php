@@ -33,7 +33,7 @@ class ShowProspectos extends Component
         'prospecto.estatus_id'=>'required',
         'prospecto.prospectos_comentarios'=>'required|min:7|max:255',
         'prospecto.prospectos_fecha'=>'required|date',
-        'prospecto.prospectos_clase_fecha'=>'date|required_if:seguimientos_id,2',
+        'prospecto.prospectos_clase_fecha'=>'required_if:seguimientos_id,2|date',
         'prospecto.prospectos_clase_hora'=>'required_if:seguimientos_id,2',
     ];
 

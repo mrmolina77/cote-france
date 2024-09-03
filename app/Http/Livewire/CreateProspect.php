@@ -28,7 +28,7 @@ class CreateProspect extends Component
         'estatus_id'=>'required',
         'prospectos_comentarios'=>'required|min:7|max:255',
         'prospectos_fecha'=>'required|date',
-        'prospectos_clase_fecha'=>'date|required_if:seguimientos_id,2',
+        'prospectos_clase_fecha'=>'required_if:seguimientos_id,2',
         'prospectos_clase_hora'=>'required_if:seguimientos_id,2',
     ];
 
@@ -41,7 +41,6 @@ class CreateProspect extends Component
     public function mount()
     {
         $this->prospectos_fecha = date('Y-m-d');
-        $this->prospectos_clase_fecha = date('Y-m-d');
     }
 
     public function save(){
