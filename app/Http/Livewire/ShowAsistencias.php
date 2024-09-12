@@ -3,11 +3,12 @@
 namespace App\Http\Livewire;
 
 use App\Models\Asistencia;
-use App\Models\ClasePrueba;
 use App\Models\Prospecto;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Database\Eloquent\Builder;
+
 
 class ShowAsistencias extends Component
 {
@@ -60,6 +61,7 @@ class ShowAsistencias extends Component
         }
 
         $prospectos = Prospecto::whereNotNull('prospectos_clase_fecha')->get();
+
         return view('livewire.show-asistencias',['asistencias'=>$asistencias
                                                   , 'prospectos'=>$prospectos]);
     }

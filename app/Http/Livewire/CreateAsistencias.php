@@ -3,7 +3,6 @@
 namespace App\Http\Livewire;
 
 use App\Models\Asistencia;
-use App\Models\ClasePrueba;
 use App\Models\Prospecto;
 use Livewire\Component;
 
@@ -11,8 +10,7 @@ class CreateAsistencias extends Component
 {
     public $open = false;
 
-    public $prospectos_id, $asistencias;
-    public $asistencias_fecha;
+    public $prospectos_id,$asistencias,$asistencias_fecha;
 
     protected $rules = [
         'prospectos_id'=>'required',
@@ -23,6 +21,7 @@ class CreateAsistencias extends Component
     public function mount()
     {
         $this->asistencias_fecha = date('Y-m-d');
+        $this->asistencias = false;
     }
     public function save(){
         $this->validate();
@@ -38,7 +37,7 @@ class CreateAsistencias extends Component
 
     public function render()
     {
-        $prospectos = Prospecto::whereNotNull('prospectos_clase_fecha')->get();
+        $prospectos = Prospecto::whereNotNull('prospectos_clase_fecha')->doesntHave('asistencia')->get();
         return view('livewire.create-asistencias',['prospectos'=>$prospectos]);
     }
 }
