@@ -7,7 +7,6 @@ use App\Models\Prospecto;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Database\Eloquent\Builder;
 
 
 class ShowAsistencias extends Component
