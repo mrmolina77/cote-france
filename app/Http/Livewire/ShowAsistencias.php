@@ -24,7 +24,6 @@ class ShowAsistencias extends Component
 
     protected $rules = [
         'asistencia.prospectos_id'=>'required',
-        'asistencia.clasespruebas_id'=>'required',
         'asistencia.asistencias_fecha'=>'required|date',
         'asistencia.asistencias'=>'required|boolean',
     ];
@@ -40,18 +39,16 @@ class ShowAsistencias extends Component
             //                             ->paginate($this->cant);
             $asistencias = DB::table('asistencias')
               ->join('prospectos','prospectos.prospectos_id','=','asistencias.prospectos_id')
-              ->join('clases_pruebas','asistencias.clasespruebas_id','=','clases_pruebas.clasespruebas_id')
               ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
               ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
-              ->orWhere('asistencias.asistencias_fecha','like','%'.trim($this->search).'%')
-              ->orWhere('clases_pruebas.clasespruebas_descripcion','like','%'.trim($this->search).'%')
-              ->orWhere(DB::raw('DATE_FORMAT(clases_pruebas.clasespruebas_fecha,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
-              ->orWhere('clases_pruebas.clasespruebas_hora_inicio','like','%'.trim($this->search).'%')
+              ->orWhere(DB::raw('DATE_FORMAT(asistencias.asistencias_fecha,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
+              ->orWhere(DB::raw('DATE_FORMAT(prospectos.prospectos_clase_fecha,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
+              ->orWhere('prospectos.prospectos_clase_hora','like','%'.trim($this->search).'%')
               ->orWhere(DB::raw('if(asistencias.asistencias,"Si","No")'),'like','%'.trim($this->search).'%')
               ->select(DB::raw('if(asistencias.asistencias,"Si","No") as asistio'),'asistencias.asistencias_fecha'
-                       ,'clases_pruebas.clasespruebas_descripcion','clases_pruebas.clasespruebas_fecha'
-                       ,'clases_pruebas.clasespruebas_hora_inicio','prospectos.prospectos_nombres'
-                       ,'prospectos.prospectos_apellidos','asistencias.asistencias_id')
+                       ,'prospectos.prospectos_clase_fecha','prospectos.prospectos_clase_hora'
+                       ,'prospectos.prospectos_nombres','prospectos.prospectos_apellidos'
+                       ,'asistencias.asistencias_id')
                 ->orderBy($this->sort,$this->direction)
                 ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
@@ -62,11 +59,9 @@ class ShowAsistencias extends Component
             $asistencias = array();
         }
 
-        $prospectos = Prospecto::all();
-        $clasespruebas = ClasePrueba::all();
+        $prospectos = Prospecto::whereNotNull('prospectos_clase_fecha')->get();
         return view('livewire.show-asistencias',['asistencias'=>$asistencias
-                                                  , 'prospectos'=>$prospectos
-                                                  , 'clasespruebas'=>$clasespruebas]);
+                                                  , 'prospectos'=>$prospectos]);
     }
 
     public function loadPosts(){

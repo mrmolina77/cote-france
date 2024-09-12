@@ -13,7 +13,7 @@
                     <x-select class="flex-1 ml-4" wire:model="prospectos_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($prospectos as $item)
-                        <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}</option>
+                        <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}} {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}} {{$item->prospectos_clase_hora}}</option>
                         @empty
                         <option value="">{{__('No Content')}}</option>
                         @endforelse
@@ -21,20 +21,7 @@
                 </div>
                 <x-forms.input-error for="prospectos_id"/>
             </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Test classes')}}: " />
-                    <x-select class="flex-1 ml-4" wire:model="clasespruebas_id">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($clasespruebas as $item)
-                        <option value="{{$item->clasespruebas_id}}">{{$item->clasespruebas_descripcion}} {{$item->clasespruebas_fecha}} {{$item->clasespruebas_hora_inicio}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="clasespruebas_id"/>
-            </div>
+
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Attended')}}: " />

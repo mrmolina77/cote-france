@@ -20,7 +20,7 @@
         </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('clasespruebas') }}" :active="request()->routeIs('clasespruebas')">
             <i class="fas fa-sticky-note mr-3"></i>
-            {{ __('Test classes') }}
+            {{ __('Timetable') }}
         </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('asistencias') }}" :active="request()->routeIs('asistencias')">
             <i class="fas fa-table mr-3"></i>

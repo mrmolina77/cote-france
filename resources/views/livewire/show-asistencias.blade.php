@@ -42,9 +42,22 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                     </th>
+                    <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('asistencias_fecha')">
+                    Fecha
+                    @if ($sort == 'asistencias_fecha')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
                     wire:click="order('clasespruebas_descripcion')">
-                    Clase Pruebas
+                    Hora
                     @if ($sort == 'clasespruebas_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
@@ -59,19 +72,6 @@
                     wire:click="order('asistio')">
                     Asistio
                     @if ($sort == 'asistio')
-                        @if ($direction == 'asc')
-                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
-                        @else
-                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
-                        @endif
-                    @else
-                        <i class="fas fa-sort float-right mt-1"></i>
-                    @endif
-                    </th>
-                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('asistencias_fecha')">
-                    Fecha
-                    @if ($sort == 'asistencias_fecha')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -106,14 +106,14 @@
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                         {{$item->asistencias_id}}
                     </th>
-                    <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->clasespruebas_descripcion}} {{\Carbon\Carbon::parse($item->clasespruebas_fecha)->format('d-m-Y')}} {{$item->clasespruebas_hora_inicio}}
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}}
+                    </td>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{$item->prospectos_clase_hora}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->asistio}}
-                    </td>
-                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{ \Carbon\Carbon::parse($item->asistencias_fecha)->format('d-m-Y')}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
@@ -197,7 +197,7 @@
                     <x-select class="flex-1 ml-4" wire:model="asistencia.prospectos_id">
                         <option value="">Seleccionar</option>
                         @forelse ($prospectos as $item)
-                        <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}</option>
+                        <option value="{{$item->prospectos_id}}">{{$item->prospectos_nombres}} {{$item->prospectos_apellidos}} {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}} {{$item->prospectos_clase_hora}}</option>
                         @empty
                         <option value="">Sin prospectos</option>
                         @endforelse
@@ -205,20 +205,7 @@
                 </div>
                 <x-forms.input-error for="prospectos_id"/>
             </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Test classes')}}: " />
-                    <x-select class="flex-1 ml-4" wire:model="asistencia.clasespruebas_id">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($clasespruebas as $item)
-                        <option value="{{$item->clasespruebas_id}}">{{$item->clasespruebas_descripcion}} {{$item->clasespruebas_fecha}} {{$item->clasespruebas_hora_inicio}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="clasespruebas_id"/>
-            </div>
+
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Attended')}}: " />
