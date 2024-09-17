@@ -20,9 +20,11 @@ use App\Http\Livewire\ShowUsuarios;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+Route::redirect('/', '/dashboard', 301);
 
 Route::middleware([
     'auth:sanctum',
