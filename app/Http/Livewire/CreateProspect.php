@@ -38,7 +38,7 @@ class CreateProspect extends Component
         $this->validateOnly($propertyName);
     } */
 
-    public function mount()
+    public function boot()
     {
         $this->prospectos_fecha = date('Y-m-d');
     }
@@ -60,7 +60,7 @@ class CreateProspect extends Component
         ]);
         $this->reset(['open','prospectos_nombres','prospectos_apellidos','prospectos_telefono',
         'prospectos_correo','origenes_id','seguimientos_id','estatus_id',
-        'prospectos_comentarios','prospectos_fecha','prospectos_clase_fecha','prospectos_clase_hora']);
+        'prospectos_comentarios','prospectos_clase_fecha','prospectos_clase_hora']);
         $this->emitTo('show-prospectos','render');
         $this->emit('alert','El prospecto fue agregado satifactoriamente');
     }

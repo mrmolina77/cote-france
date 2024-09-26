@@ -21,7 +21,7 @@ class CreateClasesPruebas extends Component
         'profesores_id'=>'required',
     ];
 
-    public function mount()
+    public function boot()
     {
         $this->clasespruebas_fecha = date('Y-m-d');
     }

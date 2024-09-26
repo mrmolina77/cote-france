@@ -22,7 +22,7 @@ class CreateTarea extends Component
         'est_tareas_id'=>'required',
     ];
 
-    public function mount()
+    public function boot()
     {
         $this->tareas_fecha = date('Y-m-d');
     }
@@ -37,8 +37,9 @@ class CreateTarea extends Component
             'est_tareas_id' =>$this->est_tareas_id,
             'user_id' =>Auth::id()
         ]);
-        $this->reset(['open','tareas_descripcion','tareas_fecha','tareas_comentario',
+        $this->reset(['open','tareas_descripcion','tareas_comentario',
         'prospectos_id','est_tareas_id']);
+        $this->tareas_fecha = date('Y-m-d');
         $this->emitTo('show-tareas','render');
         $this->emit('alert','La tarea fue agregado satifactoriamente');
     }

@@ -18,7 +18,7 @@ class CreateAsistencias extends Component
         'asistencias_fecha'=>'required|date',
     ];
 
-    public function mount()
+    public function boot()
     {
         $this->asistencias_fecha = date('Y-m-d');
         $this->asistencias = false;
@@ -30,7 +30,7 @@ class CreateAsistencias extends Component
             'asistencias' =>$this->asistencias,
             'asistencias_fecha' =>$this->asistencias_fecha
         ]);
-        $this->reset(['open','prospectos_id','asistencias','asistencias_fecha']);
+        $this->reset(['open','prospectos_id','asistencias']);
         $this->emitTo('show-asistencias','render');
         $this->emit('alert','La asistencia fue agregado satifactoriamente');
     }

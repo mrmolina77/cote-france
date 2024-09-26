@@ -2,13 +2,13 @@
 
 namespace App\Http\Livewire;
 
+use Livewire\WithPagination;
 use Livewire\Component;
 use App\Models\Prospecto;
 use App\Models\Origen;
 use App\Models\Seguimiento;
 use App\Models\Estatu;
 use Illuminate\Support\Facades\DB;
-use Livewire\WithPagination;
 
 class ShowProspectos extends Component
 {

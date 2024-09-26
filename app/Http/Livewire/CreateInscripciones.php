@@ -19,7 +19,7 @@ class CreateInscripciones extends Component
         'fecha_inscripcion'=>'required|date',
     ];
 
-    public function mount()
+    public function boot()
     {
         $this->fecha_inscripcion = date('Y-m-d');
     }
@@ -31,7 +31,7 @@ class CreateInscripciones extends Component
             'cursos_id' =>$this->cursos_id,
             'fecha_inscripcion' =>$this->fecha_inscripcion
         ]);
-        $this->reset(['open','prospectos_id','cursos_id','fecha_inscripcion']);
+        $this->reset(['open','prospectos_id','cursos_id']);
         $this->emitTo('show-inscripciones','render');
         $this->emit('alert','La inscripción fue agregado satifactoriamente');
     }
