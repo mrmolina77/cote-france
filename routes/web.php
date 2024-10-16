@@ -2,6 +2,7 @@
 
 use App\Http\Livewire\ShowAsistencias;
 use App\Http\Livewire\ShowClasesPruebas;
+use App\Http\Livewire\ShowGrupos;
 use App\Http\Livewire\ShowInscripciones;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
@@ -70,4 +71,9 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/programadas', ShowProgramadas::class )->name('programadas');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/grupos', ShowGrupos::class )->name('grupos');
 

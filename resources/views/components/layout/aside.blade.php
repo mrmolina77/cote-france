@@ -30,6 +30,10 @@
             <i class="fas fa-align-left mr-3"></i>
             {{ __('Homeworks') }}
         </x-layout.aside-link>
+        <x-layout.aside-link href="{{ route('grupos') }}" :active="request()->routeIs('grupos')">
+            <i class="fas fa-align-left mr-3"></i>
+            {{ __('Groups') }}
+        </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('inscripciones') }}" :active="request()->routeIs('inscripciones')">
             <i class="fas fa-tablet-alt mr-3"></i>
             {{ __('Enrollment') }}

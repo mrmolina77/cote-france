@@ -34,10 +34,11 @@ class ShowProgramadas extends Component
             //                        ->paginate($this->cant);
 
             $prospectos = DB::table('prospectos')
-                        ->select('prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono','prospectos_correo'
-                        ,'origenes_descripcion','estatus_descripcion','prospectos_clase_fecha','prospectos_clase_hora')
+                        ->select('prospectos.prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono','prospectos_correo'
+                        ,'origenes_descripcion','estatus_descripcion','prospectos_clase_fecha','prospectos_clase_hora','asistencias')
                         ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
                         ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
+                        ->leftJoin('asistencias', 'prospectos.prospectos_id', '=', 'asistencias.prospectos_id')
                         ->whereNotNull('prospectos_clase_fecha')
                         ->where(function ($query) {
                             $query->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
@@ -45,6 +46,10 @@ class ShowProgramadas extends Component
                                   ->orWhere(DB::raw('DATE_FORMAT(prospectos.prospectos_clase_fecha,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
                                   ->orWhere('prospectos.prospectos_clase_hora','like','%'.trim($this->search).'%')
                                   ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%');
+                        })
+                        ->where(function ($query) {
+                            $query->whereNull('asistencias')
+                                  ->orWhere('asistencias','0');
                         })
                         ->orderBy($this->sort,$this->direction)
                         ->paginate($this->cant);

@@ -1,6 +1,6 @@
 <div wire:init="loadPosts">
     @section('content')
-    <p>{{ __('Scheduled Classes') }}</p>
+    <p>{{ __('Groups') }}</p>
     @endsection
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <x-table>
@@ -21,15 +21,18 @@
                             <x-forms.input type="text" placeholder="{{__('Search')}}..." class="flex-1 ml-4" wire:model="search"/>
                         </div>
                     </div>
+                    <div class="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
+                    @livewire('create-grupos')
+                    </div>
                 </div>
             </x-slot>
             <table class="items-center bg-transparent w-full border-collapse">
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_clase_fecha')">
-                    Fecha
-                    @if ($sort == 'prospectos_clase_fecha')
+                    wire:click="order('grupo_id')">
+                    Id
+                    @if ($sort == 'grupo_id')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -40,22 +43,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_clase_hora')">
-                    Hora
-                    @if ($sort == 'prospectos_clase_hora')
-                        @if ($direction == 'asc')
-                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
-                        @else
-                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
-                        @endif
-                    @else
-                        <i class="fas fa-sort float-right mt-1"></i>
-                    @endif
-                    </th>
-                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_nombres')">
+                    wire:click="order('grupo_nombre')">
                     Nombre
-                    @if ($sort == 'prospectos_nombres')
+                    @if ($sort == 'grupo_nombre')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -66,9 +56,22 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_telefono')">
-                    Teléfono
-                    @if ($sort == 'prospectos_telefono')
+                    wire:click="order('grupo_nivel')">
+                    Nivel
+                    @if ($sort == 'grupo_nivel')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
+                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('grupo_capitulo')">
+                    Capitulo
+                    @if ($sort == 'grupo_capitulo')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -79,9 +82,9 @@
                     @endif
                 </th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_correo')">
-                    Correo
-                    @if ($sort == 'prospectos_correo')
+                    wire:click="order('modalidad_nombre')">
+                    Modalidad
+                    @if ($sort == 'modalidad_nombre')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -91,47 +94,56 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                 </th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('estado_nombre')">
+                    Estado
+                    @if ($sort == 'estado_nombre')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                </th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                    Acción
+                    </th>
                 </tr>
                 </thead>
 
                 <tbody style="max-height: 10px;">
-                @forelse ( $prospectos as $item )
-                @php
-                    $today=\Carbon\Carbon::today();
-                    $clase_fecha=\Carbon\Carbon::parse($item->prospectos_clase_fecha);
-                    if ($clase_fecha->gt($today)) {
-                        $linea_color = 'text-green-500';
-                    } elseif ($clase_fecha->lt($today)) {
-                        $linea_color = 'text-red-500';
-                    } else {
-                        $linea_color = 'text-yellow-300';
-                    }
-                @endphp
-                @if (isset($item->asistencias) and $item->asistencias == 1)
-                    @continue
-                @endif
-                <tr class="{{$linea_color}}">
-                    <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left ">
-                        {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}}
+                @forelse ( $grupos as $item )
+                <tr>
+                    <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
+                        {{$item->grupo_id}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->prospectos_clase_hora}}
+                        {{$item->grupo_nombre}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
+                        {{$item->grupo_nivel}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_telefono}}
+                        {{$item->grupo_capitulo}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_correo}}
+                        {{$item->modalidad_nombre}}
+                    </td>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{$item->estado_nombre}}
+                    </td>
+                    <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->grupo_id }})"></i>
+                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteGrupo',{{$item->grupo_id}})"></i>
                     </td>
                 </tr>
                 @empty
                 @if ($readyToLoad)
                 <tr>
                     <th colspan="5" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                        No hay propectos cargados
+                        No hay grupos cargados
                     </th>
                 </tr>
                 @else
@@ -180,7 +192,7 @@
                 </tbody>
 
             </table>
-            @if (count($prospectos) > 0 and !is_array($prospectos) and $prospectos->hasPages())
+            @if (count($grupos) > 0 and !is_array($grupos) and $grupos->hasPages())
                 <div class="px-6 py-3">
                     {{$prospectos->links()}}
                 </div>
@@ -188,4 +200,116 @@
         </x-table>
 
 
+
+
+    <x-dialog-modal wire:model="open_edit">
+        <x-slot name="title">
+            Actualizar grupo
+        </x-slot>
+        <x-slot name="content">
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Names')}}: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo.grupo_nombre"/>
+                </div>
+                <x-forms.input-error for="grupo_nombre"/>
+           </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Level')}}: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo.grupo_nivel"/>
+                </div>
+                <x-forms.input-error for="grupo_nivel"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Chapter')}}: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo.grupo_capitulo"/>
+                </div>
+                <x-forms.input-error for="grupo_capitulo"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Master book')}}: " />
+                    <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="grupo.grupo_libro_maestro">
+                    </x-forms.textarea>
+                </div>
+                <x-forms.input-error for="grupo_libro_maestro"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Student book')}}: " />
+                    <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="grupo.grupo_libro_alumno">
+                    </x-forms.textarea>
+                </div>
+                <x-forms.input-error for="grupo_libro_alumno"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Observations')}}: " />
+                    <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="grupo.grupo_observacion">
+                    </x-forms.textarea>
+                </div>
+                <x-forms.input-error for="grupo_observacion"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Modality')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="grupo.modalidad_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($modalidades as $item)
+                        <option value="{{$item->modalidad_id}}">{{$item->modalidad_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="modalidad_id"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('State')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="grupo.estado_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($estados as $item)
+                        <option value="{{$item->estado_id}}">{{$item->estado_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="estado_id"/>
+            </div>
+        </x-slot>
+        <x-slot name="footer">
+            <x-forms.red-button wire:click="$set('open_edit',false)">
+                {{__('Cancel')}}
+            </x-forms.red-button>
+            <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
+                {{__('Modify')}}
+            </x-forms.blue-button>
+            {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
+        </x-slot>
+    </x-dialog-modal>
+
+    @push('js');
+    <script>
+        livewire.on('deleteGrupo',itemId=>{
+            Swal.fire({
+            title: "{{__('Are you sure you want to delete the record?')}}",
+            text: "{{__('You will not be able to reverse this!')}}",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            cancelButtonText: "{{__('Cancel')}}",
+            confirmButtonText: "{{__('Yes, delete it!')}}"
+            }).then((result) => {
+            if (result.isConfirmed) {
+                livewire.emitTo('show-grupos','delete',itemId);
+            }
+            });
+        })
+    </script>
+    @endpush
 </div>

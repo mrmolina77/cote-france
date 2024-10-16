@@ -7,6 +7,8 @@ use App\Models\Origen;
 use App\Models\Seguimiento;
 use App\Models\Estatu;
 use App\Models\Prospecto;
+use App\Models\User;
+use App\Notifications\ClassCreated;
 
 class CreateProspect extends Component
 {
@@ -45,7 +47,7 @@ class CreateProspect extends Component
 
     public function save(){
         $this->validate();
-        Prospecto::create([
+        $prospecto = Prospecto::create([
             'prospectos_nombres' =>$this->prospectos_nombres,
             'prospectos_apellidos' =>$this->prospectos_apellidos,
             'prospectos_telefono' =>$this->prospectos_telefono,
@@ -58,6 +60,12 @@ class CreateProspect extends Component
             'prospectos_clase_fecha' =>$this->prospectos_clase_fecha,
             'prospectos_clase_hora' =>$this->prospectos_clase_hora
         ]);
+        if ($this->seguimientos_id == 2) {
+            $users = User::whereIn('roles_id',[1,2])->get();
+            foreach ($users as $user) {
+                $user->notify(new ClassCreated($prospecto));
+            }
+        }
         $this->reset(['open','prospectos_nombres','prospectos_apellidos','prospectos_telefono',
         'prospectos_correo','origenes_id','seguimientos_id','estatus_id',
         'prospectos_comentarios','prospectos_clase_fecha','prospectos_clase_hora']);

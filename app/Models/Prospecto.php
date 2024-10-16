@@ -4,8 +4,6 @@ namespace App\Models;
 
 // use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-
 class Prospecto extends Model
 {
     // use HasFactory;
@@ -41,8 +39,8 @@ class Prospecto extends Model
         return $this->belongsTo(Estatu::class,'estatus_id','estatus_id');
     }
 
-    public function asistencia(): HasOne
+    public function asistencia()
     {
-        return $this->hasOne(Asistencia::class, 'prospectos_id');
+        return $this->hasMany(Asistencia::class, 'prospectos_id', 'prospectos_id');
     }
 }
