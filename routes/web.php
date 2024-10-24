@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Livewire\ShowAsistencias;
-use App\Http\Livewire\ShowClasesPruebas;
+use App\Http\Livewire\ShowProfesores;
 use App\Http\Livewire\ShowGrupos;
 use App\Http\Livewire\ShowInscripciones;
 use App\Http\Livewire\ShowProgramadas;
@@ -50,7 +50,7 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified'
-])->get('/clasespruebas', ShowClasesPruebas::class )->name('clasespruebas');
+])->get('/clasespruebas', ShowProfesores::class )->name('clasespruebas');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -76,4 +76,9 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/grupos', ShowGrupos::class )->name('grupos');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/profesores', ShowProfesores::class )->name('profesores');
 

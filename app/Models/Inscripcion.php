@@ -15,7 +15,7 @@ class Inscripcion extends Model
     */
    protected $table = 'inscripciones';
 
-   protected $fillable = ['fecha_inscripcion','prospectos_id','cursos_id'];
+   protected $fillable = ['fecha_inscripcion','prospectos_id','cursos_id','grupo_id'];
 
    /**
     * The primary key associated with the table.

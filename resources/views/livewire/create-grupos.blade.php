@@ -56,6 +56,20 @@
             </div>
             <div>
                 <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Teacher')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="profesores_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($profesores as $item)
+                        <option value="{{$item->profesores_id}}">{{$item->profesores_nombres}} {{$item->profesores_apellidos}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="profesores_id"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
                     <x-forms.label value="{{__('Modality')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="modalidad_id">
                         <option value="">{{__('Select')}}</option>

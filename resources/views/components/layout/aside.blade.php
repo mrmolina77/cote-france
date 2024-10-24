@@ -38,6 +38,10 @@
             <i class="fas fa-tablet-alt mr-3"></i>
             {{ __('Enrollment') }}
         </x-layout.aside-link>
+        <x-layout.aside-link href="{{ route('profesores') }}" :active="request()->routeIs('profesores')">
+            <i class="fas fa-user-alt mr-3"></i>
+            {{ __('Teachers') }}
+        </x-layout.aside-link>
         <x-layout.aside-link href="{{ route('usuarios') }}" :active="request()->routeIs('usuarios')">
             <i class="fas fa-user-alt mr-3"></i>
             {{ __('Users') }}
