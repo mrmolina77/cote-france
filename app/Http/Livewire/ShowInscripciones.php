@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Models\Curso;
+use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class ShowInscripciones extends Component
     protected $rules = [
         'inscripcion.prospectos_id'=>'required',
         'inscripcion.cursos_id'=>'required',
+        'inscripcion.grupo_id'=>'required',
         'inscripcion.fecha_inscripcion'=>'required|date',
     ];
 
@@ -40,12 +42,13 @@ class ShowInscripciones extends Component
             $inscripciones = DB::table('inscripciones')
             ->join('prospectos','prospectos.prospectos_id','=','inscripciones.prospectos_id')
             ->join('cursos','cursos.cursos_id','=','inscripciones.cursos_id')
+            ->join('grupos','grupos.grupo_id','=','inscripciones.grupo_id')
             ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
             ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
             ->orWhere('cursos.cursos_descripcion','like','%'.trim($this->search).'%')
             ->orWhere('inscripciones.fecha_inscripcion','like','%'.trim($this->search).'%')
             ->select('inscripciones.fecha_inscripcion','prospectos.prospectos_nombres'
-            ,'prospectos.prospectos_apellidos','cursos.cursos_descripcion',
+            ,'prospectos.prospectos_apellidos','cursos.cursos_descripcion','grupos.grupo_nombre',
             'inscripciones.inscripciones_id')
             ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
@@ -58,8 +61,10 @@ class ShowInscripciones extends Component
 
         $prospectos = Prospecto::all();
         $cursos = Curso::all();
+        $grupos = Grupo::all();
         return view('livewire.show-inscripciones',['inscripciones'=>$inscripciones
                                                   , 'prospectos'=>$prospectos
+                                                  , 'grupos'=>$grupos
                                                   , 'cursos'=>$cursos]);
     }
 

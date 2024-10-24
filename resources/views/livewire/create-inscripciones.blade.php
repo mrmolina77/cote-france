@@ -37,6 +37,20 @@
             </div>
             <div>
                 <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Groups')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="grupo_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($grupos as $item)
+                        <option value="{{$item->grupo_id}}">{{$item->grupo_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="grupo_id"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
                     <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="fecha_inscripcion"/>
                 </div>

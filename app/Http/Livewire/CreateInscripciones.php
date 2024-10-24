@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Models\Curso;
+use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
 use Livewire\Component;
@@ -11,11 +12,12 @@ class CreateInscripciones extends Component
 {
     public $open = false;
 
-    public $fecha_inscripcion,$prospectos_id, $cursos_id;
+    public $fecha_inscripcion,$prospectos_id, $cursos_id, $grupo_id;
 
     protected $rules = [
         'prospectos_id'=>'required',
         'cursos_id'=>'required',
+        'grupo_id'=>'required',
         'fecha_inscripcion'=>'required|date',
     ];
 
@@ -29,6 +31,7 @@ class CreateInscripciones extends Component
         Inscripcion::create([
             'prospectos_id' =>$this->prospectos_id,
             'cursos_id' =>$this->cursos_id,
+            'grupo_id' =>$this->grupo_id,
             'fecha_inscripcion' =>$this->fecha_inscripcion
         ]);
         $this->reset(['open','prospectos_id','cursos_id']);
@@ -40,7 +43,9 @@ class CreateInscripciones extends Component
     {
         $prospectos = Prospecto::all();
         $cursos = Curso::all();
+        $grupos = Grupo::all();
         return view('livewire.create-inscripciones',['prospectos'=>$prospectos
+                                                    ,'grupos'=>$grupos
                                                     ,'cursos'=>$cursos]);
     }
 }

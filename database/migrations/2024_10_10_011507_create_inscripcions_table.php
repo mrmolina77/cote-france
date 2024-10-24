@@ -18,8 +18,10 @@ return new class extends Migration
             $table->date('fecha_inscripcion');
             $table->unsignedBigInteger('prospectos_id');
             $table->unsignedBigInteger('cursos_id');
+            $table->unsignedBigInteger('grupo_id');
             $table->foreign('prospectos_id')->references('prospectos_id')->on('prospectos');
             $table->foreign('cursos_id')->references('cursos_id')->on('cursos');
+            $table->foreign('grupo_id')->references('grupo_id')->on('grupos');
             $table->timestamps();
             $table->softDeletes();
         });

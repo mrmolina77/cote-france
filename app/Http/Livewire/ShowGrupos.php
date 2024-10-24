@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Grupo;
 use App\Models\Estado;
 use App\Models\Modalidad;
+use App\Models\Profesor;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -30,6 +31,7 @@ class ShowGrupos extends Component
         'grupo.grupo_libro_alumno'=>'required|min:7|max:255',
         'grupo.grupo_observacion'=>'required|min:7|max:255',
         'grupo.modalidad_id'=>'required',
+        'grupo.profesores_id'=>'required',
         'grupo.estado_id'=>'required',
     ];
 
@@ -59,8 +61,10 @@ class ShowGrupos extends Component
         }
         $modalidades = Modalidad::all();
         $estados = Estado::all();
+        $profesores = Profesor::all();
         return view('livewire.show-grupos',['grupos'=>$grupos
                                            ,'modalidades'=>$modalidades
+                                           ,'profesores'=>$profesores
                                            ,'estados'=>$estados]);
     }
 

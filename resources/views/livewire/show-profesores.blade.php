@@ -22,7 +22,7 @@
                         </div>
                     </div>
                     <div class="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
-                    @livewire('create-clases-pruebas')
+                    @livewire('create-profesores')
                     </div>
                 </div>
             </x-slot>
@@ -30,9 +30,9 @@
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('clasespruebas_id')">
+                    wire:click="order('profesores_id')">
                     Id
-                    @if ($sort == 'clasespruebas_id')
+                    @if ($sort == 'profesores_id')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -43,9 +43,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('clasespruebas_fecha')">
-                    Fecha
-                    @if ($sort == 'clasespruebas_fecha')
+                    wire:click="order('profesores_nombres')">
+                    Nombres
+                    @if ($sort == 'profesores_nombres')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -56,9 +56,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('clasespruebas_descripcion')">
-                    Descripción
-                    @if ($sort == 'clasespruebas_descripcion')
+                    wire:click="order('profesores_apellidos')">
+                    Apellidos
+                    @if ($sort == 'profesores_apellidos')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -67,17 +67,24 @@
                     @else
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
-                    </th>
-                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                    Hora Inicio
-                    </th>
-                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                    Hora Fin
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('profesores_id')">
-                    Profesor
-                    @if ($sort == 'profesores_id')
+                    wire:click="order('profesores_fecha_ingreso')">
+                    Fecha ingresos
+                    @if ($sort == 'profesores_fecha_ingreso')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
+                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                    wire:click="order('profesores_email')">
+                    Fecha ingresos
+                    @if ($sort == 'profesores_email')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -94,37 +101,34 @@
                 </thead>
 
                 <tbody style="max-height: 10px;">
-                @forelse ( $clasespruebas as $item )
+                @forelse ( $profesores as $item )
 
                 <tr>
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                        {{$item->clasespruebas_id}}
+                        {{$item->profesores_id}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{\Carbon\Carbon::parse($item->clasespruebas_fecha)->format('d-m-Y')}}
+                        {{$item->profesores_nombres}}
+                    </td>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{$item->profesores_apellidos}}
                     </td>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->clasespruebas_descripcion}}
+                        {{\Carbon\Carbon::parse($item->profesores_fecha_ingreso)->format('d-m-Y')}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->clasespruebas_hora_inicio}}
-                    </td>
-                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->clasespruebas_hora_fin}}
-                    </td>
-                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->profesores_nombres}} {{$item->profesores_apellidos}}
+                        {{$item->profesores_email}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->clasespruebas_id }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteProspecto',{{$item->clasespruebas_id}})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->profesores_id }})"></i>
+                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteProfesor',{{$item->profesores_id}})"></i>
                     </td>
                 </tr>
                 @empty
                 @if ($readyToLoad)
                 <tr>
                     <th colspan="5" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
-                        No hay clases de pruebas cargados
+                        No hay profesores cargados
                     </th>
                 </tr>
                 @else
@@ -173,9 +177,9 @@
                 </tbody>
 
             </table>
-            @if (count($clasespruebas) > 0 and !is_array($clasespruebas) and $clasespruebas->hasPages())
+            @if (count($profesores) > 0 and !is_array($profesores) and $profesores->hasPages())
                 <div class="px-6 py-3">
-                    {{$clasespruebas->links()}}
+                    {{$profesores->links()}}
                 </div>
             @endif
         </x-table>
@@ -185,51 +189,59 @@
 
     <x-dialog-modal wire:model="open_edit">
         <x-slot name="title">
-            Actualizar Clases de Pruebas
+            Actualizar Profesores
         </x-slot>
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Description')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="claseprueba.clasespruebas_descripcion"/>
+                    <x-forms.label value="{{__('Names')}}: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesores.profesores_nombres"/>
                 </div>
                 <x-forms.input-error for="clasespruebas_descripcion"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Date')}}: " />
-                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="claseprueba.clasespruebas_fecha"/>
+                    <x-forms.label value="{{__('Names')}}: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesores.profesores_apellidos"/>
                 </div>
-                <x-forms.input-error for="clasespruebas_fecha"/>
+                <x-forms.input-error for="clasespruebas_descripcion"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Start Time')}}: " />
-                    <x-forms.input type="time" class="flex-1 ml-4" wire:model="claseprueba.clasespruebas_hora_inicio"/>
+                    <x-forms.label value="{{__('Email')}}: " />
+                    <x-forms.input type="email" class="flex-1 ml-4" wire:model="profesores.profesores_email"/>
                 </div>
-                <x-forms.input-error for="clasespruebas_hora_inicio"/>
-            </div>
+                <x-forms.input-error for="profesores_email"/>
+           </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('End time')}}: " />
-                    <x-forms.input type="time" class="flex-1 ml-4" wire:model="claseprueba.clasespruebas_hora_fin"/>
+                    <x-forms.label value="{{__('Email')}}: " />
+                    <x-forms.input type="email" class="flex-1 ml-4" wire:model="profesores.profesores_email"/>
                 </div>
-                <x-forms.input-error for="clasespruebas_hora_fin"/>
-            </div>
+                <x-forms.input-error for="profesores_email"/>
+           </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Teacher')}}: " />
-                    <x-select class="flex-1 ml-4" wire:model="claseprueba.profesores_id">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($profesores as $item)
-                        <option value="{{$item->profesores_id}}">{{$item->profesores_nombres}} {{$item->profesores_apellidos}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
+                    <x-forms.label value="{{__('Entry date')}}: " />
+                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="profesores.profesores_fecha_ingreso"/>
                 </div>
-                <x-forms.input-error for="profesores_id"/>
-            </div>
+                <x-forms.input-error for="profesores_fecha_ingreso"/>
+           </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Pay per hour')}}: " />
+                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores.profesores_precio_hora"/>
+                </div>
+                <x-forms.input-error for="profesores_precio_hora"/>
+           </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Hours per month')}}: " />
+                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores.profesores_horas_mes"/>
+                </div>
+                <x-forms.input-error for="profesores_horas_mes"/>
+           </div>
+
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
@@ -244,7 +256,7 @@
 
     @push('js');
     <script>
-        livewire.on('deleteClasesPruebas',itemId=>{
+        livewire.on('deleteProfesor',itemId=>{
             Swal.fire({
             title: "{{__('Are you sure you want to delete the record?')}}",
             text: "{{__('You will not be able to reverse this!')}}",

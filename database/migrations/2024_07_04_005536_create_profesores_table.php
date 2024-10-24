@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('profesores_apellidos',100);
             $table->string('profesores_email',250);
             $table->date('profesores_fecha_ingreso');
+            $table->float('profesores_precio_hora')->nullable();
+            $table->integer('profesores_horas_mes')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
