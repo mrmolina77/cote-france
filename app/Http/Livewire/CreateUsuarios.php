@@ -11,12 +11,13 @@ class CreateUsuarios extends Component
 {
     public $open = false;
 
-    public $name,$email,$password,$password_confirmation;
+    public $name,$email,$password,$password_confirmation,$roles_id;
 
     protected $rules = [
         'name'=>'required|min:10|max:250',
         'email'=>'required|unique:users|email',
         'password'=>'required|min:8|max:512|confirmed',
+        'roles_id'=>'required',
     ];
 
 
@@ -26,9 +27,10 @@ class CreateUsuarios extends Component
         User::create([
             'name' =>$this->name,
             'email' =>$this->email,
-            'password' => Hash::make($this->password)
+            'password' => Hash::make($this->password),
+            'roles_id' =>$this->roles_id
         ]);
-        $this->reset(['open','name','email','password']);
+        $this->reset(['open','name','email','password','roles_id']);
         $this->emitTo('show-usuarios','render');
         $this->emit('alert','El usuario fue agregado satifactoriamente');
     }
