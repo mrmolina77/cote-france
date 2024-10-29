@@ -32,7 +32,6 @@ class DatabaseSeeder extends Seeder
         $this->call(EstadoSeeder::class);
         $this->call(ModalidadSeeder::class);
         $this->call(EspacioSeeder::class);
-        $this->call(DiaSeeder::class);
         $this->call(HoraSeeder::class);
         $this->call(HorarioSeeder::class);
     }

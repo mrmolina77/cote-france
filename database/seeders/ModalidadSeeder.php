@@ -21,12 +21,8 @@ class ModalidadSeeder extends Seeder
             'modalidad_descripcion' =>'Descripción Presencial',
         ]);
         Modalidad::create([
-            'modalidad_nombre' =>'A distancia',
-            'modalidad_descripcion' =>'Descripción a distancia',
-        ]);
-        Modalidad::create([
-            'modalidad_nombre' =>'Mixto',
-            'modalidad_descripcion' =>'Descripción a mixto',
+            'modalidad_nombre' =>'En linea',
+            'modalidad_descripcion' =>'Descripción en linea',
         ]);
     }
 }

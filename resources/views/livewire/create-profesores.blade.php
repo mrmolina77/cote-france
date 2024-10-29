@@ -17,10 +17,10 @@
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Names')}}: " />
+                    <x-forms.label value="{{__('Last names')}}: " />
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesores_apellidos"/>
                 </div>
-                <x-forms.input-error for="clasespruebas_descripcion"/>
+                <x-forms.input-error for="profesores_apellidos"/>
            </div>
             <div>
                 <div class="mb-4 flex">
@@ -31,10 +31,10 @@
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Email')}}: " />
-                    <x-forms.input type="email" class="flex-1 ml-4" wire:model="profesores_email"/>
+                    <x-forms.label value="{{__('Color')}}: " />
+                    <x-forms.input type="color" class="ml-4 w-12" wire:model="profesores_color"/>
                 </div>
-                <x-forms.input-error for="profesores_email"/>
+                <x-forms.input-error for="profesores_color"/>
            </div>
             <div>
                 <div class="mb-4 flex">
@@ -45,24 +45,17 @@
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Pay per hour')}}: " />
-                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores_precio_hora"/>
+                    <x-forms.label value="{{__('Hours per week')}}: " />
+                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores_horas_semanales"/>
                 </div>
-                <x-forms.input-error for="profesores_precio_hora"/>
-           </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Hours per month')}}: " />
-                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores_horas_mes"/>
-                </div>
-                <x-forms.input-error for="profesores_horas_mes"/>
+                <x-forms.input-error for="profesores_horas_semanales"/>
            </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">
                 {{__('Cancel')}}
             </x-forms.red-button>
-            <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
+            <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="save" class="disabled:opacity-65">
                 {{__('Create')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}

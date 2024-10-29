@@ -17,21 +17,12 @@ class EstadoSeeder extends Seeder
     {
         //
         Estado::create([
-            'estado_nombre' =>'Estado 1',
-            'estado_descripcion' =>'Descripción estado 1',
+            'estado_nombre' =>'Activo',
+            'estado_descripcion' =>'Descripción activo',
         ]);
         Estado::create([
-            'estado_nombre' =>'Estado 2',
-            'estado_descripcion' =>'Descripción estado 2',
+            'estado_nombre' =>'Inactivo',
+            'estado_descripcion' =>'Descripción inactivo',
         ]);
-        Estado::create([
-            'estado_nombre' =>'Estado 3',
-            'estado_descripcion' =>'Descripción estado 3',
-        ]);
-        Estado::create([
-            'estado_nombre' =>'Estado 4',
-            'estado_descripcion' =>'Descripción estado 4',
-        ]);
-
     }
 }

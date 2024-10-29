@@ -81,10 +81,23 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                     </th>
-                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
                     wire:click="order('profesores_email')">
                     Fecha ingresos
                     @if ($sort == 'profesores_email')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
+                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('profesores_email')">
+                    Color
+                    @if ($sort == 'profesores_color')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -118,6 +131,9 @@
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->profesores_email}}
+                    </td>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        <div class="w-16 h-8 rounded" style="background-color: {{$item->profesores_color}};"></div>
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->profesores_id }})"></i>
@@ -195,52 +211,45 @@
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Names')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesores.profesores_nombres"/>
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesor.profesores_nombres"/>
                 </div>
-                <x-forms.input-error for="clasespruebas_descripcion"/>
+                <x-forms.input-error for="profesores_nombres"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Names')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesores.profesores_apellidos"/>
+                    <x-forms.label value="{{__('Last names')}}: " />
+                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="profesor.profesores_apellidos"/>
                 </div>
-                <x-forms.input-error for="clasespruebas_descripcion"/>
-           </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Email')}}: " />
-                    <x-forms.input type="email" class="flex-1 ml-4" wire:model="profesores.profesores_email"/>
-                </div>
-                <x-forms.input-error for="profesores_email"/>
+                <x-forms.input-error for="profesores_apellidos"/>
            </div>
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Email')}}: " />
-                    <x-forms.input type="email" class="flex-1 ml-4" wire:model="profesores.profesores_email"/>
+                    <x-forms.input type="email" class="flex-1 ml-4" wire:model="profesor.profesores_email"/>
                 </div>
                 <x-forms.input-error for="profesores_email"/>
            </div>
+           <div>
+            <div class="mb-4 flex">
+                <x-forms.label value="{{__('Color')}}: " />
+                <x-forms.input type="color" class="ml-4 w-12" wire:model="profesor.profesores_color"/>
+            </div>
+            <x-forms.input-error for="profesores_color"/>
+       </div>
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Entry date')}}: " />
-                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="profesores.profesores_fecha_ingreso"/>
+                    <x-forms.input type="date" class="flex-1 ml-4" wire:model="profesor.profesores_fecha_ingreso"/>
                 </div>
                 <x-forms.input-error for="profesores_fecha_ingreso"/>
            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Pay per hour')}}: " />
-                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores.profesores_precio_hora"/>
-                </div>
-                <x-forms.input-error for="profesores_precio_hora"/>
-           </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Hours per month')}}: " />
-                    <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesores.profesores_horas_mes"/>
-                </div>
-                <x-forms.input-error for="profesores_horas_mes"/>
-           </div>
+           <div>
+            <div class="mb-4 flex">
+                <x-forms.label value="{{__('Hours per week')}}: " />
+                <x-forms.input type="number" class="flex-1 ml-4" wire:model="profesor.profesores_horas_semanales"/>
+            </div>
+            <x-forms.input-error for="profesores_horas_semanales"/>
+       </div>
 
         </x-slot>
         <x-slot name="footer">

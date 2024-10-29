@@ -3,6 +3,7 @@
 use App\Http\Livewire\ShowAsistencias;
 use App\Http\Livewire\ShowProfesores;
 use App\Http\Livewire\ShowGrupos;
+use App\Http\Livewire\ShowHorarios;
 use App\Http\Livewire\ShowInscripciones;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
@@ -81,4 +82,9 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/profesores', ShowProfesores::class )->name('profesores');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/horarios', ShowHorarios::class )->name('horarios');
 

@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Profesor extends Model
 {
     // use HasFactory;
+
+    protected $fillable = ['profesores_nombres','profesores_apellidos','profesores_email',
+                           'profesores_color','profesores_horas_semanales','profesores_fecha_ingreso'];
+
     /**
     * The table associated with the model.
     *

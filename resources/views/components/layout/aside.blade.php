@@ -18,7 +18,7 @@
             <i class="fas fa-chalkboard mr-3"></i>
             {{ __('Scheduled') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="{{ route('clasespruebas') }}" :active="request()->routeIs('clasespruebas')">
+        <x-layout.aside-link href="{{ route('horarios') }}" :active="request()->routeIs('horarios')">
             <i class="fas fa-sticky-note mr-3"></i>
             {{ __('Timetable') }}
         </x-layout.aside-link>

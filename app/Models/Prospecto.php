@@ -9,7 +9,7 @@ class Prospecto extends Model
     // use HasFactory;
 
     protected $fillable = ['prospectos_nombres','prospectos_apellidos','prospectos_telefono',
-                           'prospectos_correo','origenes_id','seguimientos_id','estatus_id',
+                           'profesores_fecha_ingreso','origenes_id','seguimientos_id','estatus_id',
                            'prospectos_comentarios','prospectos_fecha','prospectos_clase_fecha',
                            'prospectos_clase_hora'];
     /**
