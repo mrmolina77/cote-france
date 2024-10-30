@@ -91,6 +91,9 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                 </th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                    Acción
+                    </th>
                 </tr>
                 </thead>
 
@@ -125,6 +128,10 @@
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_correo}}
+                    </td>
+                    <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        <i class="fas fa-user-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
+                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
                     </td>
                 </tr>
                 @empty
@@ -186,6 +193,44 @@
                 </div>
             @endif
         </x-table>
+
+
+        <x-dialog-modal wire:model="open_edit">
+            <x-slot name="title">
+                Actualizar Asistencia
+            </x-slot>
+            <x-slot name="content">
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Prospects')}}: " />
+                        <x-forms.label value="@isset($prospecto) $prospecto->prospectos_nombres $prospecto->prospectos_apellidos @endisset" />
+                    </div>
+                </div>
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Attended')}}: " />
+                        <x-forms.toggle wire:model="asistencias"/>
+                    </div>
+                    <x-forms.input-error for="asistencias"/>
+                </div>
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Date')}}: " />
+                        <x-forms.input type="date" class="flex-1 ml-4" wire:model="asistencias_fecha"/>
+                    </div>
+                    <x-forms.input-error for="asistencias_fecha"/>
+               </div>
+            </x-slot>
+            <x-slot name="footer">
+                <x-forms.red-button wire:click="$set('open_edit',false)">
+                    {{__('Cancel')}}
+                </x-forms.red-button>
+                <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
+                    {{__('Modify')}}
+                </x-forms.blue-button>
+                {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
+            </x-slot>
+        </x-dialog-modal>
 
 
 </div>

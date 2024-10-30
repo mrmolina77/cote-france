@@ -20,17 +20,20 @@ class ShowHorarios extends Component
     public function render()
     {
         $espacios = Espacio::all();
-        $cant_espacios = Espacio::count();
         $horas = Hora::all();
         $horarios = Horario::whereDate('horarios_dia', $this->fecha)
         ->orderBy('espacios_id', 'asc')
         ->orderBy('horas_id', 'asc')
         ->get();
-        dd($horarios);
+        // dd($horarios);
+        foreach ($horarios as $horario) {
+            $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->espacios_id] = "$horario->grupo";
+        }
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
                                            ,'horas'=>$horas
-                                           ,'cant_espacios'=>$cant_espacios
+                                           ,'horarios'=>$array_horario
+                                           ,'fecha'=>$this->fecha
                                             ]);
     }
 }

@@ -16,6 +16,7 @@ class ShowProgramadas extends Component
     public $prospecto;
     public $cant = 5;
     public $readyToLoad = false;
+    public $open_edit = false;
 
 
 
@@ -75,6 +76,19 @@ class ShowProgramadas extends Component
             $this->sort= $order;
             $this->direction = 'asc';
         }
+    }
+
+    public function edit($id){
+        $prospecto = Prospecto::find($id);
+        $this->prospecto = $prospecto;
+        $this->open_edit = true;
+    }
+
+    public function update(){
+        $this->prospecto->save();
+        $this->reset(['open_edit']);
+        $this->emit('alert','El prospecto fue modificado satifactoriamente');
+
     }
 
 }
