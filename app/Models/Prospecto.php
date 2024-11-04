@@ -8,10 +8,11 @@ class Prospecto extends Model
 {
     // use HasFactory;
 
-    protected $fillable = ['prospectos_nombres','prospectos_apellidos','prospectos_telefono',
-                           'profesores_fecha_ingreso','origenes_id','seguimientos_id','estatus_id',
-                           'prospectos_comentarios','prospectos_fecha','prospectos_clase_fecha',
-                           'prospectos_clase_hora'];
+    protected $fillable = ['prospectos_nombres','prospectos_apellidos','prospectos_telefono1',
+                           'prospectos_telefono2','profesores_fecha_ingreso','origenes_id',
+                           'seguimientos_id','estatus_id','prospectos_comentarios','prospectos_correo',
+                           'prospectos_fecha','prospectos_clase_fecha','prospectos_clase_hora',
+                           'grupo_id','horarios_id','modalidad_id'];
     /**
     * The table associated with the model.
     *

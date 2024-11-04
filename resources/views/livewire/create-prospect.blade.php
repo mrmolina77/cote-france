@@ -24,11 +24,14 @@
                 <x-forms.input-error for="prospectos_apellidos"/>
             </div>
             <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Phone')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_telefono"/>
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Phone')}} : " />
+                        <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_telefono1"/>
+                        <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospectos_telefono2"/>
+                    </div>
+                    <x-forms.input-error for="prospectos_telefono1"/>
                 </div>
-                <x-forms.input-error for="prospectos_telefono"/>
             </div>
             <div>
                 <div class="mb-4 flex">
@@ -67,20 +70,48 @@
             </div>
             @if ($seguimientos_id === '2')
                 <div>
-                    <div class="mb-4 flex">
-                        <x-forms.label value="{{__('Class date')}}: " />
-                        <x-forms.input type="date" class="flex-1 ml-4" wire:model="prospectos_clase_fecha"/>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Group')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="grupoid">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($grupos as $item)
+                            <option value="{{$item->grupo_id}}">{{$item->grupo_nombre}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
                     </div>
-                    <x-forms.input-error for="prospectos_clase_fecha"/>
+                    <x-forms.input-error for="grupo_id"/>
                 </div>
                 <div>
-                    <div class="mb-4 flex">
-                        <x-forms.label value="{{__('Class time')}}: " />
-                        <x-forms.input type="time" class="flex-1 ml-4" wire:model="prospectos_clase_hora"/>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Timetable')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="horarios_id">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($horarios as $item)
+                            <option value="{{$item->horarios_id}}">{{\Carbon\Carbon::parse($item->horarios_dia)->format('d-m-Y')}} {{$item->hora->horas_desde}} {{$item->hora->horas_hasta}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
                     </div>
-                    <x-forms.input-error for="prospectos_clase_hora"/>
+                    <x-forms.input-error for="estatus_id"/>
                 </div>
             @endif
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Modality')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="modalidad_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($modalidades as $item)
+                        <option value="{{$item->modalidad_id}}">{{$item->modalidad_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="modalidad_id"/>
+            </div>
             <div>
                 <div class="mb-4 flex" >
                     <x-forms.label value="{{__('Status')}}: " />

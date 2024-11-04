@@ -26,7 +26,7 @@ class Horario extends Model
 
     public function hora()
     {
-        return $this->belongsTo(Profesor::class,'horas_id','horas_id');
+        return $this->belongsTo(Hora::class,'horas_id','horas_id');
     }
 
     public function espacio()

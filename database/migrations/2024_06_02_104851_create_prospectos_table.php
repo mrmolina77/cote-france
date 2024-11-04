@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('prospectos_nombres',50);
             $table->string('prospectos_apellidos',50);
             $table->string('prospectos_telefono1',80);
-            $table->string('prospectos_telefono2',80);
+            $table->string('prospectos_telefono2',80)->nullable();
             $table->string('prospectos_correo',100);
             $table->unsignedBigInteger('origenes_id');
             $table->unsignedBigInteger('seguimientos_id');
@@ -26,8 +26,6 @@ return new class extends Migration
             $table->unsignedBigInteger('modalidad_id');
             $table->text('prospectos_comentarios');
             $table->date('prospectos_fecha');
-            $table->date('prospectos_clase_fecha')->nullable();
-            $table->time('prospectos_clase_hora')->nullable();
             $table->unsignedBigInteger('grupo_id')->nullable();
             $table->unsignedBigInteger('horarios_id')->nullable();
             $table->foreign('seguimientos_id')->references('seguimientos_id')->on('seguimientos');

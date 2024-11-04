@@ -11,17 +11,17 @@ class ClassCreated extends Notification
 {
     use Queueable;
 
-    private $prospecto;
+    private $datos;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($prospecto)
+    public function __construct($datos)
     {
         //
-        $this->prospecto = $prospecto;
+        $this->datos = $datos;
     }
 
     /**
@@ -45,10 +45,10 @@ class ClassCreated extends Notification
     {
         return (new MailMessage)
                     ->greeting('¡Hola!')
-                    ->line('El prospecto '.$this->prospecto->prospectos_nombres.' '.$this->prospecto->prospectos_apellidos
-                         .' tiene una clase programada para el dia '.\Carbon\Carbon::parse($this->prospecto->prospectos_clase_fecha)->format('d-m-Y')
-                         .' a las '.$this->prospecto->prospectos_clase_hora.' puede contactar por el '.$this->prospecto->prospectos_telefono.' o por el correo'
-                         .$this->prospecto->prospectos_correo)
+                    ->line('El prospecto '.$this->datos['nombre'].' tiene una clase programada para el dia '
+                         .\Carbon\Carbon::parse($this->datos['fecha'])->format('d-m-Y')
+                         .' a las '.$this->datos['hora'].' puede contactar por el '.$this->datos['prospectos_telefono']
+                         .' o por el correo '.$this->datos['prospectos_correo'])
                     ->line('¡Por favor estar pendiente de hacerle seguimiento!');
     }
 

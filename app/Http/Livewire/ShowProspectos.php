@@ -52,14 +52,14 @@ class ShowProspectos extends Component
             //                        ->paginate($this->cant);
 
             $prospectos = DB::table('prospectos')
-                        ->select('prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono','origenes_descripcion','estatus_descripcion')
+                        ->select('prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono1','prospectos_telefono2','origenes_descripcion','estatus_descripcion')
                         ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
                         ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
                         ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
                         ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
                         ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%')
                         ->orWhere('estatus.estatus_descripcion','like','%'.trim($this->search).'%')
-                        ->orWhere('prospectos.prospectos_telefono','like','%'.trim($this->search).'%')
+                        ->orWhere('prospectos.prospectos_telefono1','like','%'.trim($this->search).'%')
                         ->orderBy($this->sort,$this->direction)
                         ->paginate($this->cant);
         } else {
