@@ -74,7 +74,7 @@ class CreateProspect extends Component
             $horario = Horario::find($this->horarios_id);
             $profesor = Profesor::find($grupo->profesores_id);
 
-            $datos = ['nombre'=>$profesor->nombreCompleto,
+            $datos = ['nombre'=>$this->prospectos_nombres.' '.$this->prospectos_apellidos,
                       'hora'=>$horario->hora->horas_desde,
                       'prospectos_telefono'=>$this->prospectos_telefono1,
                       'fecha'=>$horario->horarios_dia,

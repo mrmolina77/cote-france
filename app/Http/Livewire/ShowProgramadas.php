@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Asistencia;
 use Livewire\Component;
 use App\Models\Prospecto;
 use Illuminate\Support\Facades\DB;
@@ -11,12 +12,15 @@ class ShowProgramadas extends Component
 {
     use WithPagination;
     public $search = "";
-    public $sort = 'prospectos_clase_fecha';
+    public $sort = 'horarios_dia';
     public $direction = 'asc';
     public $prospecto;
     public $cant = 5;
     public $readyToLoad = false;
     public $open_edit = false;
+    public $asistencia;
+
+    public $prospectos_id,$asistencias,$asistencias_fecha;
 
 
 
@@ -35,17 +39,21 @@ class ShowProgramadas extends Component
             //                        ->paginate($this->cant);
 
             $prospectos = DB::table('prospectos')
-                        ->select('prospectos.prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono','prospectos_correo'
-                        ,'origenes_descripcion','estatus_descripcion','prospectos_clase_fecha','prospectos_clase_hora','asistencias')
+                        ->select('prospectos.prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono1','prospectos_correo'
+                        ,'origenes_descripcion','estatus_descripcion','asistencias','horas_desde','horarios_dia')
                         ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
                         ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
+                        ->join('grupos','grupos.grupo_id','=','prospectos.grupo_id')
+                        ->join('profesores','profesores.profesores_id','=','grupos.profesores_id')
+                        ->join('horarios','horarios.horarios_id','=','prospectos.horarios_id')
+                        ->join('horas','horas.horas_id','=','horarios.horas_id')
                         ->leftJoin('asistencias', 'prospectos.prospectos_id', '=', 'asistencias.prospectos_id')
-                        ->whereNotNull('prospectos_clase_fecha')
+                        ->whereNotNull('grupos.grupo_id')
                         ->where(function ($query) {
                             $query->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
                                   ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
-                                  ->orWhere(DB::raw('DATE_FORMAT(prospectos.prospectos_clase_fecha,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
-                                  ->orWhere('prospectos.prospectos_clase_hora','like','%'.trim($this->search).'%')
+                                  ->orWhere(DB::raw('DATE_FORMAT(horarios.horarios_dia,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
+                                  ->orWhere('horas.horas_desde','like','%'.trim($this->search).'%')
                                   ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%');
                         })
                         ->where(function ($query) {
@@ -80,14 +88,35 @@ class ShowProgramadas extends Component
 
     public function edit($id){
         $prospecto = Prospecto::find($id);
+        $this->asistencia = Asistencia::where('prospectos_id',$id)->first();
         $this->prospecto = $prospecto;
+        if($this->asistencia){
+            $this->prospectos_id = $this->asistencia->prospectos_id;
+            $this->asistencias = $this->asistencia->asistencias;
+            $this->asistencias_fecha = $this->asistencia->asistencias_fecha ;
+        } else {
+            $this->prospectos_id = $id;
+            $this->asistencias = 0;
+            $this->asistencias_fecha = date('Y-m-d');
+        }
         $this->open_edit = true;
     }
 
     public function update(){
-        $this->prospecto->save();
-        $this->reset(['open_edit']);
-        $this->emit('alert','El prospecto fue modificado satifactoriamente');
+        if($this->asistencia){
+            $this->asistencia->prospectos_id = $this->prospectos_id;
+            $this->asistencia->asistencias = $this->asistencias;
+            $this->asistencia->asistencias_fecha = $this->asistencias_fecha;
+            $this->asistencia->save();
+        } else {
+            $asistencia = Asistencia::create([
+                'prospectos_id' => $this->prospectos_id,
+                'asistencias' => $this->asistencias,
+                'asistencias_fecha' => $this->asistencias_fecha,
+            ]);
+        }
+        $this->reset(['open_edit','prospectos_id','asistencias','asistencias_fecha']);
+        $this->emit('alert','La asistencia fue actualización satifactoriamente');
 
     }
 
