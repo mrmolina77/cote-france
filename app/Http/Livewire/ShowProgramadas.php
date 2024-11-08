@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Asistencia;
 use Livewire\Component;
 use App\Models\Prospecto;
+use App\Notifications\ClassReminder;
 use Illuminate\Support\Facades\DB;
 use Livewire\WithPagination;
 
@@ -117,6 +118,12 @@ class ShowProgramadas extends Component
         }
         $this->reset(['open_edit','prospectos_id','asistencias','asistencias_fecha']);
         $this->emit('alert','La asistencia fue actualización satifactoriamente');
+
+    }
+
+    public function notification($id){
+        $prospecto = Prospecto::find($id);
+        $prospecto->notify(new ClassReminder($prospecto));
 
     }
 
