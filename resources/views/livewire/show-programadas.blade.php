@@ -131,6 +131,7 @@
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-user-plus text-blue-600 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
+                        <i class="fas fa-paper-plane text-green-600 mr-4 cursor-pointer" wire:click="notification({{ $item->prospectos_id }})"></i>
                     </td>
                 </tr>
                 @empty

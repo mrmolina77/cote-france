@@ -44,6 +44,7 @@ class ClassCreated extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
+                    ->subject('Recordatorio de Clase de Prueba')
                     ->greeting('¡Hola!')
                     ->line('El prospecto '.$this->datos['nombre'].' tiene una clase programada para el dia '
                          .\Carbon\Carbon::parse($this->datos['fecha'])->format('d-m-Y')

@@ -117,14 +117,14 @@ class ShowProgramadas extends Component
             ]);
         }
         $this->reset(['open_edit','prospectos_id','asistencias','asistencias_fecha']);
-        $this->emit('alert','La asistencia fue actualización satifactoriamente');
+        $this->emit('alert','La asistencia fue actualización satisfactoriamente');
 
     }
 
     public function notification($id){
         $prospecto = Prospecto::find($id);
         $prospecto->notify(new ClassReminder($prospecto));
-
+        $this->emit('alert','La notificación fue enviada satisfactoriamente');
     }
 
 }
