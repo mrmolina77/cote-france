@@ -2,10 +2,12 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Diario;
 use App\Models\Espacio;
 use App\Models\Grupo;
 use App\Models\Hora;
 use App\Models\Horario;
+use App\Models\Plan;
 use Livewire\Component;
 
 class ShowHorarios extends Component
@@ -13,12 +15,13 @@ class ShowHorarios extends Component
 
     public $fecha;
     public $open_edit;
+    public $open_edit_plan;
+    public $open_edit_diario;
     public $horarios_dia,$espacios_id,$horas_id,$grupo_id;
+    public $planes_horarios_id,$planes_descripcion;
+    public $diarios_horarios_id,$diarios_descripcion;
+    public $plan, $diario;
     protected $listeners = ['render','delete'];
-
-    protected $rules = [
-        'grupo_id'=>'required',
-    ];
 
     public function boot()
     {
@@ -58,7 +61,9 @@ class ShowHorarios extends Component
     }
 
     public function save(){
-        $this->validate();
+        $validated = $this->validate([
+            'grupo_id'=>'required',
+        ]);
         $prospecto = Horario::create([
             'horarios_dia' =>$this->horarios_dia,
             'espacios_id' =>$this->espacios_id,
@@ -75,5 +80,66 @@ class ShowHorarios extends Component
     public function delete(Horario $horario){
         $horario->delete();
         $this->emit('alert','El horario fue eliminado satifactoriamente');
+    }
+
+    public function editPlan($id){
+        $this->plan = Plan::where('horarios_id',$id)->first();
+        if($this->plan){
+            $this->planes_horarios_id = $id;
+            $this->planes_descripcion = $this->plan->planes_descripcion;
+        } else {
+            $this->planes_horarios_id = $id;
+            $this->planes_descripcion = "";
+
+        }
+        $this->open_edit_plan = true;
+    }
+
+    public function editDiario($id){
+        $this->diario = Diario::where('horarios_id',$id)->first();
+        if($this->diario){
+            $this->diarios_horarios_id = $id;
+            $this->diarios_descripcion = $this->diario->diarios_descripcion;
+        } else {
+            $this->diarios_horarios_id = $id;
+            $this->diarios_descripcion = "";
+
+        }
+        $this->open_edit_diario = true;
+    }
+    public function savePlan(){
+        $validated = $this->validate([
+            'planes_descripcion'=>'required|min:15|max:550',
+        ]);
+        if($this->plan){
+            $this->plan->horarios_id = $this->planes_horarios_id;
+            $this->plan->planes_descripcion = $this->planes_descripcion;
+            $this->plan->save();
+        } else {
+            $asistencia = Plan::create([
+                'horarios_id' => $this->planes_horarios_id,
+                'planes_descripcion' => $this->planes_descripcion,
+            ]);
+        }
+        $this->reset(['open_edit_plan','planes_horarios_id','planes_descripcion']);
+        $this->emit('alert','El plan fue actualización satisfactoriamente');
+    }
+
+    public function saveDiario(){
+        $validated = $this->validate([
+            'diarios_descripcion'=>'required|min:15|max:550',
+        ]);
+        if($this->diario){
+            $this->diario->horarios_id = $this->diarios_horarios_id;
+            $this->diario->diarios_descripcion = $this->diarios_descripcion;
+            $this->diario->save();
+        } else {
+            $asistencia = Diario::create([
+                'horarios_id' => $this->diarios_horarios_id,
+                'diarios_descripcion' => $this->diarios_descripcion,
+            ]);
+        }
+        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_descripcion']);
+        $this->emit('alert','El diario fue actualización satisfactoriamente');
     }
 }
