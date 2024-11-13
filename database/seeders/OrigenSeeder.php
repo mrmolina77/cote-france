@@ -31,6 +31,12 @@ class OrigenSeeder extends Seeder
         Origen::create([
             'origenes_descripcion' =>'Google Ads',
         ]);
+        Origen::create([
+            'origenes_descripcion' =>'Facebook',
+        ]);
+        Origen::create([
+            'origenes_descripcion' =>'Calle',
+        ]);
 
     }
 }

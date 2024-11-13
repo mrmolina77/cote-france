@@ -116,7 +116,7 @@
                         {{$item->estatus_descripcion}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_telefono}}
+                        {{$item->prospectos_telefono1}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
@@ -206,11 +206,14 @@
                 <x-forms.input-error for="prospectos_apellidos"/>
             </div>
             <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Phone')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_telefono"/>
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Phone')}} : " />
+                        <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_telefono1"/>
+                        <x-forms.input type="text" class="flex-1 ml-4" wire:model="prospecto.prospectos_telefono2"/>
+                    </div>
+                    <x-forms.input-error for="prospectos_telefono1"/>
                 </div>
-                <x-forms.input-error for="prospectos_telefono"/>
             </div>
             <div>
                 <div class="mb-4 flex">
@@ -223,7 +226,7 @@
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Origins')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospecto.origenes_id">
-                        <option value="">>{{__('Select')}}</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($origenes as $item)
                         <option value="{{$item->origenes_id}}">{{$item->origenes_descripcion}}</option>
                         @empty
@@ -237,7 +240,7 @@
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Follow-ups')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospecto.seguimientos_id">
-                        <option value="">>{{__('Select')}}</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($seguimientos as $item)
                         <option value="{{$item->seguimientos_id}}">{{$item->seguimientos_descripcion}}</option>
                         @empty
@@ -247,28 +250,55 @@
                 </div>
                 <x-forms.input-error for="seguimientos_id"/>
             </div>
-
             @if ($this->open_edit and isset($this->prospecto->seguimientos_id) and (int)$this->prospecto->seguimientos_id === 2)
                 <div>
-                    <div class="mb-4 flex">
-                        <x-forms.label value="{{__('Class date')}}: " />
-                        <x-forms.input type="date" class="flex-1 ml-4" wire:model="prospecto.prospectos_clase_fecha"/>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Group')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="grupoid">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($grupos as $item)
+                            <option value="{{$item->grupo_id}}">{{$item->grupo_nombre}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
                     </div>
-                    <x-forms.input-error for="prospectos_clase_fecha"/>
+                    <x-forms.input-error for="grupo_id"/>
                 </div>
                 <div>
-                    <div class="mb-4 flex">
-                        <x-forms.label value="{{__('Class time')}}: " />
-                        <x-forms.input type="time" class="flex-1 ml-4" wire:model="prospecto.prospectos_clase_hora"/>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Timetable')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="prospecto.horarios_id">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($horarios as $item)
+                            <option value="{{$item->horarios_id}}">{{\Carbon\Carbon::parse($item->horarios_dia)->format('d-m-Y')}} {{$item->hora->horas_desde}} {{$item->hora->horas_hasta}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
                     </div>
-                    <x-forms.input-error for="clasespruebas_hora_fin"/>
+                    <x-forms.input-error for="estatus_id"/>
                 </div>
             @endif
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Modality')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="prospecto.modalidad_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($modalidades as $item)
+                        <option value="{{$item->modalidad_id}}">{{$item->modalidad_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="modalidad_id"/>
+            </div>
             <div>
                 <div class="mb-4 flex" >
                     <x-forms.label value="{{__('Status')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="prospecto.estatus_id">
-                        <option value="">>{{__('Select')}}</option>
+                        <option value="">{{__('Select')}}</option>
                         @forelse ($estatus as $item)
                         <option value="{{$item->estatus_id}}">{{$item->estatus_descripcion}}</option>
                         @empty

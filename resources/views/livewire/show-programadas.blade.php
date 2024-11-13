@@ -27,9 +27,9 @@
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_clase_fecha')">
+                    wire:click="order('horarios_dia')">
                     Fecha
-                    @if ($sort == 'prospectos_clase_fecha')
+                    @if ($sort == 'horarios_dia')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -66,9 +66,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_telefono')">
+                    wire:click="order('prospectos_telefono1')">
                     Teléfono
-                    @if ($sort == 'prospectos_telefono')
+                    @if ($sort == 'prospectos_telefono1')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -91,6 +91,9 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                 </th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                    Acción
+                    </th>
                 </tr>
                 </thead>
 
@@ -98,7 +101,7 @@
                 @forelse ( $prospectos as $item )
                 @php
                     $today=\Carbon\Carbon::today();
-                    $clase_fecha=\Carbon\Carbon::parse($item->prospectos_clase_fecha);
+                    $clase_fecha=\Carbon\Carbon::parse($item->horarios_dia);
                     if ($clase_fecha->gt($today)) {
                         $linea_color = 'text-green-500';
                     } elseif ($clase_fecha->lt($today)) {
@@ -112,19 +115,23 @@
                 @endif
                 <tr class="{{$linea_color}}">
                     <th class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left ">
-                        {{\Carbon\Carbon::parse($item->prospectos_clase_fecha)->format('d-m-Y')}}
+                        {{\Carbon\Carbon::parse($item->horarios_dia)->format('d-m-Y')}}
                     </th>
                     <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                        {{$item->prospectos_clase_hora}}
+                        {{$item->horas_desde}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->prospectos_telefono}}
+                        {{$item->prospectos_telefono1}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_correo}}
+                    </td>
+                    <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        <i class="fas fa-user-plus text-blue-600 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
+                        <i class="fas fa-paper-plane text-green-600 mr-4 cursor-pointer" wire:click="notification({{ $item->prospectos_id }})"></i>
                     </td>
                 </tr>
                 @empty
@@ -186,6 +193,44 @@
                 </div>
             @endif
         </x-table>
+
+
+        <x-dialog-modal wire:model="open_edit">
+            <x-slot name="title">
+                Actualizar Asistencia
+            </x-slot>
+            <x-slot name="content">
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Prospects')}}: " />
+                        <x-forms.label value="{{$prospecto->prospectos_nombres ?? 'Nombre no disponible'}} {{$prospecto->prospectos_apellidos ?? 'Apellido no disponible'}}" />
+                    </div>
+                </div>
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Attended')}}: " />
+                        <x-forms.toggle wire:model="asistencias"/>
+                    </div>
+                    <x-forms.input-error for="asistencias"/>
+                </div>
+                <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Date')}}: " />
+                        <x-forms.input type="date" class="flex-1 ml-4" wire:model="asistencias_fecha"/>
+                    </div>
+                    <x-forms.input-error for="asistencias_fecha"/>
+               </div>
+            </x-slot>
+            <x-slot name="footer">
+                <x-forms.red-button wire:click="$set('open_edit',false)">
+                    {{__('Cancel')}}
+                </x-forms.red-button>
+                <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
+                    {{__('Modify')}}
+                </x-forms.blue-button>
+                {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
+            </x-slot>
+        </x-dialog-modal>
 
 
 </div>

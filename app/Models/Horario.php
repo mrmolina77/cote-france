@@ -15,7 +15,7 @@ class Horario extends Model
     */
     protected $table = 'horarios';
 
-    protected $fillable = ['espacios_id','dias_id','horas_id','grupos_id'];
+    protected $fillable = ['espacios_id','horarios_dia','horas_id','grupo_id'];
 
    /**
     * The primary key associated with the table.
@@ -24,18 +24,17 @@ class Horario extends Model
     */
     protected $primaryKey = 'horarios_id';
 
-    public function dia()
-    {
-        return $this->belongsTo(Profesor::class,'dias_id','dias_id');
-    }
-
     public function hora()
     {
-        return $this->belongsTo(Profesor::class,'horas_id','horas_id');
+        return $this->belongsTo(Hora::class,'horas_id','horas_id');
     }
 
     public function espacio()
     {
-        return $this->belongsTo(Profesor::class,'espacios_id','espacios_id');
+        return $this->belongsTo(Espacio::class,'espacios_id','espacios_id');
+    }
+    public function grupo()
+    {
+        return $this->belongsTo(Grupo::class,'grupo_id','grupo_id');
     }
 }

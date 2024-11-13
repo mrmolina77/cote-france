@@ -34,5 +34,11 @@ class EspacioSeeder extends Seeder
             'espacios_activo' =>true,
             'modalidad_id' =>'1',
         ]);
+        Espacio::create([
+            'espacios_nombre' =>'Salon 3',
+            'espacios_descripcion' =>'Descripción del salon 3',
+            'espacios_activo' =>true,
+            'modalidad_id' =>'1',
+        ]);
     }
 }

@@ -13,9 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('dias', function (Blueprint $table) {
-            $table->id('dias_id');
-            $table->string('dias_nombre',25);
+        Schema::create('planes', function (Blueprint $table) {
+            $table->id('planes_id');
+            $table->unsignedBigInteger('horarios_id')->nullable();
+            $table->longText('planes_descripcion');
+            $table->foreign('horarios_id')->references('horarios_id')->on('horarios');
             $table->timestamps();
             $table->softDeletes();
         });
@@ -28,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('dias');
+        Schema::dropIfExists('plans');
     }
 };

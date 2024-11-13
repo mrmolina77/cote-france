@@ -31,4 +31,8 @@ class Grupo extends Model
     {
         return $this->belongsTo(Modalidad::class,'modalidad_id','modalidad_id');
     }
+    public function profesor()
+    {
+        return $this->belongsTo(Profesor::class,'profesores_id','profesores_id');
+    }
 }

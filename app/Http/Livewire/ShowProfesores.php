@@ -23,12 +23,12 @@ class ShowProfesores extends Component
 
 
     protected $rules = [
-        'profesores.profesores_nombres'=>'required|min:3|max:100',
-        'profesores.profesores_apellidos'=>'required|min:3|max:100',
-        'profesores.profesores_email'=>'required|email',
-        'profesores.profesores_fecha_ingreso'=>'required|date',
-        'profesores.profesores_precio_hora'=>'decimal:2',
-        'profesores.profesores_horas_mes'=>'integer',
+        'profesor.profesores_nombres'=>'required|min:3|max:100',
+        'profesor.profesores_apellidos'=>'required|min:3|max:100',
+        'profesor.profesores_email'=>'required|email',
+        'profesor.profesores_fecha_ingreso'=>'required|date',
+        'profesor.profesores_horas_semanales'=>'integer',
+        'profesor.profesores_color'=>'required',
     ];
 
     public function updatingSearch(){
@@ -45,7 +45,8 @@ class ShowProfesores extends Component
             ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_email','like','%'.trim($this->search).'%')
             ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
-            ,'profesores.profesores_email','profesores.profesores_id','profesores.profesores_fecha_ingreso')
+                    ,'profesores.profesores_email','profesores.profesores_id'
+                    ,'profesores.profesores_fecha_ingreso','profesores.profesores_color')
             ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
