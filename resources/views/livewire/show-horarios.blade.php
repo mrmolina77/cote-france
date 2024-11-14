@@ -111,7 +111,7 @@
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Description')}}: " />
-                    <x-forms.textarea rows="8" class="flex-1 ml-4" wire:model="planes_descripcion">
+                    <x-forms.textarea id="planes_descripcion" rows="8" class="flex-1 ml-4" wire:model="planes_descripcion">
                     </x-forms.textarea>
                 </div>
                 <x-forms.input-error for="planes_descripcion"/>
@@ -128,6 +128,9 @@
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
     </x-dialog-modal>
+    @push('css')
+        <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css" />
+    @endpush
     @push('js');
     <script>
         livewire.on('deleteHorario',itemId=>{
@@ -146,6 +149,29 @@
             }
             });
         })
+    </script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script>
+
+    <script>
+        const {
+            ClassicEditor,
+            Essentials,
+            Bold,
+            Italic,
+            Font,
+            Paragraph
+        } = CKEDITOR;
+
+        ClassicEditor
+            .create( document.querySelector( '#editor' ), {
+                plugins: [ Essentials, Bold, Italic, Font, Paragraph ],
+                toolbar: [
+                    'undo', 'redo', '|', 'bold', 'italic', '|',
+                    'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
+                ]
+            } )
+            .then( /* ... */ )
+            .catch( /* ... */ );
     </script>
     @endpush
 

@@ -28,7 +28,7 @@ class CreateProspect extends Component
         'prospectos_nombres'=>'required|min:3|max:50',
         'prospectos_apellidos'=>'required|min:3|max:50',
         'prospectos_telefono1'=>'required|numeric',
-        'prospectos_telefono2'=>'numeric',
+        'prospectos_telefono2'=>'nullable|numeric',
         'prospectos_correo'=>'required|email|max:100',
         'origenes_id'=>'required',
         'seguimientos_id'=>'required',
