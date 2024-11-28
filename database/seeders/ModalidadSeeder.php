@@ -25,8 +25,8 @@ class ModalidadSeeder extends Seeder
             'modalidad_descripcion' =>'Descripción en linea',
         ]);
         Modalidad::create([
-            'modalidad_nombre' =>'Mixto',
-            'modalidad_descripcion' =>'Descripción mixto',
+            'modalidad_nombre' =>'Ambas',
+            'modalidad_descripcion' =>'Descripción ambas',
         ]);
     }
 }

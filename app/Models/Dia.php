@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Dia extends Model
 {
     // use HasFactory;
+    // use HasFactory;
     /**
     * The table associated with the model.
     *
@@ -20,5 +21,6 @@ class Dia extends Model
     *
     * @var string
     */
-   protected $primaryKey = 'dias_id';
+    protected $primaryKey = 'dias_id';
+
 }

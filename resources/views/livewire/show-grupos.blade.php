@@ -199,9 +199,6 @@
             @endif
         </x-table>
 
-
-
-
         <x-dialog-modal wire:model="open_edit">
             <x-slot name="title">
                 Actualizar grupo
@@ -266,7 +263,7 @@
                     </div>
                     <x-forms.input-error for="modalidad_id"/>
                 </div>
-                <div>
+                {{-- <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Teacher')}}: " />
                         <x-select class="flex-1 ml-4" wire:model="grupo.profesores_id">
@@ -279,7 +276,7 @@
                         </x-select>
                     </div>
                     <x-forms.input-error for="profesores_id"/>
-                </div>
+                </div> --}}
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('State')}}: " />
@@ -293,6 +290,98 @@
                         </x-select>
                     </div>
                     <x-forms.input-error for="estado_id"/>
+                </div>
+                <div class="flex flex-row">
+                    <div class="basis-1/4">
+                        <div class="mb-4">
+                            <x-select class="flex-1 ml-4" wire:model="dias_id">
+                                <option value="">{{__('Day')}}</option>
+                                @forelse ($dias as $item)
+                                <option value="{{$item->dias_id}}">{{$item->dias_nombre}}</option>
+                                @empty
+                                <option value="">{{__('No Content')}}</option>
+                                @endforelse
+                            </x-select>
+                        </div>
+                        <x-forms.input-error for="dias_id"/>
+                    </div>
+                    <div class="basis-1/4">
+                        <div class="mb-4">
+                            <x-select class="flex-1 ml-4" wire:model="horas_id">
+                                <option value="">{{__('Hours')}}</option>
+                                @forelse ($horas as $item)
+                                <option value="{{$item->horas_id}}">{{$item->horas_desde}} - {{$item->horas_hasta}}</option>
+                                @empty
+                                <option value="">{{__('No Content')}}</option>
+                                @endforelse
+                            </x-select>
+                        </div>
+                        <x-forms.input-error for="horas_id"/>
+                    </div>
+                    <div class="basis-1/4">
+                        <div class="mb-4">
+                            <x-select class="flex-1 ml-4" wire:model="profesores_id">
+                                <option value="">{{__('Teacher')}}</option>
+                                @forelse ($profesores as $item)
+                                <option value="{{$item->profesores_id}}">{{$item->profesores_nombres}} {{$item->profesores_apellidos}}</option>
+                                @empty
+                                <option value="">{{__('No Content')}}</option>
+                                @endforelse
+                            </x-select>
+                        </div>
+                        <x-forms.input-error for="profesores_id"/>
+                    </div>
+                    <div class="basis-1/4">
+                        <button type="button" wire:click="add"  wire:loading.attr="disabled" wire:target="add" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 disabled:opacity-65">
+                            Agrerar
+                        </button>
+                    </div>
+                </div>
+
+
+                <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                    <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">
+                                    Días
+                                </th>
+                                <th scope="col" class="px-6 py-3">
+                                    Horas
+                                </th>
+                                <th scope="col" class="px-6 py-3">
+                                    Profesores
+                                </th>
+                                <th scope="col" class="px-6 py-3">
+                                    Acción
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($detalles_grupos as $item )
+                                <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
+                                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                        {{$item['dia']}}
+                                    </th>
+                                    <td class="px-6 py-4">
+                                        {{$item['hora']}}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {{$item['profesor']}}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteDetalle',{{$loop->index}})"></i>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
+                                    <td class="px-6 py-4" colspan="4">
+                                        Sin definir
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </x-slot>
             <x-slot name="footer">
@@ -323,7 +412,24 @@
                 livewire.emitTo('show-grupos','delete',itemId);
             }
             });
-        })
+        });
+
+        livewire.on('deleteDetalle',itemId=>{
+            Swal.fire({
+            title: "{{__('Are you sure you want to delete the record?')}}",
+            text: "{{__('You will not be able to reverse this!')}}",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            cancelButtonText: "{{__('Cancel')}}",
+            confirmButtonText: "{{__('Yes, delete it!')}}"
+            }).then((result) => {
+            if (result.isConfirmed) {
+                livewire.emitTo('show-grupos','deleteDetalle',itemId);
+            }
+            });
+        });
     </script>
     @endpush
 </div>

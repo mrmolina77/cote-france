@@ -48,5 +48,21 @@ class ProfesorSeeder extends Seeder
             'profesores_horas_semanales' =>'14',
             'profesores_color' =>'#e1ff00',
         ]);
+        Profesor::create([
+            'profesores_nombres' =>'Alejandra',
+            'profesores_apellidos' =>'Torrez',
+            'profesores_email' =>'atorrez@gmail.com',
+            'profesores_fecha_ingreso' =>date('Y-m-d'),
+            'profesores_horas_semanales' =>'14',
+            'profesores_color' =>'#ff5733',
+        ]);
+        Profesor::create([
+            'profesores_nombres' =>'Meiby',
+            'profesores_apellidos' =>'Molina',
+            'profesores_email' =>'memolina@gmail.com',
+            'profesores_fecha_ingreso' =>date('Y-m-d'),
+            'profesores_horas_semanales' =>'14',
+            'profesores_color' =>'#9933ff',
+        ]);
     }
 }

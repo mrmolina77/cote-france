@@ -38,11 +38,11 @@
         @stack('js')
 
         <script>
-            Livewire.on('alert',function(message){
+            Livewire.on('alert',function(message,titulo = "Exito!",icono = "success"){
                 Swal.fire({
-                    title: "Exito!",
+                    title: titulo,
                     text: message,
-                    icon: "success"
+                    icon: icono
                 });
             })
         </script>
