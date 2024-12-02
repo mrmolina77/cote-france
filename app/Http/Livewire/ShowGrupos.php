@@ -96,6 +96,7 @@ class ShowGrupos extends Component
     public function edit($id){
         $grupo = Grupo::find($id);
         $detalles = GruposDetalles::where('grupo_id',$id)->get();
+        $this->detalles_grupos=[];
         foreach ($detalles as $detalle) {
             $this->detalles_grupos[]=[
                 'detalles_id'=>$detalle->detalles_id,

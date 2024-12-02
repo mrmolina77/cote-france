@@ -20,6 +20,11 @@ class GruposDetalles extends Model
         return $this->belongsTo(Dia::class,'dias_id','dias_id');
     }
 
+    public function grupo()
+    {
+        return $this->belongsTo(Grupo::class,'grupo_id','grupo_id');
+    }
+
     public function hora()
     {
         return $this->belongsTo(Hora::class,'horas_id','horas_id');

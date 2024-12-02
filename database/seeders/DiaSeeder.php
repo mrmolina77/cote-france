@@ -17,9 +17,6 @@ class DiaSeeder extends Seeder
     {
         //
         Dia::create([
-            'dias_nombre' =>'Domingo'
-        ]);
-        Dia::create([
             'dias_nombre' =>'Lunes'
         ]);
         Dia::create([
@@ -36,6 +33,9 @@ class DiaSeeder extends Seeder
         ]);
         Dia::create([
             'dias_nombre' =>'Sábado'
+        ]);
+        Dia::create([
+            'dias_nombre' =>'Domingo'
         ]);
     }
 }
