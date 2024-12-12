@@ -1,4 +1,4 @@
-<div>
+<div class="scale-50 -translate-x-80 -translate-y-80">
     @section('content')
     <p>{{ __('Timetable') }}</p>
     @endsection
@@ -21,7 +21,7 @@
                                 <table>
                                     <tr>
                                         @foreach ($profesores as $profesor)
-                                        <td><div style="color:{{$profesor->profesores_color}}" class="w-32 border-2" >{{$profesor->profesores_nombres}}</div></td>
+                                        <td><div style="color:{{$profesor->profesores_color}}" class="w-20 border-2" >{{$profesor->profesores_nombres}}</div></td>
                                         @endforeach
                                     </tr>
                                 </table>
@@ -38,7 +38,7 @@
                                             @foreach ($profesores as $profesor)
                                                 @if (isset($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]))
                                                     <td class="items-center justify-center h-full bg-gray-300">
-                                                        <div class="border-2 w-32 min-h-20 grid grid-cols-1">
+                                                        <div class="border-2 w-20 min-h-20 grid grid-cols-1">
                                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</div>
                                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div>
                                                             <div class="flex items-center justify-center">
@@ -50,7 +50,7 @@
                                                     </td>
                                                 @else
                                                     <td class="items-center justify-center h-full">
-                                                        <div class="border-2 w-32 min-h-20 grid grid-cols-1">
+                                                        <div class="border-2 w-20 min-h-20 grid grid-cols-1">
                                                             @if(isset($grupo_deta[$dia->dias_id][$profesor->profesores_id][$hora->horas_id]))
                                                                 {{$grupo_deta[$dia->dias_id][$profesor->profesores_id][$hora->horas_id]['grupo_nombre']}}
                                                                 <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}},{{$grupo_deta[$dia->dias_id][$profesor->profesores_id][$hora->horas_id]['grupo_id']}})"></i>
@@ -63,7 +63,6 @@
                                             @endforeach
                                         </tr>
                                     </table>
-
                                 </td>
                             @endforeach
                         </tr>

@@ -11,7 +11,7 @@ class GruposDetalles extends Model
 
     protected $table = 'grupos_detalles';
 
-    protected $fillable = ['grupo_id','horas_id','profesores_id','dias_id'];
+    protected $fillable = ['grupo_id','horas_id','espacios_id','dias_id'];
 
     protected $primaryKey = 'detalles_id';
 
@@ -30,9 +30,9 @@ class GruposDetalles extends Model
         return $this->belongsTo(Hora::class,'horas_id','horas_id');
     }
 
-    public function profesor()
+    public function espacio()
     {
-        return $this->belongsTo(Profesor::class,'profesores_id','profesores_id');
+        return $this->belongsTo(Espacio::class,'espacios_id','espacios_id');
     }
 
 

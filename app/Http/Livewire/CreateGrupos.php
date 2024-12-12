@@ -8,7 +8,7 @@ use App\Models\GruposDetalles;
 use App\Models\Hora;
 use App\Models\Dia;
 use App\Models\Modalidad;
-use App\Models\Profesor;
+use App\Models\Espacio;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
@@ -18,9 +18,9 @@ class CreateGrupos extends Component
 
     public $grupo_nombre,$grupo_nivel,$grupo_capitulo;
     public $grupo_libro_maestro,$grupo_libro_alumno,$grupo_observacion,$modalidad_id;
-    public $estado_id,$profesores_id,$dias_id,$horas_id;
+    public $estado_id,$espacios_id,$dias_id,$horas_id;
     public $detalles_grupos=array();
-    protected $listeners = ['render','delete'];
+    protected $listeners = ['render','createDelete'];
 
     protected $rules = [
         'grupo_nombre'=>'required|min:3|max:50',
@@ -59,13 +59,13 @@ class CreateGrupos extends Component
                         'grupo_id' =>$grupo->grupo_id ,
                         'dias_id' =>$detalle['dias_id'] ,
                         'horas_id' =>$detalle['horas_id'],
-                        'profesores_id' =>$detalle['profesores_id'],
+                        'espacios_id' =>$detalle['espacios_id'],
                     ]);
             }
             DB::commit();
             $this->reset(['open','grupo_nombre','grupo_nivel','grupo_capitulo',
             'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','modalidad_id',
-            'estado_id','profesores_id','detalles_grupos']);
+            'estado_id','espacios_id','detalles_grupos']);
             $this->emitTo('show-grupos','render');
             $this->emit('alert','El grupo fue agregado satifactoriamente');
         } catch (\Throwable $th) {
@@ -80,13 +80,13 @@ class CreateGrupos extends Component
         $validatedData = $this->validate([
             'dias_id' => 'required',
             'horas_id' => 'required',
-            'profesores_id' => 'required',
+            'espacios_id' => 'required',
         ]);
         // Verifica si ya existe un registro con los mismos valores
         $existe = collect($this->detalles_grupos)->contains(function ($registro) use ($validatedData) {
             return $registro['dias_id'] === $validatedData['dias_id']
                 && $registro['horas_id'] === $validatedData['horas_id']
-                && $registro['profesores_id'] === $validatedData['profesores_id'];
+                && $registro['espacios_id'] === $validatedData['espacios_id'];
         });
 
         if ($existe) {
@@ -94,22 +94,22 @@ class CreateGrupos extends Component
         } else {
             $existe = GruposDetalles::where('dias_id',$validatedData['dias_id'])
                                     ->where('horas_id',$validatedData['horas_id'])
-                                    ->where('profesores_id',$validatedData['profesores_id'])->count();
+                                    ->where('espacios_id',$validatedData['espacios_id'])->count();
             if ($existe > 0) {
                 $this->addError('dias_id', "Ya existe en otro grupo.") ;
             } else {
                 $dia = Dia::find($this->dias_id);
                 $hora = Hora::find($this->horas_id);
-                $profesor = Profesor::find($this->profesores_id);
+                $espacio = Espacio::find($this->espacios_id);
                 $this->detalles_grupos[]=[
                                     'dias_id'=>$this->dias_id,
                                     'dia'=>$dia->dias_nombre,
                                     'horas_id'=>$this->horas_id,
                                     'hora'=>$hora->horas_desde .' - '.$hora->horas_hasta,
-                                    'profesores_id'=>$this->profesores_id,
-                                    'profesor'=>$profesor->profesores_nombres.' '.$profesor->profesores_apellidos,
+                                    'espacios_id'=>$this->espacios_id,
+                                    'espacio'=>$espacio->espacios_nombre,
                                 ];
-                $this->reset(['dias_id','horas_id','profesores_id']); // Revertir los cambios si algo falla
+                $this->reset(['dias_id','horas_id','espacios_id']); // Revertir los cambios si algo falla
             }
         }
     }
@@ -118,17 +118,17 @@ class CreateGrupos extends Component
     {
         $modalidades = Modalidad::all();
         $estados = Estado::all();
-        $profesores = Profesor::all();
+        $espacios = Espacio::all();
         $dias = Dia::all();
         $horas = Hora::all();
         return view('livewire.create-grupos',['modalidades'=>$modalidades
                                              ,'estados'=>$estados
                                              ,'dias'=>$dias
                                              ,'horas'=>$horas
-                                             ,'profesores'=>$profesores]);
+                                             ,'espacios'=>$espacios]);
     }
 
-    public function delete($id){;
+    public function createDelete($id){;
         unset($this->detalles_grupos[$id]);
         $this->emit('alert','El horario fue eliminado satifactoriamente');
     }

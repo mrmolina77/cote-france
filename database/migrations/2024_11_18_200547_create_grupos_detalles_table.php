@@ -17,8 +17,12 @@ return new class extends Migration
             $table->id('detalles_id');
             $table->unsignedBigInteger('grupo_id')->nullable();
             $table->unsignedBigInteger('horas_id')->nullable();
-            $table->unsignedBigInteger('profesores_id')->nullable();
+            $table->unsignedBigInteger('espacios_id')->nullable();
             $table->unsignedBigInteger('dias_id')->nullable();
+            $table->foreign('grupo_id')->references('grupo_id')->on('grupos');
+            $table->foreign('horas_id')->references('horas_id')->on('horas');
+            $table->foreign('espacios_id')->references('espacios_id')->on('espacios');
+            $table->foreign('dias_id')->references('dias_id')->on('dias');
             $table->timestamps();
         });
     }

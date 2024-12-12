@@ -320,16 +320,16 @@
                     </div>
                     <div class="basis-1/4">
                         <div class="mb-4">
-                            <x-select class="flex-1 ml-4" wire:model="profesores_id">
-                                <option value="">{{__('Teacher')}}</option>
-                                @forelse ($profesores as $item)
-                                <option value="{{$item->profesores_id}}">{{$item->profesores_nombres}} {{$item->profesores_apellidos}}</option>
+                            <x-select class="flex-1 ml-4" wire:model="espacios_id">
+                                <option value="">{{__('Spaces')}}</option>
+                                @forelse ($espacios as $item)
+                                <option value="{{$item->espacios_id}}">{{$item->espacios_nombre}}</option>
                                 @empty
                                 <option value="">{{__('No Content')}}</option>
                                 @endforelse
                             </x-select>
                         </div>
-                        <x-forms.input-error for="profesores_id"/>
+                        <x-forms.input-error for="espacios_id"/>
                     </div>
                     <div class="basis-1/4">
                         <button type="button" wire:click="add"  wire:loading.attr="disabled" wire:target="add" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 disabled:opacity-65">
@@ -367,7 +367,7 @@
                                         {{$item['hora']}}
                                     </td>
                                     <td class="px-6 py-4">
-                                        {{$item['profesor']}}
+                                        {{$item['espacio']}}
                                     </td>
                                     <td class="px-6 py-4">
                                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteDetalle',{{$loop->index}})"></i>
