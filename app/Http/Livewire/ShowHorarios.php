@@ -26,6 +26,8 @@ class ShowHorarios extends Component
     public $diarios_horarios_id,$diarios_descripcion;
     public $plan, $diario, $semanal,$year;
     public $semana,$inicio,$fin,$profesores_id;
+    public $porcentajes, $dimenciones,$porcentaje;
+    public $ocupados;
     protected $listeners = ['render','delete'];
 
     public function boot()
@@ -36,6 +38,16 @@ class ShowHorarios extends Component
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
+        $this->porcentajes[]="100%";
+        $this->porcentajes[]="95%";
+        $this->porcentajes[]="90%";
+        $this->porcentajes[]="75%";
+        $this->porcentajes[]="50%";
+        $this->dimenciones[]="scale-100 -translate-x-0 -translate-y-0";
+        $this->dimenciones[]="scale-95 -translate-x-10 -translate-y-10";
+        $this->dimenciones[]="scale-90 -translate-x-20 -translate-y-20";
+        $this->dimenciones[]="scale-75 -translate-x-40 -translate-y-40";
+        $this->dimenciones[]="scale-50 -translate-x-80 -translate-y-80";
     }
 
     public function render()
@@ -57,12 +69,9 @@ class ShowHorarios extends Component
                                                                                                 ];
         }
 
-        $detalles = GruposDetalles::all();
-        $grupo_deta=[];
-        foreach ($detalles as $item) {
-            $grupo_deta[$item->dias_id][$item->profesores_id][$item->horas_id]=['grupo_id'=>$item->grupo_id
-                              ,'grupo_nombre'=>$item->grupo->grupo_nombre];
-        }
+
+        $this->ocupados=array();
+        $grupo_deta=$this->cargaDetalleGrupo();
         $grupos = Grupo::all();
         $profesores = Profesor::all();
         $dias = Dia::all();
@@ -170,5 +179,72 @@ class ShowHorarios extends Component
         }
         $this->reset(['open_edit_diario','diarios_horarios_id','diarios_descripcion']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
+    }
+
+    protected function cargaDetalleGrupo(){
+        $grupo_deta=array();
+        $horarios = Horario::where('horarios_dia','>=', $this->inicio)
+                           ->where('horarios_dia','<=', $this->fin)
+                           ->orderBy('horarios_dia', 'asc')
+                           ->orderBy('horas_id', 'asc')
+                           ->orderBy('profesores_id', 'asc')
+                           ->get();
+        $array_horario = array();
+        foreach ($horarios as $horario) {
+            $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->profesores_id] = [ 'nombre'=>$horario->grupo->grupo_nombre
+                                                                                                 ,'color'=>$horario->profesor->profesores_color
+                                                                                                 ,'espacio'=>$horario->espacio->espacios_nombre
+                                                                                                 ,'id'=>$horario->horarios_id
+                                                                                                ];
+        }
+
+        $detalles = GruposDetalles::all();
+        foreach ($detalles as $item) {
+            $grupo_deta[$item->dias_id][$item->horas_id][]=[
+                                            'grupo_id'=>$item->grupo_id
+                                           ,'espacios_id'=>$item->espacios_id
+                                           ,'grupo_nombre'=>$item->grupo->grupo_nombre];
+        }
+        $horas = Hora::all();
+        $profesores = Profesor::all();
+        $dias = Dia::all();
+        $respuesta=array();
+        foreach ( $horas as $hora ){
+            foreach ($dias as $dia) {
+                if(isset($grupo_deta[$dia->dias_id][$hora->horas_id])){
+                    $anterior=[];
+                    $centros=[];
+                    foreach ($profesores as $profesor) {
+                        $cantidad = count($grupo_deta[$dia->dias_id][$hora->horas_id]);
+                        foreach ($grupo_deta[$dia->dias_id][$hora->horas_id] as $key => $deta) {
+                            if (! isset($horarios[\Carbon\Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id])){
+                                if (! isset($this->ocupados[$dia->dias_id][$hora->horas_id])){
+                                    $respuesta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]=[
+                                                                                                             'grupo_id'=>$deta['grupo_id']
+                                                                                                            ,'espacios_id'=>$deta['espacios_id']
+                                                                                                            ,'grupo_nombre'=>$deta['grupo_nombre']];
+                                    $this->ocupados[$dia->dias_id][$hora->horas_id][$deta['grupo_id']]=$profesor->profesores_id;
+                                    $anterior[]=$profesor->profesores_id;
+                                    $centros[]=$deta['grupo_id'];
+                                } elseif ( ! in_array($profesor->profesores_id,$anterior) and ! in_array($deta['grupo_id'],$centros)) {
+                                    $respuesta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]=[
+                                                                 'grupo_id'=>$deta['grupo_id']
+                                                                ,'espacios_id'=>$deta['espacios_id']
+                                                                ,'grupo_nombre'=>$deta['grupo_nombre']];
+                                    $this->ocupados[$dia->dias_id][$hora->horas_id][$deta['grupo_id']]=$profesor->profesores_id;
+                                    $anterior[]=$profesor->profesores_id;
+                                    $centros[]=$deta['grupo_id'];
+                                }
+                            }
+                            if(count($anterior)>=$cantidad){
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        return $respuesta;
     }
 }

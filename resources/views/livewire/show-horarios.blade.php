@@ -1,4 +1,10 @@
-<div class="scale-50 -translate-x-80 -translate-y-80">
+<div @class([
+    'scale-100 -translate-x-0 -translate-y-0'  => $porcentaje === '0',
+    'scale-95 -translate-x-10 -translate-y-10' => $porcentaje === '1',
+    'scale-90 -translate-x-20 -translate-y-20' => $porcentaje === '2',
+    'scale-75 -translate-x-40 -translate-y-40' => $porcentaje === '3',
+    'scale-50 -translate-x-80 -translate-y-80' => $porcentaje === '4'
+    ]) >
     @section('content')
     <p>{{ __('Timetable') }}</p>
     @endsection
@@ -8,7 +14,16 @@
                 <thead>
                     <tr>
                         <!-- Columnas de cabecera vacías -->
-                        <th class="border p-2 w-60" colspan="8">Semana {{$semana}}</th>
+                        <th class="border p-2 w-36">
+                            <x-select class="flex-1 ml-4" wire:model="porcentaje">
+                                @forelse ($porcentajes as $key => $item)
+                                <option value="{{$key}}">{{$item}}</option>
+                                @empty
+                                <option value="">{{__('No Content')}}</option>
+                                @endforelse
+                            </x-select>
+                        </th>
+                        <th class="border p-2 w-60" colspan="7">Semana {{$semana}}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,9 +66,9 @@
                                                 @else
                                                     <td class="items-center justify-center h-full">
                                                         <div class="border-2 w-20 min-h-20 grid grid-cols-1">
-                                                            @if(isset($grupo_deta[$dia->dias_id][$profesor->profesores_id][$hora->horas_id]))
-                                                                {{$grupo_deta[$dia->dias_id][$profesor->profesores_id][$hora->horas_id]['grupo_nombre']}}
-                                                                <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}},{{$grupo_deta[$dia->dias_id][$profesor->profesores_id][$hora->horas_id]['grupo_id']}})"></i>
+                                                            @if(isset($grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]))
+                                                                {{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['grupo_nombre']}}
+                                                                <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                                             @else
                                                                 <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                                             @endif
