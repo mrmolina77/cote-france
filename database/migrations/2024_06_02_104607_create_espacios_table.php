@@ -15,8 +15,9 @@ return new class extends Migration
     {
         Schema::create('espacios', function (Blueprint $table) {
             $table->id('espacios_id');
-            $table->string('espacios_nombre',100); 
+            $table->string('espacios_nombre',100);
             $table->string('espacios_descripcion',250);
+            $table->string('espacios_enlace',550)->nullable();
             $table->boolean('espacios_activo');
             $table->unsignedBigInteger('modalidad_id');
             $table->foreign('modalidad_id')->references('modalidad_id')->on('modalidades');

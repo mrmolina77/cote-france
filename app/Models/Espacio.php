@@ -15,6 +15,8 @@ class Espacio extends Model
     */
    protected $table = 'espacios';
 
+   protected $fillable = ['espacios_nombre','espacios_descripcion','espacios_enlace','espacios_activo','modalidad_id'];
+
    /**
     * The primary key associated with the table.
     *
