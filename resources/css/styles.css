@@ -24,3 +24,13 @@
     /* Apply class bg-indigo-700 */
     background-color: #4c51bf;
 }
+
+.dragging {
+    opacity: 0.5;
+    border: 2px dashed #4CAF50;
+}
+
+.updating {
+    background-color: #FFFAE6;
+    border: 2px solid #FFD700;
+}
