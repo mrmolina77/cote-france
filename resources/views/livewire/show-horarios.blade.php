@@ -1,25 +1,25 @@
 <div @class([
     'scale-100 -translate-x-0 -translate-y-0'  => $porcentaje === '0',
-    'scale-95 -translate-x-10 -translate-y-10' => $porcentaje === '1',
-    'scale-90 -translate-x-20 -translate-y-20' => $porcentaje === '2',
-    'scale-75 -translate-x-40 -translate-y-40' => $porcentaje === '3',
-    'scale-50 -translate-x-80 -translate-y-80' => $porcentaje === '4'
+    'scale-95 -translate-x-0 -translate-y-0' => $porcentaje === '1',
+    'scale-90 -translate-x-10 -translate-y-10' => $porcentaje === '2',
+    'scale-75 -translate-x-40 -translate-y-20' => $porcentaje === '3',
+    'scale-50 -translate-x-80 -translate-y-60' => $porcentaje === '4'
     ]) >
     @section('content')
     <p>{{ __('Timetable') }}</p>
     @endsection
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"  wire:ignore.self wire:updated="initializeDragAndDrop">
+    <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-1 py-1"  wire:ignore.self wire:updated="initializeDragAndDrop">
         @if ($semanal)
             <table class="table-auto w-full border-collapse" id="horarios-table">
                 <thead>
                     <tr>
-                        <th class="border p-2 w-36" colspan="8">
+                        <th class="border p-0 w-36" colspan="8">
                             <div>Semana # {{$semana}}</div>
                         </th>
                     </tr>
                     <tr>
                         <!-- Columnas de cabecera vacías -->
-                        <th class="border p-2 w-36" colspan="8">
+                        <th class="border p-0 w-20" colspan="8">
                             <div class="flex justify-between">
                                 <div>
                                     <button wire:click="anterior">
@@ -56,11 +56,11 @@
                         <!-- Columnas de cabecera vacías -->
                         <th class="border p-2 w-40">{{ __('Hours') }}</th>
                         @foreach ( $dias as $dia )
-                            <th class="border p-[17px]">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}
+                            <th class="border p-[10px]">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}
                                 <table>
                                     <tr>
                                         @foreach ($profesores as $profesor)
-                                        <td><div style="color:{{$profesor->profesores_color}}" class="w-20 border-2" >{{$profesor->profesores_nombres}}</div></td>
+                                        <td class="w-20 border-1 items-center justify-center"><div style="color:{{$profesor->profesores_color}}">{{$profesor->profesores_nombres}}</div></td>
                                         @endforeach
                                     </tr>
                                 </table>
@@ -69,9 +69,9 @@
                     </tr>
                     @foreach ( $horas as $hora )
                         <tr>
-                            <td class="border p-4 text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
+                            <td class="border text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
                             @foreach ( $dias as $dia )
-                                <td class="border p-4 text-center">
+                                <td class="border p-0 text-center">
                                     <table>
                                         <tr>
                                             @foreach ($profesores as $profesor)
@@ -84,7 +84,7 @@
                                                         data-grupo="{{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['grupo_id'] }}"
                                                         data-profesor="{{$profesor->profesores_id}}"
                                                         >
-                                                        <div class="border-2 w-20 min-h-20 grid grid-cols-1">
+                                                        <div class="border-1 w-20 min-h-20 grid grid-cols-1">
                                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</div>
                                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div>
                                                             <div class="flex items-center justify-center">
@@ -104,7 +104,7 @@
                                                         data-grupo="{{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['grupo_id']}}"
                                                         data-profesor="{{ $profesor->profesores_id }}"
                                                         >
-                                                            <div class="border-2 w-20 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                                            <div class="border-1 w-20 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                                                 {{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['grupo_nombre']}}
                                                                 {{-- <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i> --}}
                                                             </div>
@@ -118,7 +118,7 @@
                                                         data-grupo="0"
                                                         data-profesor="{{ $profesor->profesores_id }}"
                                                         >
-                                                            <div class="border-2 w-20 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                                            <div class="border-1 w-20 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                                                 <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                                             </div>
                                                         </td>
@@ -138,32 +138,32 @@
                 <thead>
                     <tr>
                         <!-- Columnas de cabecera vacías -->
-                        <th class="border p-2 w-60" colspan="{{count($profesores)+1}}"><input type="date" wire:model="fecha" value="{{\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')}}"></th>
+                        <th class="border p-0 w-60" colspan="{{count($profesores)+1}}"><input type="date" wire:model="fecha" value="{{\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')}}"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Fila 1 -->
                     <tr>
                         <!-- Columnas de cabecera vacías -->
-                        <th class="border p-2 w-40">{{ __('Hours') }}</th>
+                        <th class="border p-0 w-40">{{ __('Hours') }}</th>
                         @foreach ( $profesores as $profesor )
-                        <th><div style="color:{{$profesor->profesores_color}}" class=" border-2" >{{$profesor->profesores_nombres}}</div></th>
+                        <th><div style="color:{{$profesor->profesores_color}}" class=" border-1" >{{$profesor->profesores_nombres}}</div></th>
                         @endforeach
                     </tr>
                     @foreach ( $horas as $hora )
                         <tr>
-                            <td class="border p-4 text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
+                            <td class="border p-0 text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
                             @foreach ($profesores as $profesor)
                                 @if (isset($horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]))
                                     <td class="items-center justify-center h-full bg-gray-300 grupo-cell"
-                                        data-id="{{ $horarios[$fecha][$hora->horas_id][$profesor->profesores_id]['id'] }}"
+                                        data-id="{{ $horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['id'] }}"
                                         data-dia="{{\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')}}"
                                         data-espacio="{{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacios_id']}}"
                                         data-hora="{{ $hora->horas_id }}"
                                         data-grupo="{{ $horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['grupo_id'] }}"
                                         data-profesor="{{$profesor->profesores_id}}"
                                         >
-                                        <div class="border-2  min-h-20 grid grid-cols-1">
+                                        <div class="border-1  min-h-20 grid grid-cols-1">
                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</div>
                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div>
                                             <div class="flex items-center justify-center">
@@ -183,7 +183,7 @@
                                         data-grupo="{{$grupo_deta[\Carbon\Carbon::parse($fecha)->isoFormat('d')+1][$hora->horas_id][$profesor->profesores_id]['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}"
                                         >
-                                            <div class="border-2  min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ \Carbon\Carbon::parse($fecha)->isoFormat('d')+1 }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                            <div class="border-1  min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ \Carbon\Carbon::parse($fecha)->isoFormat('d')+1 }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                                 {{$grupo_deta[\Carbon\Carbon::parse($fecha)->isoFormat('d')+1][$hora->horas_id][$profesor->profesores_id]['grupo_nombre']}}
                                                 {{-- <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i> --}}
                                             </div>
@@ -197,7 +197,7 @@
                                         data-grupo="0"
                                         data-profesor="{{ $profesor->profesores_id }}"
                                         >
-                                            <div class="border-2  min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ \Carbon\Carbon::parse($fecha)->isoFormat('d')+1 }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                            <div class="border-1  min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ \Carbon\Carbon::parse($fecha)->isoFormat('d')+1 }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                                 <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                             </div>
                                         </td>

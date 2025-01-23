@@ -40,6 +40,7 @@ class ShowHorarios extends Component
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
+        $this->fecha = Carbon::now();
         $this->porcentajes[]="100%";
         $this->porcentajes[]="95%";
         $this->porcentajes[]="90%";
