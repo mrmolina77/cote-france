@@ -257,6 +257,8 @@
     "This user already belongs to the team.": "Cet utilisateur appartient déjà à l'équipe.",
     "This user has already been invited to the team.": "Cet utilisateur a déjà été invité à rejoindre l'équipe.",
     "Timetable": "Calendrier",
+    "Timetable in person": "Horaires en personne",
+    "Timetable online": "Horaires en ligne",
     "To finish enabling two factor authentication, scan the following QR code using your phone's authenticator application or enter the setup key and provide the generated OTP code.": "Pour terminer l'activation de l'authentification à deux facteurs, scannez le code QR suivant à l'aide de l'application d'authentification de votre téléphone ou entrez la clé de configuration et fournissez le code OTP généré.",
     "Token Name": "Nom du jeton",
     "Too Early": "Trop tôt",

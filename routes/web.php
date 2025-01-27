@@ -86,5 +86,5 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified'
-])->get('/horarios', ShowHorarios::class )->name('horarios');
+])->get('/horarios/{modalidad}', ShowHorarios::class )->name('horarios');
 

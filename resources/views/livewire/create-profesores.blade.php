@@ -50,6 +50,20 @@
                 </div>
                 <x-forms.input-error for="profesores_horas_semanales"/>
            </div>
+           <div>
+            <div class="mb-4 flex">
+                <x-forms.label value="{{__('Modality')}}: " />
+                <x-select class="flex-1 ml-4" wire:model="modalidad_id">
+                    <option value="">{{__('Select')}}</option>
+                    @forelse ($modalidades as $item)
+                    <option value="{{$item->modalidad_id}}">{{$item->modalidad_nombre}}</option>
+                    @empty
+                    <option value="">{{__('No Content')}}</option>
+                    @endforelse
+                </x-select>
+            </div>
+            <x-forms.input-error for="modalidad_id"/>
+        </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open',false)">

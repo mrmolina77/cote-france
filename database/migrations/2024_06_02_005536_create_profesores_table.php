@@ -21,6 +21,8 @@ return new class extends Migration
             $table->char('profesores_color',7)->nullable();
             $table->date('profesores_fecha_ingreso');
             $table->integer('profesores_horas_semanales')->nullable();
+            $table->unsignedBigInteger('modalidad_id');
+            $table->foreign('modalidad_id')->references('modalidad_id')->on('modalidades');
             $table->timestamps();
             $table->softDeletes();
         });

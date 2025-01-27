@@ -18,14 +18,19 @@
             <i class="fas fa-chalkboard mr-3"></i>
             {{ __('Scheduled') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="{{ route('horarios') }}" :active="request()->routeIs('horarios')">
+        <x-layout.aside-link href="{{ route('horarios',['modalidad' => 1]) }}" :active="request()->routeIs('horarios')">
             <i class="fas fa-sticky-note mr-3"></i>
-            {{ __('Timetable') }}
+            {{ __('Timetable in person') }}
         </x-layout.aside-link>
-        <x-layout.aside-link href="{{ route('asistencias') }}" :active="request()->routeIs('asistencias')">
+        <x-layout.aside-link href="{{ route('horarios',['modalidad' => 2]) }}" :active="request()->routeIs('horarios')">
+            <i class="fas fa-sticky-note mr-3"></i>
+            {{ __('Timetable online') }}
+        </x-layout.aside-link>
+
+        {{-- <x-layout.aside-link href="{{ route('asistencias') }}" :active="request()->routeIs('asistencias')">
             <i class="fas fa-table mr-3"></i>
             {{ __('Assistance') }}
-        </x-layout.aside-link>
+        </x-layout.aside-link> --}}
         <x-layout.aside-link href="{{ route('tareas') }}" :active="request()->routeIs('tareas')">
             <i class="fas fa-align-left mr-3"></i>
             {{ __('Homeworks') }}

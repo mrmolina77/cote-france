@@ -226,7 +226,7 @@
                     <x-select class="flex-1 ml-4" wire:model="inscripcion.grupo_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($grupos as $item)
-                        <option value="{{$item->greupo_id}}">{{$item->grupo_nombre}}</option>
+                        <option value="{{$item->grupo_id}}">{{$item->grupo_nombre}}</option>
                         @empty
                         <option value="">{{__('No Content')}}</option>
                         @endforelse

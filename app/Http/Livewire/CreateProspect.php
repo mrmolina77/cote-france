@@ -72,7 +72,7 @@ class CreateProspect extends Component
         if ($this->seguimientos_id == 2) {
             $grupo = Grupo::find($this->grupoid);
             $horario = Horario::find($this->horarios_id);
-            $profesor = Profesor::find($grupo->profesores_id);
+            $profesor = Profesor::find($horario->profesores_id);
 
             $datos = ['nombre'=>$this->prospectos_nombres.' '.$this->prospectos_apellidos,
                       'hora'=>$horario->hora->horas_desde,
@@ -103,6 +103,6 @@ class CreateProspect extends Component
     }
 
     public function updatedGrupoid($grupo_id){
-        $this->horarios =  Horario::where('grupo_id',$grupo_id)->get();
+        $this->horarios =  Horario::where('grupo_id',$grupo_id)->where('horarios_dia','>=',date('Y-m-d'))->get();
     }
 }

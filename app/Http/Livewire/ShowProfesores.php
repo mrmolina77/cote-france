@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Modalidad;
 use App\Models\Profesor;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -29,6 +30,7 @@ class ShowProfesores extends Component
         'profesor.profesores_fecha_ingreso'=>'required|date',
         'profesor.profesores_horas_semanales'=>'integer',
         'profesor.profesores_color'=>'required',
+        'profesor.modalidad_id'=>'required',
     ];
 
     public function updatingSearch(){
@@ -41,12 +43,14 @@ class ShowProfesores extends Component
             // $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
             //                             ->paginate($this->cant);
             $profesores = DB::table('profesores')
+            ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
+                    ,'profesores.profesores_email','profesores.profesores_id'
+                    ,'profesores.profesores_fecha_ingreso','profesores.profesores_color'
+                    ,'modalidades.modalidad_nombre')
+            ->join('modalidades','profesores.modalidad_id','=','modalidades.modalidad_id')
             ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_email','like','%'.trim($this->search).'%')
-            ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
-                    ,'profesores.profesores_email','profesores.profesores_id'
-                    ,'profesores.profesores_fecha_ingreso','profesores.profesores_color')
             ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
@@ -56,7 +60,10 @@ class ShowProfesores extends Component
             $profesores = array();
         }
 
-        return view('livewire.show-profesores',['profesores'=>$profesores]);
+        $modalidades = Modalidad::all();
+
+        return view('livewire.show-profesores',['profesores'=>$profesores
+                                               ,'modalidades'=>$modalidades]);
     }
 
     public function loadPosts(){

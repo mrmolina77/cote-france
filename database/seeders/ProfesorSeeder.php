@@ -23,6 +23,7 @@ class ProfesorSeeder extends Seeder
             'profesores_fecha_ingreso' =>date('Y-m-d'),
             'profesores_horas_semanales' =>'8',
             'profesores_color' =>'#e81111',
+            'modalidad_id' =>'1',
         ]);
         Profesor::create([
             'profesores_nombres' =>'Maria',
@@ -31,6 +32,7 @@ class ProfesorSeeder extends Seeder
             'profesores_fecha_ingreso' =>date('Y-m-d'),
             'profesores_horas_semanales' =>'10',
             'profesores_color' =>'#29219c',
+            'modalidad_id' =>'2',
         ]);
         Profesor::create([
             'profesores_nombres' =>'Juan',
@@ -39,6 +41,7 @@ class ProfesorSeeder extends Seeder
             'profesores_fecha_ingreso' =>date('Y-m-d'),
             'profesores_horas_semanales' =>'12',
             'profesores_color' =>'#359f0f',
+            'modalidad_id' =>'1',
         ]);
         Profesor::create([
             'profesores_nombres' =>'Fracisco',
@@ -47,6 +50,7 @@ class ProfesorSeeder extends Seeder
             'profesores_fecha_ingreso' =>date('Y-m-d'),
             'profesores_horas_semanales' =>'14',
             'profesores_color' =>'#e1ff00',
+            'modalidad_id' =>'2',
         ]);
         Profesor::create([
             'profesores_nombres' =>'Alejandra',
@@ -55,6 +59,7 @@ class ProfesorSeeder extends Seeder
             'profesores_fecha_ingreso' =>date('Y-m-d'),
             'profesores_horas_semanales' =>'14',
             'profesores_color' =>'#ff5733',
+            'modalidad_id' =>'1',
         ]);
         Profesor::create([
             'profesores_nombres' =>'Meiby',
@@ -63,6 +68,7 @@ class ProfesorSeeder extends Seeder
             'profesores_fecha_ingreso' =>date('Y-m-d'),
             'profesores_horas_semanales' =>'14',
             'profesores_color' =>'#9933ff',
+            'modalidad_id' =>'2',
         ]);
     }
 }

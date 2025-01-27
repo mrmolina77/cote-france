@@ -11,7 +11,7 @@ class Profesor extends Model
     // use HasFactory;
     use Notifiable;
 
-    protected $fillable = ['profesores_nombres','profesores_apellidos','profesores_email',
+    protected $fillable = ['profesores_nombres','profesores_apellidos','profesores_email','modalidad_id',
                            'profesores_color','profesores_horas_semanales','profesores_fecha_ingreso'];
 
     /**

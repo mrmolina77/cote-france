@@ -87,6 +87,7 @@ class ShowInscripciones extends Component
 
     public function edit($id){
         $inscripcion = Inscripcion::find($id);
+        // dd($inscripcion);
         $this->inscripcion = $inscripcion;
         $this->open_edit = true;
     }

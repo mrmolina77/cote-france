@@ -26,11 +26,11 @@ class DatabaseSeeder extends Seeder
         $this->call(SeguimientoSeeder::class);
         $this->call(EstatuTareaSeeder::class);
         $this->call(CursoSeeder::class);
+        $this->call(ModalidadSeeder::class);
         $this->call(ProfesorSeeder::class);
         $this->call(RoleSeeder::class);
         $this->call(UserSeeder::class);
         $this->call(EstadoSeeder::class);
-        $this->call(ModalidadSeeder::class);
         $this->call(EspacioSeeder::class);
         $this->call(HoraSeeder::class);
         $this->call(DiaSeeder::class);

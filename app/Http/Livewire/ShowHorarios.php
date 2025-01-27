@@ -28,7 +28,7 @@ class ShowHorarios extends Component
     public $plan, $diario, $semanal,$year;
     public $semana,$inicio,$fin,$profesores_id;
     public $porcentajes, $dimenciones,$porcentaje;
-    public $ocupados;
+    public $ocupados, $modalidad;
     protected $listeners = ['render','delete'];
 
     public function boot()
@@ -51,6 +51,10 @@ class ShowHorarios extends Component
         $this->dimenciones[]="scale-90 -translate-x-20 -translate-y-20";
         $this->dimenciones[]="scale-75 -translate-x-40 -translate-y-40";
         $this->dimenciones[]="scale-50 -translate-x-80 -translate-y-80";
+    }
+
+    public function mount($modalidad){
+        $this->modalidad = $modalidad;
     }
 
     public function render()
@@ -76,8 +80,8 @@ class ShowHorarios extends Component
 
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo();
-        $grupos = Grupo::all();
-        $profesores = Profesor::all();
+        $grupos = Grupo::where('modalidad_id',$this->modalidad)->where('estado_id',1)->get();
+        $profesores = Profesor::where('modalidad_id',$this->modalidad)->get();
         $dias = Dia::all();
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
