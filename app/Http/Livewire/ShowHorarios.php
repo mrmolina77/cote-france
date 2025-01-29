@@ -59,6 +59,13 @@ class ShowHorarios extends Component
         $this->modalidad = $modalidad;
     }
 
+    public function updatedYdiario($value)
+    {
+        // Actualiza la fecha cuando ydiario cambia
+        $this->fecha = Carbon::parse($value);
+    }
+
+
     public function render()
     {
         $espacios = Espacio::all();
