@@ -18,7 +18,7 @@ use Livewire\Component;
 class ShowHorarios extends Component
 {
 
-    public $fecha;
+    public $fecha,$ydiario;
     public $open_edit;
     public $open_edit_plan;
     public $open_edit_diario;
@@ -35,12 +35,14 @@ class ShowHorarios extends Component
     {
         $this->semanal = true;
         $this->fecha = Carbon::now();
+        $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         // $this->fecha = new Carbon('last monday');
         $this->year = $this->fecha->isoFormat('Y');
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
         $this->fecha = Carbon::now();
+        $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         $this->porcentajes[]="100%";
         $this->porcentajes[]="95%";
         $this->porcentajes[]="90%";
@@ -106,6 +108,7 @@ class ShowHorarios extends Component
 
     public function anterior(){
         $this->fecha = $this->fecha->subWeek();
+        $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         $this->year = $this->fecha->isoFormat('Y');
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
@@ -114,6 +117,7 @@ class ShowHorarios extends Component
 
     public function siguiente(){
         $this->fecha = $this->fecha->addWeek();
+        $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         $this->year = $this->fecha->isoFormat('Y');
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
