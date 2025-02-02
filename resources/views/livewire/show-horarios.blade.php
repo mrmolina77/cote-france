@@ -20,14 +20,14 @@
                     <tr>
                         <!-- Columnas de cabecera vacías -->
                         <th class="border p-0 w-20" colspan="8">
-                            <div class="flex justify-between">
-                                <div>
-                                    <button wire:click="anterior">
+                            <div class="grid h-full max-w-lg grid-cols-4 gap-4 mx-auto">
+                                <div class="flex items-center justify-center">
+                                    <button class="w-full py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" wire:click="anterior">
                                         Anterior
                                     </button>
                                 </div>
-                                <div>
-                                    <x-select id="porcentaje-select" class="flex-1 ml-4" wire:model="porcentaje">
+                                <div class="flex items-center">
+                                    <x-select id="porcentaje-select" class="w-full text-sm font-medium text-gray-900 py-2.5 px-5" wire:model="porcentaje">
                                         @forelse ($porcentajes as $key => $item)
                                         <option value="{{$key}}">{{$item}}</option>
                                         @empty
@@ -35,14 +35,14 @@
                                         @endforelse
                                     </x-select>
                                 </div>
-                                <div>
-                                    <x-select id="semanal-select" class="flex-1 ml-4" wire:model="semanal">
+                                <div class="flex items-center">
+                                    <x-select id="semanal-select" class="w-full text-sm font-medium text-gray-900" wire:model="semanal">
                                         <option value="1">{{__('Weekly')}}</option>
                                         <option value="0">{{__('Daily')}}</option>
                                     </x-select>
                                 </div>
-                                <div>
-                                    <button wire:click="siguiente">
+                                <div class="flex items-center justify-center">
+                                    <button class="w-full py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" wire:click="siguiente">
                                         Siguiente
                                     </button>
                                 </div>
@@ -138,7 +138,19 @@
                 <thead>
                     <tr>
                         <!-- Columnas de cabecera vacías -->
-                        <th class="border p-0 w-60" colspan="{{count($profesores)+1}}"><input type="date" wire:model="ydiario"></th>
+                        <th class="border p-0 w-60" colspan="{{count($profesores)+1}}">
+                            <div class="grid h-full max-w-lg grid-cols-2 gap-4 mx-auto">
+                                <div>
+                                    <input type="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" wire:model="ydiario">
+                                </div>
+                                <div>
+                                    <x-select id="semanal-select" class="w-full text-sm font-medium text-gray-900 p-2.5" wire:model="semanal">
+                                        <option value="1">{{__('Weekly')}}</option>
+                                        <option value="0">{{__('Daily')}}</option>
+                                    </x-select>
+                                </div>
+                            </div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
