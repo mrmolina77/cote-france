@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Livewire\ShowProspectos;
 use App\Http\Livewire\ShowTareas;
 use App\Http\Livewire\ShowUsuarios;
+use App\Http\Livewire\ShowEspacios;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,4 +88,10 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/horarios/{modalidad}', ShowHorarios::class )->name('horarios');
+
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified'
+])->get('/espacios', ShowEspacios::class )->name('espacios');
 
