@@ -83,6 +83,8 @@ class ShowHorarios extends Component
                                                                                                  ,'espacios_id'=>$horario->espacios_id
                                                                                                  ,'grupo_id'=>$horario->grupo_id
                                                                                                  ,'espacio'=>$horario->espacio->espacios_nombre
+                                                                                                 ,'enlace'=>$horario->espacio->espacios_enlace
+                                                                                                 ,'modalidad'=>$horario->espacio->modalidad_id
                                                                                                  ,'id'=>$horario->horarios_id
                                                                                                 ];
         }
