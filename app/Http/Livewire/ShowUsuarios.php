@@ -2,8 +2,11 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Inscripcion;
+use App\Models\Profesor;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +25,28 @@ class ShowUsuarios extends Component
     public $open_edit = false;
     protected $listeners = ['render','delete'];
 
-    public $name,$email,$password,$password_confirmation,$roles_id;
+    public $name,$email,$password,$password_confirmation,$rolesid,$relacionados,$relacionados_id;
 
     protected $rules = [
         'name'=>'required|min:10|max:250',
         'email'=>'required|unique:posts|email',
         'password'=>'required|min:10|max:512|confirmed',
-        'roles_id'=>'required',
+        'rolesid'=>'required',
+        'relacionados_id'=>'required',
     ];
+
+    public function updated($propertyName)
+    {
+        $this->validateOnly($propertyName, [
+            'relacionados_id' => Rule::requiredIf(function () {
+                return in_array($this->rolesid, [3, 4]);
+            }),
+        ]);
+    }
+
+    public function boot(){
+        $this->relacionados = collect([]);
+    }
 
     public function updatingSearch(){
         $this->resetPage();
@@ -53,6 +70,7 @@ class ShowUsuarios extends Component
         } else {
             $users = array();
         }
+
         $roles = Role::all();
         return view('livewire.show-usuarios',['users'=>$users,
                                               'roles'=>$roles]);
@@ -80,7 +98,20 @@ class ShowUsuarios extends Component
         $this->user = $user;
         $this->name = $this->user->name;
         $this->email = $this->user->email;
-        $this->roles_id = $this->user->roles_id;
+        $this->rolesid = $this->user->roles_id;
+        $this->relacionados = collect([]);
+        if($this->rolesid == 3) {
+            $profesores = Profesor::all();
+            foreach ($profesores as $item) {
+                $this->relacionados[] = collect(['id'=>$item->profesores_id,'nombres'=>$item->profesores_nombres .' '. $item->profesores_apellidos]);
+            }
+        } elseif ($this->rolesid == 4) {
+            $inscripciones =  Inscripcion::all();
+            foreach ($inscripciones as $item) {
+                $this->relacionados[] = collect(['id'=>$item->prospecto->prospectos_id,'nombres'=>$item->prospecto->prospectos_nombres .' '. $item->prospecto->prospectos_apellidos]);
+            }
+        }
+        $this->relacionados_id = $this->user->relacionados_id;
         $this->open_edit = true;
     }
 
@@ -91,7 +122,8 @@ class ShowUsuarios extends Component
         $this->user->forceFill([
             'name' => $this->name,
             'email' => $this->email,
-            'roles_id' => $this->roles_id,
+            'roles_id' => $this->rolesid,
+            'relacionados_id' => $this->relacionados_id,
             'password' => Hash::make($this->password),
         ])->save();
         unset($this->user);
@@ -103,5 +135,21 @@ class ShowUsuarios extends Component
     public function delete(User $user){
         $user->delete();
         $this->emit('alert','El usuario fue eliminado satifactoriamente');
+    }
+
+    public function updatedRolesid($roles_id){
+
+        $this->relacionados = collect([]);
+        if($roles_id == 3) {
+            $profesores = Profesor::all();
+            foreach ($profesores as $item) {
+                $this->relacionados[] = collect(['id'=>$item->profesores_id,'nombres'=>$item->profesores_nombres .' '. $item->profesores_apellidos]);
+            }
+        } elseif ($roles_id == 4) {
+            $inscripciones =  Inscripcion::all();
+            foreach ($inscripciones as $item) {
+                $this->relacionados[] = collect(['id'=>$item->prospecto->prospectos_id,'nombres'=>$item->prospecto->prospectos_nombres .' '. $item->prospecto->prospectos_apellidos]);
+            }
+        }
     }
 }

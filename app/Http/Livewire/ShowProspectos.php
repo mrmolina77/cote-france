@@ -31,7 +31,7 @@ class ShowProspectos extends Component
         'prospecto.prospectos_nombres'=>'required|min:3|max:50',
         'prospecto.prospectos_apellidos'=>'required|min:3|max:50',
         'prospecto.prospectos_telefono1'=>'required|numeric',
-        'prospecto.prospectos_telefono2'=>'nullable|numeric',
+        'prospecto.prospectos_telefono2'=>'nullable|numeric ',
         'prospecto.prospectos_correo'=>'required|email|max:100',
         'prospecto.origenes_id'=>'required',
         'prospecto.seguimientos_id'=>'required',

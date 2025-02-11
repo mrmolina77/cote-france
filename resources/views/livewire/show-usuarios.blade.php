@@ -208,7 +208,7 @@
            <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Roles')}}: " />
-                    <x-select class="flex-1 ml-4" wire:model="roles_id">
+                    <x-select class="flex-1 ml-4" wire:model="rolesid">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($roles as $item)
                         <option value="{{$item->roles_id}}">{{$item->roles_nombre}}</option>
@@ -218,7 +218,21 @@
                     </x-select>
                 </div>
                 <x-forms.input-error for="roles_id"/>
-        </div>
+          </div>
+          <div>
+            <div class="mb-4 flex">
+                <x-forms.label value="{{__('Related')}}: " />
+                <x-select class="flex-1 ml-4" wire:model="relacionados_id">
+                    <option value="">{{__('Select')}}</option>
+                    @forelse ($relacionados as $item)
+                    <option value="{{$item['id']}}">{{$item['nombres']}}</option>
+                    @empty
+                    <option value="">{{__('No Content')}}</option>
+                    @endforelse
+                </x-select>
+            </div>
+            <x-forms.input-error for="roles_id"/>
+          </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
