@@ -6,7 +6,7 @@
     'scale-50 -translate-x-80 -translate-y-60' => $porcentaje === '4'
     ]) >
     @section('content')
-    <p>{{ __('Timetable') }}</p>
+    <p>{{ __('Timetable') }} {{__('Teacher')}}</p>
     @endsection
     <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-1 py-1"  wire:ignore.self wire:updated="initializeDragAndDrop">
         @if ($semanal)
@@ -84,7 +84,7 @@
                                                         data-grupo="{{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['grupo_id'] }}"
                                                         data-profesor="{{$profesor->profesores_id}}"
                                                         >
-                                                        <div class="border-1 w-20 min-h-20 grid grid-cols-1">
+                                                        <div class="border-2 w-20 min-h-20 grid grid-cols-1">
                                                             @if ($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['modalidad'] == '2')
                                                             <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm"> <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</a></div>
                                                             @else
@@ -92,38 +92,25 @@
                                                             @endif
                                                             {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div> --}}
                                                             <div class="flex items-center justify-center">
-                                                                <div><i class="fas fa-trash text-red-500 m-2 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
+                                                                @if ($id_relacionado == $profesor->profesores_id)
                                                                 <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
                                                                 <div><i class="fas fa-book text-blue-500 m-2 cursor-pointer" wire:click="editDiario({{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
+
+                                                                @endif
                                                             </div>
                                                         </div>
                                                     </td>
                                                 @else
                                                     @if(isset($grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]))
-                                                        <td class="h-full grupo-cell"
-                                                        data-id="0"
-                                                        data-dia="{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}"
-                                                        data-espacio="{{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['espacios_id']}}"
-                                                        data-hora="{{$hora->horas_id}}"
-                                                        data-grupo="{{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['grupo_id']}}"
-                                                        data-profesor="{{ $profesor->profesores_id }}"
-                                                        >
+                                                        <td class="h-full grupo-cell">
                                                             <div class="border-1 w-20 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                                                {{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['grupo_nombre']}}
-                                                                {{-- <i class="fas fa-plus text-emerald-500 mr-4 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i> --}}
+
                                                             </div>
                                                         </td>
                                                     @else
-                                                        <td class="h-full grupo-cell"
-                                                        data-id="0"
-                                                        data-dia="{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}"
-                                                        data-espacio="0"
-                                                        data-hora="{{$hora->horas_id}}"
-                                                        data-grupo="0"
-                                                        data-profesor="{{ $profesor->profesores_id }}"
-                                                        >
+                                                        <td class="h-full grupo-cell">
                                                             <div class="border-1 w-20 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                                                <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
+
                                                             </div>
                                                         </td>
                                                     @endif
@@ -357,194 +344,8 @@
     </script>
     {{-- <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script> --}}
 
+
     <script>
-        // const {
-        //     ClassicEditor,
-        //     Essentials,
-        //     Bold,
-        //     Italic,
-        //     Font,
-        //     Paragraph
-        // } = CKEDITOR;
-
-        // ClassicEditor
-        //     .create( document.querySelector( '#editor' ), {
-        //         plugins: [ Essentials, Bold, Italic, Font, Paragraph ],
-        //         toolbar: [
-        //             'undo', 'redo', '|', 'bold', 'italic', '|',
-        //             'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
-        //         ]
-        //     } )
-        //     .then( /* ... */ )
-        //     .catch( /* ... */ );
-    </script>
-    <script>
-    //     document.addEventListener('DOMContentLoaded', function () {
-    //     let table = document.getElementById('horarios-table');
-    //     let cells = table.querySelectorAll('.grupo-cell');
-
-    //     cells.forEach(cell => {
-    //         cell.setAttribute('draggable', true);
-    //         cell.addEventListener('dragstart', function (e) {
-    //             e.dataTransfer.setData('text', JSON.stringify({
-    //                 id:       cell.dataset.id,
-    //                 dia:      cell.dataset.dia,
-    //                 hora:     cell.dataset.hora,
-    //                 grupo:    cell.dataset.grupo,
-    //                 profesor: cell.dataset.profesor,
-    //                 espacio: cell.dataset.espacio,
-    //             }));
-    //         });
-    //     });
-
-    //     table.addEventListener('dragover', function (e) {
-    //         e.preventDefault();
-    //     });
-
-    //     table.addEventListener('drop', function (e) {
-    //         e.preventDefault();
-    //         let data = JSON.parse(e.dataTransfer.getData('text'));
-    //         let targetCell = e.target.closest('.grupo-cell');
-
-    //         if (targetCell) {
-
-    //             let targetId = targetCell.dataset.id;
-    //             let targetDia = targetCell.dataset.dia;
-    //             let targetEspacio = targetCell.dataset.espacio;
-    //             let targetHora = targetCell.dataset.hora;
-    //             let targetGrupo = targetCell.dataset.grupo;
-    //             let targetProfesor = targetCell.dataset.profesor;
-    //             // Evitar cualquier cambio visual directo en las celdas
-    //             e.stopPropagation();
-    //             // Llamar a Livewire para actualizar el grupo
-    //             @this.updateGrupoHorario(targetId, targetDia, targetHora,data.grupo,targetProfesor,data.espacio,data.id);
-    //         }
-    //     });
-    // });
-    // document.addEventListener('DOMContentLoaded', function () {
-    //     let table = document.getElementById('horarios-table');
-    //     let cells = table.querySelectorAll('.grupo-cell');
-
-    //     // Permitir que las celdas sean arrastrables
-    //     cells.forEach(cell => {
-    //         cell.setAttribute('draggable', true);
-    //         cell.addEventListener('dragstart', function (e) {
-    //             e.dataTransfer.effectAllowed = 'move'; // Solo se permite mover
-    //             e.dataTransfer.setData('text/plain', JSON.stringify({
-    //                 id:       cell.dataset.id,
-    //                 dia:      cell.dataset.dia,
-    //                 hora:     cell.dataset.hora,
-    //                 grupo:    cell.dataset.grupo,
-    //                 profesor: cell.dataset.profesor,
-    //                 espacio:  cell.dataset.espacio,
-    //             }));
-    //         });
-    //     });
-
-    //     // Permitir que la tabla acepte el drop
-    //     table.addEventListener('dragover', function (e) {
-    //         e.preventDefault();
-    //         e.dataTransfer.dropEffect = 'move';
-    //     });
-
-    //     table.addEventListener('drop', function (e) {
-    //         e.preventDefault();
-    //         e.stopPropagation(); // Evitar comportamiento predeterminado
-
-    //         let data = JSON.parse(e.dataTransfer.getData('text/plain'));
-    //         let targetCell = e.target.closest('.grupo-cell');
-
-    //         if (targetCell) {
-    //             // Obtener datos de la celda destino
-    //             let targetId = targetCell.dataset.id;
-    //             let targetDia = targetCell.dataset.dia;
-    //             let targetHora = targetCell.dataset.hora;
-    //             let targetProfesor = targetCell.dataset.profesor;
-    //             let targetEspacio = targetCell.dataset.espacio;
-
-    //             // Llamar a Livewire para manejar la actualización
-    //             @this.updateGrupoHorario(targetId, targetDia, targetHora,data.grupo,targetProfesor,data.espacio,data.id)
-
-    //              // Opcional: Mostrar visualmente que la celda destino está procesando
-    //             targetCell.classList.add('updating');
-    //             setTimeout(() => targetCell.classList.remove('updating'), 1000);
-    //         }
-    //     });
-    // });
-
-    // document.addEventListener('DOMContentLoaded', function () {
-
-    //     let table = document.getElementById('horarios-table');
-    //     let cells = table.querySelectorAll('.grupo-cell');
-
-    //     // Permitir que las celdas sean arrastrables
-    //     cells.forEach(cell => {
-    //         cell.setAttribute('draggable', true);
-    //         cell.addEventListener('dragstart', function (e) {
-    //             e.dataTransfer.effectAllowed = 'move';
-    //             e.dataTransfer.setData('text/plain', JSON.stringify({
-    //                 id:       cell.dataset.id,
-    //                 dia:      cell.dataset.dia,
-    //                 hora:     cell.dataset.hora,
-    //                 grupo:    cell.dataset.grupo,
-    //                 profesor: cell.dataset.profesor,
-    //                 espacio:  cell.dataset.espacio,
-    //             }));
-    //             // Añadir una clase para resaltar la celda de origen
-    //             cell.classList.add('dragging');
-    //         });
-
-    //         cell.addEventListener('dragend', function () {
-    //             // Remover la clase después de finalizar el drag
-    //             cell.classList.remove('dragging');
-    //         });
-    //     });
-
-    //     // Permitir que la tabla acepte el drop
-    //     table.addEventListener('dragover', function (e) {
-    //         e.preventDefault();
-    //         e.dataTransfer.dropEffect = 'move';
-    //     });
-
-    //     table.addEventListener('drop', function (e) {
-    //         e.preventDefault();
-    //         e.stopPropagation();
-
-    //         let data = JSON.parse(e.dataTransfer.getData('text/plain'));
-    //         let targetCell = e.target.closest('.grupo-cell');
-
-    //         if (targetCell) {
-    //             let targetId = targetCell.dataset.id;
-    //             let targetDia = targetCell.dataset.dia;
-    //             let targetHora = targetCell.dataset.hora;
-    //             let targetProfesor = targetCell.dataset.profesor;
-    //             let targetEspacio = targetCell.dataset.espacio;
-
-    //             // Llamar a Livewire para manejar la actualización
-    //             console.log('✅ Llamando a Livewire para actualizar el horario');
-
-    //             // Llamar directamente a Livewire desde el frontend
-    //             Livewire.find('{{ $this->id }}').call('updateGrupoHorario', targetId, targetDia, targetHora, data.grupo, targetProfesor, data.espacio, data.id);
-
-    //             // Opcional: Mostrar visualmente que la celda destino está procesando
-    //             targetCell.classList.add('updating');
-    //             setTimeout(() => targetCell.classList.remove('updating'), 1000); // Remover después de 1s
-    //         }
-    //     });
-
-    //     // Inicializar al cargar la página
-    //     window.initializeDragAndDrop();
-
-    //     // Volver a inicializar después de una actualización de Livewire
-    //     document.addEventListener('livewire:update', () => {
-    //         window.initializeDragAndDrop();
-    //     });
-    // });
-
-    // Livewire.on('refreshHorario', () => {
-    //     console.log('🔄 Refrescando componente Livewire');
-    //     Livewire.restart();
-    // });
 
     document.addEventListener('DOMContentLoaded', function () {
         const initializeDragAndDrop = () => {

@@ -15,7 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
-class ShowHorarios extends Component
+class ShowProfesorHorario extends Component
 {
 
     public $fecha,$ydiario;
@@ -89,6 +89,7 @@ class ShowHorarios extends Component
                                                                                                 ];
         }
 
+        $id_relacionado = auth()->user()->relacionados_id;
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo();
         $grupos = Grupo::where('modalidad_id',$this->modalidad)->where('estado_id',1)->get();
@@ -101,6 +102,7 @@ class ShowHorarios extends Component
                                            ,'grupos'=>$grupos
                                            ,'grupo_deta'=>$grupo_deta
                                            ,'profesores'=>$profesores
+                                           ,'id_relacionado'=>$id_relacionado
                                            ,'dias'=>$dias
                                            ,'fecha'=>$this->fecha
                                             ]);
