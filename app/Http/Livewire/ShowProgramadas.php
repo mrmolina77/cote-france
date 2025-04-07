@@ -16,13 +16,18 @@ class ShowProgramadas extends Component
     public $sort = 'horarios_dia';
     public $direction = 'asc';
     public $prospecto;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
     public $open_edit = false;
     public $asistencia;
 
     public $prospectos_id,$asistencias,$asistencias_fecha;
 
+    public function mount(){
+        $this->readyToLoad = true;
+        $this->asistencias_fecha = date('Y-m-d');
+        $this->asistencias = 2;
+    }
 
 
     public function updatingSearch(){
@@ -42,14 +47,15 @@ class ShowProgramadas extends Component
             $prospectos = DB::table('prospectos')
                         ->select('prospectos.prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono1','prospectos_correo'
                         ,'origenes_descripcion','estatus_descripcion','asistencias','horas_desde','horarios_dia')
-                        ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
-                        ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
-                        ->join('grupos','grupos.grupo_id','=','prospectos.grupo_id')
-                        ->join('horarios','horarios.horarios_id','=','prospectos.horarios_id')
-                        ->join('profesores','profesores.profesores_id','=','horarios.profesores_id')
-                        ->join('horas','horas.horas_id','=','horarios.horas_id')
+                        ->leftJoin('origenes','prospectos.origenes_id','=','origenes.origenes_id')
+                        ->leftJoin('estatus','prospectos.estatus_id','=','estatus.estatus_id')
+                        ->leftJoin('grupos','grupos.grupo_id','=','prospectos.grupo_id')
+                        ->leftJoin('horarios','horarios.horarios_id','=','prospectos.horarios_id')
+                        ->leftJoin('profesores','profesores.profesores_id','=','horarios.profesores_id')
+                        ->leftJoin('horas','horas.horas_id','=','horarios.horas_id')
                         ->leftJoin('asistencias', 'prospectos.prospectos_id', '=', 'asistencias.prospectos_id')
                         ->whereNotNull('grupos.grupo_id')
+                        ->where('prospectos.seguimientos_id',2)
                         ->where(function ($query) {
                             $query->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
                                   ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
@@ -59,7 +65,7 @@ class ShowProgramadas extends Component
                         })
                         ->where(function ($query) {
                             $query->whereNull('asistencias')
-                                  ->orWhere('asistencias','0');
+                                  ->orWhere('asistencias','2');
                         })
                         ->orderBy($this->sort,$this->direction)
                         ->paginate($this->cant);
@@ -67,7 +73,12 @@ class ShowProgramadas extends Component
             $prospectos = array();
         }
 
-        return view('livewire.show-programadas',['prospectos'=>$prospectos]);
+        $sel_asistencias[2] = 'En espera';
+        $sel_asistencias[0] = 'No asistio';
+        $sel_asistencias[1] = 'Asistio';
+
+        return view('livewire.show-programadas',['prospectos'=>$prospectos
+                                              ,'sel_asistencias'=>$sel_asistencias]);
     }
 
     public function loadPosts(){
@@ -97,7 +108,7 @@ class ShowProgramadas extends Component
             $this->asistencias_fecha = $this->asistencia->asistencias_fecha ;
         } else {
             $this->prospectos_id = $id;
-            $this->asistencias = 0;
+            $this->asistencias = 2;
             $this->asistencias_fecha = date('Y-m-d');
         }
         $this->open_edit = true;

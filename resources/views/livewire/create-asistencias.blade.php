@@ -25,6 +25,14 @@
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Attended')}}: " />
+                    <x-select class="flex-1 ml-4" wire:model="prospectos_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($sel_asistencias as $key => $item)
+                        <option value="{{$key}}">{{$item}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
                     <x-forms.toggle wire:model="asistencias"/>
                 </div>
                 <x-forms.input-error for="asistencias"/>

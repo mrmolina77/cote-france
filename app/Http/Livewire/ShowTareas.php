@@ -17,7 +17,7 @@ class ShowTareas extends Component
     public $sort = 'tareas_id';
     public $direction = 'asc';
     public $tarea;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
 
     public $open_edit = false;

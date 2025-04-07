@@ -14,14 +14,14 @@ class CreateAsistencias extends Component
 
     protected $rules = [
         'prospectos_id'=>'required',
-        'asistencias'=>'required|boolean',
+        'asistencias'=>'required|integer|between:0,2',
         'asistencias_fecha'=>'required|date',
     ];
 
     public function boot()
     {
         $this->asistencias_fecha = date('Y-m-d');
-        $this->asistencias = false;
+        $this->asistencias = 0;
     }
     public function save(){
         $this->validate();
@@ -38,6 +38,10 @@ class CreateAsistencias extends Component
     public function render()
     {
         $prospectos = Prospecto::whereNotNull('prospectos_clase_fecha')->doesntHave('asistencia')->get();
-        return view('livewire.create-asistencias',['prospectos'=>$prospectos]);
+        $sel_asistencias[0] = 'No asistio';
+        $sel_asistencias[1] = 'Asistio';
+        $sel_asistencias[2] = 'En espera';
+        return view('livewire.create-asistencias',['prospectos'=>$prospectos
+                                                  ,'asistencias'=>$sel_asistencias]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Curso;
 use Livewire\WithPagination;
 use Livewire\Component;
 use App\Models\Prospecto;
@@ -20,7 +21,7 @@ class ShowProspectos extends Component
     public $sort = 'prospectos_id';
     public $direction = 'asc';
     public $prospecto;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
     public $horarios,$grupoid;
 
@@ -29,17 +30,16 @@ class ShowProspectos extends Component
 
     protected $rules = [
         'prospecto.prospectos_nombres'=>'required|min:3|max:50',
-        'prospecto.prospectos_apellidos'=>'required|min:3|max:50',
+        'prospecto.prospectos_apellidos'=>'nullable|min:3|max:50',
         'prospecto.prospectos_telefono1'=>'required|numeric',
         'prospecto.prospectos_telefono2'=>'nullable|numeric ',
-        'prospecto.prospectos_correo'=>'required|email|max:100',
-        'prospecto.origenes_id'=>'required',
-        'prospecto.seguimientos_id'=>'required',
-        'prospecto.estatus_id'=>'required',
-        'prospecto.modalidad_id'=>'required',
-        'prospecto.grupo_id'=>'required_if:seguimientos_id,2',
-        'prospecto.horarios_id'=>'required_if:seguimientos_id,2',
-        'prospecto.prospectos_comentarios'=>'required|min:7|max:255',
+        'prospecto.prospectos_correo'=>'nullable|email|max:100',
+        'prospecto.origenes_id'=>'nullable',
+        'prospecto.seguimientos_id'=>'nullable',
+        'prospecto.estatus_id'=>'nullable',
+        'prospecto.modalidad_id'=>'nullable',
+        'prospecto.cursos_id'=>'nullable',
+        'prospecto.prospectos_comentarios'=>'nullable|min:7|max:255',
         'prospecto.prospectos_fecha'=>'required|date',
     ];
 
@@ -64,8 +64,8 @@ class ShowProspectos extends Component
 
             $prospectos = DB::table('prospectos')
                         ->select('prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono1','prospectos_telefono2','origenes_descripcion','estatus_descripcion')
-                        ->join('origenes','prospectos.origenes_id','=','origenes.origenes_id')
-                        ->join('estatus','prospectos.estatus_id','=','estatus.estatus_id')
+                        ->leftJoin('origenes','prospectos.origenes_id','=','origenes.origenes_id')
+                        ->leftJoin('estatus','prospectos.estatus_id','=','estatus.estatus_id')
                         ->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
                         ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
                         ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%')
@@ -81,11 +81,13 @@ class ShowProspectos extends Component
         $estatus = Estatu::all();
         $grupos = Grupo::all();
         $modalidades = Modalidad::all();
+        $cursos = Curso::all();
         return view('livewire.show-prospetos',['prospectos'=>$prospectos
                                               ,'origenes'=>$origenes
                                               ,'grupos'=>$grupos
                                               ,'modalidades'=>$modalidades
                                               ,'seguimientos'=>$seguimientos
+                                              ,'cursos'=>$cursos
                                               ,'estatus'=>$estatus]);
     }
 

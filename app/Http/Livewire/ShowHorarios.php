@@ -259,7 +259,7 @@ class ShowHorarios extends Component
             }
         }
 
-        
+
         return $grupo_deta;
     }
 

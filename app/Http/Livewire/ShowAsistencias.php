@@ -16,7 +16,7 @@ class ShowAsistencias extends Component
     public $sort = 'asistencias_id';
     public $direction = 'asc';
     public $asistencia;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
 
     public $open_edit = false;
@@ -61,6 +61,8 @@ class ShowAsistencias extends Component
 
         $prospectos = Prospecto::whereNotNull('prospectos_clase_fecha')->get();
 
+        dd($prospectos);
+        dd($asistencias);
         return view('livewire.show-asistencias',['asistencias'=>$asistencias
                                                   , 'prospectos'=>$prospectos]);
     }

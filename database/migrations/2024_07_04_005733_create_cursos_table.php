@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id('cursos_id');
             $table->string('cursos_descripcion',250);
             $table->date('cursos_fecha_creacion');
-            $table->boolean('cursos_activo');
+            $table->boolean('cursos_activo')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

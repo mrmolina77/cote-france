@@ -15,7 +15,7 @@ class ShowProfesores extends Component
     public $sort = 'profesores_id';
     public $direction = 'asc';
     public $profesor;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
 
     public $open_edit = false;

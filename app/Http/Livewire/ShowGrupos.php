@@ -20,7 +20,7 @@ class ShowGrupos extends Component
     public $sort = 'grupo_id';
     public $direction = 'asc';
     public $grupo,$espacios_id,$dias_id,$horas_id;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
     public $detalles_grupos=array();
     public $borrados=array();
@@ -32,9 +32,9 @@ class ShowGrupos extends Component
         'grupo.grupo_nombre'=>'required|min:3|max:50',
         'grupo.grupo_nivel'=>'required|min:3|max:50',
         'grupo.grupo_capitulo'=>'required|numeric',
-        'grupo.grupo_libro_maestro'=>'required|min:7|max:255',
-        'grupo.grupo_libro_alumno'=>'required|min:7|max:255',
-        'grupo.grupo_observacion'=>'required|min:7|max:255',
+        'grupo.grupo_libro_maestro'=>'nullable|min:7|max:255',
+        'grupo.grupo_libro_alumno'=>'nullable|min:7|max:255',
+        'grupo.grupo_observacion'=>'nullable|min:7|max:255',
         'grupo.modalidad_id'=>'required',
         'grupo.estado_id'=>'required',
     ];
@@ -65,15 +65,20 @@ class ShowGrupos extends Component
         }
         $modalidades = Modalidad::all();
         $estados = Estado::all();
-        $espacios = Espacio::all();
+        $espacios =  collect([]);
         $dias = Dia::all();
         $horas = Hora::all();
+
+        $arr_niveles = array('A1'=>'A1','A2'=>'A2','B1'=>'B1','B2'=>'B2','C1'=>'C1','C2'=>'C2');
+        $arr_capitulos = array('1er Capitulo'=>'1er Capitulo','2do Capitulo'=>'2do Capitulo','3er Capitulo'=>'3er Capitulo','4to Capitulo'=>'4to Capitulo','5to Capitulo'=>'5to Capitulo','6to Capitulo'=>'6to Capitulo','7mo Capitulo'=>'7mo Capitulo','8vo Capitulo'=>'8vo Capitulo','9no Capitulo'=>'9no Capitulo','10mo Capitulo'=>'10mo Capitulo');
         return view('livewire.show-grupos',['grupos'=>$grupos
                                            ,'modalidades'=>$modalidades
                                            ,'espacios'=>$espacios
                                            ,'dias'=>$dias
                                            ,'horas'=>$horas
-                                           ,'estados'=>$estados]);
+                                           ,'estados'=>$estados
+                                           ,'arr_niveles'=>$arr_niveles
+                                           ,'arr_capitulos'=>$arr_capitulos]);
     }
 
     public function loadPosts(){

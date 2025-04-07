@@ -9,10 +9,10 @@
                     <div class="flex items-center">
                         <span>{{__('Show')}}</span>
                         <x-select class="mx-2" wire:model="cant">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
+                            <option value="75">75</option>
+                            <option value="100">100</option>
                         </x-select>
                         <span>{{__('rows')}}</span>
                     </div>
@@ -209,7 +209,12 @@
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Attended')}}: " />
-                        <x-forms.toggle wire:model="asistencias"/>
+                        <x-select class="flex-1 ml-4" wire:model="asistencias">
+                            @forelse ($sel_asistencias as $key => $item)
+                            <option value="{{$key}}">{{$item}}</option>
+                            @empty
+                            @endforelse
+                        </x-select>
                     </div>
                     <x-forms.input-error for="asistencias"/>
                 </div>

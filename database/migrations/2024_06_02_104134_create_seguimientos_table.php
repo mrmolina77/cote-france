@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::create('seguimientos', function (Blueprint $table) {
             $table->id('seguimientos_id');
+            $table->string('seguimientos_codigo',10);
             $table->string('seguimientos_descripcion',100);
             $table->timestamps();
         });

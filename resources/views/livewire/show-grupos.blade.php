@@ -9,10 +9,10 @@
                     <div class="flex items-center">
                         <span>{{__('Show')}}</span>
                         <x-select class="mx-2" wire:model="cant">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
+                            <option value="75">75</option>
+                            <option value="100">100</option>
                         </x-select>
                         <span>{{__('rows')}}</span>
                     </div>
@@ -214,14 +214,28 @@
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Level')}}: " />
-                        <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo.grupo_nivel"/>
+                        <x-select class="flex-1 ml-4" wire:model="grupo.grupo_nivel">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_niveles as $key => $item)
+                            <option value="{{$key}}">{{$item}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
                     </div>
                     <x-forms.input-error for="grupo_nivel"/>
                 </div>
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Chapter')}}: " />
-                        <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo.grupo_capitulo"/>
+                        <x-select class="flex-1 ml-4" wire:model="grupo.grupo_capitulo">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_capitulos as $key => $item)
+                            <option value="{{$key}}">{{$item}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
                     </div>
                     <x-forms.input-error for="grupo_capitulo"/>
                 </div>
@@ -277,7 +291,7 @@
                     </div>
                     <x-forms.input-error for="profesores_id"/>
                 </div> --}}
-                <div>
+                {{-- <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('State')}}: " />
                         <x-select class="flex-1 ml-4" wire:model="grupo.estado_id">
@@ -290,7 +304,7 @@
                         </x-select>
                     </div>
                     <x-forms.input-error for="estado_id"/>
-                </div>
+                </div> --}}
                 <div class="flex flex-row">
                     <div class="basis-1/4">
                         <div class="mb-4">
@@ -333,12 +347,10 @@
                     </div>
                     <div class="basis-1/4">
                         <button type="button" wire:click="add"  wire:loading.attr="disabled" wire:target="add" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 disabled:opacity-65">
-                            Agrerar
+                            Agregar
                         </button>
                     </div>
                 </div>
-
-
                 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
                     <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">

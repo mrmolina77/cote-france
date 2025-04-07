@@ -11,22 +11,36 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Names')}}: " />
+                    <x-forms.label value="{{__('Names')}}: " required/>
                     <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo_nombre"/>
                 </div>
                 <x-forms.input-error for="grupo_nombre"/>
            </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Level')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo_nivel"/>
+                    <x-forms.label value="{{__('Level')}}: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="grupo_nivel">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_niveles as $key => $item)
+                        <option value="{{$key}}">{{$item}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
                 </div>
                 <x-forms.input-error for="grupo_nivel"/>
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Chapter')}}: " />
-                    <x-forms.input type="text" class="flex-1 ml-4" wire:model="grupo_capitulo"/>
+                    <x-forms.label value="{{__('Chapter')}}: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="grupo_capitulo">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_capitulos as $key => $item)
+                        <option value="{{$key}}">{{$item}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
                 </div>
                 <x-forms.input-error for="grupo_capitulo"/>
             </div>
@@ -56,7 +70,7 @@
             </div>
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Modality')}}: " />
+                    <x-forms.label value="{{__('Modality')}}: " required />
                     <x-select class="flex-1 ml-4" wire:model="modalidad_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($modalidades as $item)
@@ -68,7 +82,7 @@
                 </div>
                 <x-forms.input-error for="modalidad_id"/>
             </div>
-            <div>
+            {{-- <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('State')}}: " />
                     <x-select class="flex-1 ml-4" wire:model="estado_id">
@@ -81,7 +95,7 @@
                     </x-select>
                 </div>
                 <x-forms.input-error for="estado_id"/>
-            </div>
+            </div> --}}
             <div class="inline-flex items-center justify-center w-full">
                 <hr class="w-64 h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
                 <span class="absolute px-3 font-medium text-gray-900 -translate-x-1/2 bg-white left-1/2 dark:text-white dark:bg-gray-900"> Horarios </span>
@@ -102,7 +116,7 @@
                 </div>
                 <div class="basis-1/4">
                     <div class="mb-4">
-                        <x-select class="flex-1 ml-4" wire:model="horas_id">
+                        <x-select class="flex-1 ml-4" wire:model="horasid">
                             <option value="">{{__('Hours')}}</option>
                             @forelse ($horas as $item)
                             <option value="{{$item->horas_id}}">{{$item->horas_desde}} - {{$item->horas_hasta}}</option>
@@ -111,7 +125,7 @@
                             @endforelse
                         </x-select>
                     </div>
-                    <x-forms.input-error for="horas_id"/>
+                    <x-forms.input-error for="horasid"/>
                 </div>
                 <div class="basis-1/4">
                     <div class="mb-4">
@@ -128,7 +142,7 @@
                 </div>
                 <div class="basis-1/4">
                     <button type="button" wire:click="add"  wire:loading.attr="disabled" wire:target="add" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 disabled:opacity-65">
-                        Agrerar
+                        Agregar
                     </button>
                 </div>
             </div>

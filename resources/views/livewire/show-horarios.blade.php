@@ -56,7 +56,7 @@
                         <!-- Columnas de cabecera vacías -->
                         <th class="border p-2 w-40">{{ __('Hours') }}</th>
                         @foreach ( $dias as $dia )
-                            <th class="border p-[10px]">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}
+                            <th class="border border-black p-[10px]">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}
                                 <table>
                                     <tr>
                                         @foreach ($profesores as $profesor)
@@ -72,7 +72,7 @@
                             <td class="border text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
                             @foreach ( $dias as $dia )
                                 <td class="border p-0 text-center">
-                                    <table>
+                                    <table class="border border-black">
                                         <tr>
                                             @foreach ($profesores as $profesor)
                                                 @if (isset($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]))
@@ -358,193 +358,7 @@
     {{-- <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script> --}}
 
     <script>
-        // const {
-        //     ClassicEditor,
-        //     Essentials,
-        //     Bold,
-        //     Italic,
-        //     Font,
-        //     Paragraph
-        // } = CKEDITOR;
-
-        // ClassicEditor
-        //     .create( document.querySelector( '#editor' ), {
-        //         plugins: [ Essentials, Bold, Italic, Font, Paragraph ],
-        //         toolbar: [
-        //             'undo', 'redo', '|', 'bold', 'italic', '|',
-        //             'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
-        //         ]
-        //     } )
-        //     .then( /* ... */ )
-        //     .catch( /* ... */ );
-    </script>
-    <script>
-    //     document.addEventListener('DOMContentLoaded', function () {
-    //     let table = document.getElementById('horarios-table');
-    //     let cells = table.querySelectorAll('.grupo-cell');
-
-    //     cells.forEach(cell => {
-    //         cell.setAttribute('draggable', true);
-    //         cell.addEventListener('dragstart', function (e) {
-    //             e.dataTransfer.setData('text', JSON.stringify({
-    //                 id:       cell.dataset.id,
-    //                 dia:      cell.dataset.dia,
-    //                 hora:     cell.dataset.hora,
-    //                 grupo:    cell.dataset.grupo,
-    //                 profesor: cell.dataset.profesor,
-    //                 espacio: cell.dataset.espacio,
-    //             }));
-    //         });
-    //     });
-
-    //     table.addEventListener('dragover', function (e) {
-    //         e.preventDefault();
-    //     });
-
-    //     table.addEventListener('drop', function (e) {
-    //         e.preventDefault();
-    //         let data = JSON.parse(e.dataTransfer.getData('text'));
-    //         let targetCell = e.target.closest('.grupo-cell');
-
-    //         if (targetCell) {
-
-    //             let targetId = targetCell.dataset.id;
-    //             let targetDia = targetCell.dataset.dia;
-    //             let targetEspacio = targetCell.dataset.espacio;
-    //             let targetHora = targetCell.dataset.hora;
-    //             let targetGrupo = targetCell.dataset.grupo;
-    //             let targetProfesor = targetCell.dataset.profesor;
-    //             // Evitar cualquier cambio visual directo en las celdas
-    //             e.stopPropagation();
-    //             // Llamar a Livewire para actualizar el grupo
-    //             @this.updateGrupoHorario(targetId, targetDia, targetHora,data.grupo,targetProfesor,data.espacio,data.id);
-    //         }
-    //     });
-    // });
-    // document.addEventListener('DOMContentLoaded', function () {
-    //     let table = document.getElementById('horarios-table');
-    //     let cells = table.querySelectorAll('.grupo-cell');
-
-    //     // Permitir que las celdas sean arrastrables
-    //     cells.forEach(cell => {
-    //         cell.setAttribute('draggable', true);
-    //         cell.addEventListener('dragstart', function (e) {
-    //             e.dataTransfer.effectAllowed = 'move'; // Solo se permite mover
-    //             e.dataTransfer.setData('text/plain', JSON.stringify({
-    //                 id:       cell.dataset.id,
-    //                 dia:      cell.dataset.dia,
-    //                 hora:     cell.dataset.hora,
-    //                 grupo:    cell.dataset.grupo,
-    //                 profesor: cell.dataset.profesor,
-    //                 espacio:  cell.dataset.espacio,
-    //             }));
-    //         });
-    //     });
-
-    //     // Permitir que la tabla acepte el drop
-    //     table.addEventListener('dragover', function (e) {
-    //         e.preventDefault();
-    //         e.dataTransfer.dropEffect = 'move';
-    //     });
-
-    //     table.addEventListener('drop', function (e) {
-    //         e.preventDefault();
-    //         e.stopPropagation(); // Evitar comportamiento predeterminado
-
-    //         let data = JSON.parse(e.dataTransfer.getData('text/plain'));
-    //         let targetCell = e.target.closest('.grupo-cell');
-
-    //         if (targetCell) {
-    //             // Obtener datos de la celda destino
-    //             let targetId = targetCell.dataset.id;
-    //             let targetDia = targetCell.dataset.dia;
-    //             let targetHora = targetCell.dataset.hora;
-    //             let targetProfesor = targetCell.dataset.profesor;
-    //             let targetEspacio = targetCell.dataset.espacio;
-
-    //             // Llamar a Livewire para manejar la actualización
-    //             @this.updateGrupoHorario(targetId, targetDia, targetHora,data.grupo,targetProfesor,data.espacio,data.id)
-
-    //              // Opcional: Mostrar visualmente que la celda destino está procesando
-    //             targetCell.classList.add('updating');
-    //             setTimeout(() => targetCell.classList.remove('updating'), 1000);
-    //         }
-    //     });
-    // });
-
-    // document.addEventListener('DOMContentLoaded', function () {
-
-    //     let table = document.getElementById('horarios-table');
-    //     let cells = table.querySelectorAll('.grupo-cell');
-
-    //     // Permitir que las celdas sean arrastrables
-    //     cells.forEach(cell => {
-    //         cell.setAttribute('draggable', true);
-    //         cell.addEventListener('dragstart', function (e) {
-    //             e.dataTransfer.effectAllowed = 'move';
-    //             e.dataTransfer.setData('text/plain', JSON.stringify({
-    //                 id:       cell.dataset.id,
-    //                 dia:      cell.dataset.dia,
-    //                 hora:     cell.dataset.hora,
-    //                 grupo:    cell.dataset.grupo,
-    //                 profesor: cell.dataset.profesor,
-    //                 espacio:  cell.dataset.espacio,
-    //             }));
-    //             // Añadir una clase para resaltar la celda de origen
-    //             cell.classList.add('dragging');
-    //         });
-
-    //         cell.addEventListener('dragend', function () {
-    //             // Remover la clase después de finalizar el drag
-    //             cell.classList.remove('dragging');
-    //         });
-    //     });
-
-    //     // Permitir que la tabla acepte el drop
-    //     table.addEventListener('dragover', function (e) {
-    //         e.preventDefault();
-    //         e.dataTransfer.dropEffect = 'move';
-    //     });
-
-    //     table.addEventListener('drop', function (e) {
-    //         e.preventDefault();
-    //         e.stopPropagation();
-
-    //         let data = JSON.parse(e.dataTransfer.getData('text/plain'));
-    //         let targetCell = e.target.closest('.grupo-cell');
-
-    //         if (targetCell) {
-    //             let targetId = targetCell.dataset.id;
-    //             let targetDia = targetCell.dataset.dia;
-    //             let targetHora = targetCell.dataset.hora;
-    //             let targetProfesor = targetCell.dataset.profesor;
-    //             let targetEspacio = targetCell.dataset.espacio;
-
-    //             // Llamar a Livewire para manejar la actualización
-    //             console.log('✅ Llamando a Livewire para actualizar el horario');
-
-    //             // Llamar directamente a Livewire desde el frontend
-    //             Livewire.find('{{ $this->id }}').call('updateGrupoHorario', targetId, targetDia, targetHora, data.grupo, targetProfesor, data.espacio, data.id);
-
-    //             // Opcional: Mostrar visualmente que la celda destino está procesando
-    //             targetCell.classList.add('updating');
-    //             setTimeout(() => targetCell.classList.remove('updating'), 1000); // Remover después de 1s
-    //         }
-    //     });
-
-    //     // Inicializar al cargar la página
-    //     window.initializeDragAndDrop();
-
-    //     // Volver a inicializar después de una actualización de Livewire
-    //     document.addEventListener('livewire:update', () => {
-    //         window.initializeDragAndDrop();
-    //     });
-    // });
-
-    // Livewire.on('refreshHorario', () => {
-    //     console.log('🔄 Refrescando componente Livewire');
-    //     Livewire.restart();
-    // });
+    // Escuchar el evento de Livewire para inicializar el arrastre y la caída
 
     document.addEventListener('DOMContentLoaded', function () {
         const initializeDragAndDrop = () => {

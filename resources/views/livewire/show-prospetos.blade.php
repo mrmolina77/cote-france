@@ -9,10 +9,10 @@
                     <div class="flex items-center">
                         <span>{{__('Show')}}</span>
                         <x-select class="mx-2" wire:model="cant">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
+                            <option value="75">75</option>
+                            <option value="100">100</option>
                         </x-select>
                         <span>{{__('rows')}}</span>
                     </div>
@@ -279,11 +279,40 @@
                     </div>
                     <x-forms.input-error for="estatus_id"/>
                 </div>
+            @elseif ( $this->open_edit and isset($this->prospecto->seguimientos_id) and (int)$this->prospecto->seguimientos_id === 8)
+                <div>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Group')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="grupoid">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($grupos as $item)
+                            <option value="{{$item->grupo_id}}">{{$item->grupo_nombre}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                    </div>
+                    <x-forms.input-error for="grupo_id"/>
+                </div>
+                <div>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Course')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="prospecto.cursos_id">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($cursos as $item)
+                            <option value="{{$item->cursos_id}}">{{$item->cursos_descripcion}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                    </div>
+                    <x-forms.input-error for="cursos_id"/>
+                </div>
             @endif
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Modality')}}: " />
-                    <x-select class="flex-1 ml-4" wire:model="prospecto.modalidad_id">
+                    <x-select class="flex-1 ml-4" wire:model="modalidad_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($modalidades as $item)
                         <option value="{{$item->modalidad_id}}">{{$item->modalidad_nombre}}</option>

@@ -16,8 +16,10 @@ return new class extends Migration
         Schema::create('diarios', function (Blueprint $table) {
             $table->id('diarios_id');
             $table->unsignedBigInteger('horarios_id')->nullable();
+            $table->unsignedBigInteger('modalidades_id')->nullable();
             $table->longText('diarios_descripcion');
             $table->foreign('horarios_id')->references('horarios_id')->on('horarios');
+            $table->foreign('modalidades_id')->references('modalidad_id')->on('modalidades');
             $table->timestamps();
             $table->softDeletes();
         });

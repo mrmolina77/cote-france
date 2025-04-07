@@ -19,7 +19,7 @@ class ShowUsuarios extends Component
     public $sort = 'id';
     public $direction = 'asc';
     public $user;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
 
     public $open_edit = false;

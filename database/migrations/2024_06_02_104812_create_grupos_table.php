@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('grupo_libro_alumno')->nullable();
             $table->text('grupo_observacion')->nullable();
             $table->unsignedBigInteger('modalidad_id');
-            $table->unsignedBigInteger('estado_id');
+            $table->unsignedBigInteger('estado_id')->default(1);
             $table->foreign('modalidad_id')->references('modalidad_id')->on('modalidades');
             $table->foreign('estado_id')->references('estado_id')->on('estados');
             $table->timestamps();

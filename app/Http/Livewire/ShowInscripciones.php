@@ -17,7 +17,7 @@ class ShowInscripciones extends Component
     public $sort = 'inscripciones_id';
     public $direction = 'asc';
     public $inscripcion;
-    public $cant = 5;
+    public $cant = 25;
     public $readyToLoad = false;
 
     public $open_edit = false;
