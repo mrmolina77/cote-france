@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Capitulo;
 use App\Models\Grupo;
 use App\Models\Estado;
 use App\Models\Modalidad;
@@ -9,6 +10,7 @@ use App\Models\Espacio;
 use App\Models\GruposDetalles;
 use App\Models\Hora;
 use App\Models\Dia;
+use App\Models\Nivel;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -19,10 +21,10 @@ class ShowGrupos extends Component
     public $search = "";
     public $sort = 'grupo_id';
     public $direction = 'asc';
-    public $grupo,$espacios_id,$dias_id,$horas_id;
+    public $grupo,$espacios_id,$dias_id,$horasid,$nivelid,$diasid;
     public $cant = 25;
     public $readyToLoad = false;
-    public $detalles_grupos=array();
+    public $detalles_grupos=array(),$espacios,$arr_capitulos,$arr_horas,$arr_niveles;
     public $borrados=array();
 
     public $open_edit = false;
@@ -30,14 +32,23 @@ class ShowGrupos extends Component
 
     protected $rules = [
         'grupo.grupo_nombre'=>'required|min:3|max:50',
-        'grupo.grupo_nivel'=>'required|min:3|max:50',
-        'grupo.grupo_capitulo'=>'required|numeric',
+        'grupo.nivel_id'=>'required',
+        'grupo.capitulo_id'=>'required',
         'grupo.grupo_libro_maestro'=>'nullable|min:7|max:255',
         'grupo.grupo_libro_alumno'=>'nullable|min:7|max:255',
         'grupo.grupo_observacion'=>'nullable|min:7|max:255',
         'grupo.modalidad_id'=>'required',
         'grupo.estado_id'=>'required',
     ];
+
+
+    public function boot()
+    {
+
+        $this->espacios =  collect([]);
+        $this->arr_capitulos = collect([]);
+        $this->arr_horas = collect([]);
+    }
 
     public function updatingSearch(){
         $this->resetPage();
@@ -46,16 +57,16 @@ class ShowGrupos extends Component
     public function render()
     {
         if($this->readyToLoad){
-
-
             $grupos = DB::table('grupos')
-                        ->select('grupo_id','grupo_nombre','grupo_nivel','grupo_capitulo',
+                        ->select('grupo_id','grupo_nombre','nivel_descripcion','capitulo_descripcion',
                                  'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','modalidad_nombre','estado_nombre')
                         ->join('modalidades','grupos.modalidad_id','=','modalidades.modalidad_id')
                         ->join('estados','grupos.estado_id','=','estados.estado_id')
+                        ->join('niveles','grupos.nivel_id','=','niveles.nivel_id')
+                        ->join('capitulos','grupos.capitulo_id','=','capitulos.capitulo_id')
                         ->orWhere('grupos.grupo_nombre','like','%'.trim($this->search).'%')
-                        ->orWhere('grupos.grupo_nivel','like','%'.trim($this->search).'%')
-                        ->orWhere('grupos.grupo_capitulo','like','%'.trim($this->search).'%')
+                        ->orWhere('niveles.nivel_descripcion','like','%'.trim($this->search).'%')
+                        ->orWhere('capitulos.capitulo_descripcion','like','%'.trim($this->search).'%')
                         ->orWhere('modalidades.modalidad_nombre','like','%'.trim($this->search).'%')
                         ->orWhere('estados.estado_nombre','like','%'.trim($this->search).'%')
                         ->orderBy($this->sort,$this->direction)
@@ -67,18 +78,13 @@ class ShowGrupos extends Component
         $estados = Estado::all();
         $espacios =  collect([]);
         $dias = Dia::all();
-        $horas = Hora::all();
 
-        $arr_niveles = array('A1'=>'A1','A2'=>'A2','B1'=>'B1','B2'=>'B2','C1'=>'C1','C2'=>'C2');
-        $arr_capitulos = array('1er Capitulo'=>'1er Capitulo','2do Capitulo'=>'2do Capitulo','3er Capitulo'=>'3er Capitulo','4to Capitulo'=>'4to Capitulo','5to Capitulo'=>'5to Capitulo','6to Capitulo'=>'6to Capitulo','7mo Capitulo'=>'7mo Capitulo','8vo Capitulo'=>'8vo Capitulo','9no Capitulo'=>'9no Capitulo','10mo Capitulo'=>'10mo Capitulo');
+        $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
         return view('livewire.show-grupos',['grupos'=>$grupos
                                            ,'modalidades'=>$modalidades
                                            ,'espacios'=>$espacios
                                            ,'dias'=>$dias
-                                           ,'horas'=>$horas
-                                           ,'estados'=>$estados
-                                           ,'arr_niveles'=>$arr_niveles
-                                           ,'arr_capitulos'=>$arr_capitulos]);
+                                           ,'estados'=>$estados]);
     }
 
     public function loadPosts(){
@@ -100,7 +106,7 @@ class ShowGrupos extends Component
 
     public function edit($id){
         $grupo = Grupo::find($id);
-        $detalles = GruposDetalles::where('grupo_id',$id)->get();
+        $detalles = GruposDetalles::where('grupo_id',$id)->orderBy('dias_id','asc')->orderBy('horas_id','asc')->get();
         $this->detalles_grupos=[];
         foreach ($detalles as $detalle) {
             $this->detalles_grupos[]=[
@@ -113,7 +119,10 @@ class ShowGrupos extends Component
                 'espacio'=>$detalle->espacio->espacios_nombre,
             ];
         }
+        $this->nivelid = $grupo->nivel_id;
         $this->grupo = $grupo;
+        $this->arr_capitulos = Capitulo::where('nivel_id',$grupo->nivel_id)->get();
+
         $this->open_edit = true;
     }
 
@@ -140,7 +149,7 @@ class ShowGrupos extends Component
             $this->emit('alert','El grupo fue modificado satifactoriamente');
         } catch (\Throwable $th) {
             DB::rollBack(); // Revertir los cambios si algo falla
-            $this->emit('alert','El grupo presento problema no fue agregado satifactoriamente','Error!','error');
+            $this->emit('alert','El grupo presento problema no fue agregado satifactoriamente'.$th->getMessage(),'Error!','error');
         }
     }
 
@@ -166,41 +175,70 @@ class ShowGrupos extends Component
 
     public function add(){
         $validatedData = $this->validate([
-            'dias_id' => 'required',
-            'horas_id' => 'required',
+            'diasid' => 'required',
+            'horasid' => 'required',
             'espacios_id' => 'required',
         ]);
         // Verifica si ya existe un registro con los mismos valores
         $existe = collect($this->detalles_grupos)->contains(function ($registro) use ($validatedData) {
-            return $registro['dias_id'] === $validatedData['dias_id']
-                && $registro['horas_id'] === $validatedData['horas_id']
+            return $registro['dias_id'] === $validatedData['diasid']
+                && $registro['horas_id'] === $validatedData['horasid']
                 && $registro['espacios_id'] === $validatedData['espacios_id'];
         });
 
         if ($existe) {
             $this->addError('dias_id', "Ya existe en este grupo") ;
         } else {
-            $existe = GruposDetalles::where('dias_id',$validatedData['dias_id'])
-                                    ->where('horas_id',$validatedData['horas_id'])
+            $existe = GruposDetalles::where('dias_id',$validatedData['diasid'])
+                                    ->where('horas_id',$validatedData['horasid'])
                                     ->where('espacios_id',$validatedData['espacios_id'])->count();
             if ($existe > 0) {
                 $this->addError('dias_id', "Ya existe en otro grupo.") ;
             } else {
-                $dia = Dia::find($this->dias_id);
-                $hora = Hora::find($this->horas_id);
+                $dia = Dia::find($this->diasid);
+                $hora = Hora::find($this->horasid);
                 $espacio = Espacio::find($this->espacios_id);
                 $this->detalles_grupos[]=[
                     'detalles_id'=>0,
-                    'dias_id'=>$this->dias_id,
+                    'dias_id'=>$this->diasid,
                     'dia'=>$dia->dias_nombre,
-                    'horas_id'=>$this->horas_id,
+                    'horas_id'=>$this->horasid,
                     'hora'=>$hora->horas_desde .' - '.$hora->horas_hasta,
                     'espacios_id'=>$this->espacios_id,
                     'espacio'=>$espacio->espacios_nombre,
                 ];
-                $this->reset(['dias_id','horas_id','espacios_id']); // Revertir los cambios si algo falla
+                $this->reset(['diasid','horasid','espacios_id']); // Revertir los cambios si algo falla
             }
         }
+    }
+
+    public function updatedhorasid($horasid){
+        $espacios_registrados = GruposDetalles::where('horas_id',$horasid)->where('dias_id',$this->dias_id)->pluck('espacios_id');
+        $this->espacios = Espacio::wherenotIn('espacios_id',$espacios_registrados)->get();
+        if ($this->espacios->isEmpty()) {
+            $this->addError('espacios_id', "No hay espacios disponibles para esta hora") ;
+        }
+    }
+
+    public function updatedidnivel($idnivel){
+
+        $this->arr_capitulos = Capitulo::where('nivel_id',$idnivel)->get();
+        if ($this->arr_capitulos->isEmpty()) {
+            $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel") ;
+        }
+    }
+
+    public function updateddiasid($diasid){
+        if ($diasid == 6) {
+            $this->arr_horas = Hora::where('tipo', 2)->get();
+        } else {
+            $this->arr_horas = Hora::where('tipo', 1)->get();
+        }
+
+        if ($this->arr_horas->isEmpty()) {
+            $this->addError('horasid', "No hay horas disponibles para este dia") ;
+        }
+
     }
 
 }

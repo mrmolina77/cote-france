@@ -23,6 +23,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call(EstatuSeeder::class);
         $this->call(OrigenSeeder::class);
+        $this->call(NivelSeeder::class);
+        $this->call(CapituloSeeder::class);
+        $this->call(OrigenSeeder::class);
         $this->call(SeguimientoSeeder::class);
         $this->call(EstatuTareaSeeder::class);
         $this->call(CursoSeeder::class);

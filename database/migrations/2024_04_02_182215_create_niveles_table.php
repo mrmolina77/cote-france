@@ -13,13 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('horas', function (Blueprint $table) {
-            $table->id('horas_id');
-            $table->time('horas_desde')->nullable();
-            $table->time('horas_hasta')->nullable();
-            $table->tinyInteger('tipo');
+        Schema::create('niveles', function (Blueprint $table) {
+            $table->id('nivel_id');
+            $table->string('nivel_descripcion',100);
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -30,6 +27,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('horas');
+        Schema::dropIfExists('nivels');
     }
 };

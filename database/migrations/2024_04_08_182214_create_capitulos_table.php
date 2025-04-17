@@ -13,13 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('horas', function (Blueprint $table) {
-            $table->id('horas_id');
-            $table->time('horas_desde')->nullable();
-            $table->time('horas_hasta')->nullable();
-            $table->tinyInteger('tipo');
+        Schema::create('capitulos', function (Blueprint $table) {
+            $table->id('capitulo_id');
+            $table->string('capitulo_descripcion',100);
+            $table->string('capitulo_codigo',10);
+            $table->unsignedBigInteger('nivel_id');
+            $table->foreign('nivel_id')->references('nivel_id')->on('niveles');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('horas');
+        Schema::dropIfExists('capitulos');
     }
 };

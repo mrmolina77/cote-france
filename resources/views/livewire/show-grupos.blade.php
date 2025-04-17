@@ -56,9 +56,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('grupo_nivel')">
+                    wire:click="order('nivel_descripcion')">
                     Nivel
-                    @if ($sort == 'grupo_nivel')
+                    @if ($sort == 'nivel_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -69,9 +69,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('grupo_capitulo')">
+                    wire:click="order('capitulo_descripcion')">
                     Capitulo
-                    @if ($sort == 'grupo_capitulo')
+                    @if ($sort == 'capitulo_descripcion')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -123,10 +123,10 @@
                         {{$item->grupo_nombre}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->grupo_nivel}}
+                        {{ucfirst($item->nivel_descripcion)}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        {{$item->grupo_capitulo}}
+                        {{ucfirst($item->capitulo_descripcion)}}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->modalidad_nombre}}
@@ -214,10 +214,10 @@
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Level')}}: " />
-                        <x-select class="flex-1 ml-4" wire:model="grupo.grupo_nivel">
+                        <x-select class="flex-1 ml-4" wire:model="nivelid">
                             <option value="">{{__('Select')}}</option>
                             @forelse ($arr_niveles as $key => $item)
-                            <option value="{{$key}}">{{$item}}</option>
+                            <option value="{{$key}}">{{ucfirst($item)}} </option>
                             @empty
                             <option value="">{{__('No Content')}}</option>
                             @endforelse
@@ -228,10 +228,10 @@
                 <div>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Chapter')}}: " />
-                        <x-select class="flex-1 ml-4" wire:model="grupo.grupo_capitulo">
+                        <x-select class="flex-1 ml-4" wire:model="grupo.capitulo_id">
                             <option value="">{{__('Select')}}</option>
-                            @forelse ($arr_capitulos as $key => $item)
-                            <option value="{{$key}}">{{$item}}</option>
+                            @forelse ($arr_capitulos as $item)
+                            <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
                             @empty
                             <option value="">{{__('No Content')}}</option>
                             @endforelse
@@ -308,7 +308,7 @@
                 <div class="flex flex-row">
                     <div class="basis-1/4">
                         <div class="mb-4">
-                            <x-select class="flex-1 ml-4" wire:model="dias_id">
+                            <x-select class="flex-1 ml-4" wire:model="diasid">
                                 <option value="">{{__('Day')}}</option>
                                 @forelse ($dias as $item)
                                 <option value="{{$item->dias_id}}">{{$item->dias_nombre}}</option>
@@ -317,20 +317,20 @@
                                 @endforelse
                             </x-select>
                         </div>
-                        <x-forms.input-error for="dias_id"/>
+                        <x-forms.input-error for="diasid"/>
                     </div>
                     <div class="basis-1/4">
                         <div class="mb-4">
-                            <x-select class="flex-1 ml-4" wire:model="horas_id">
+                            <x-select class="flex-1 ml-4" wire:model="horasid">
                                 <option value="">{{__('Hours')}}</option>
-                                @forelse ($horas as $item)
+                                @forelse ($arr_horas as $item)
                                 <option value="{{$item->horas_id}}">{{$item->horas_desde}} - {{$item->horas_hasta}}</option>
                                 @empty
                                 <option value="">{{__('No Content')}}</option>
                                 @endforelse
                             </x-select>
                         </div>
-                        <x-forms.input-error for="horas_id"/>
+                        <x-forms.input-error for="horasid"/>
                     </div>
                     <div class="basis-1/4">
                         <div class="mb-4">

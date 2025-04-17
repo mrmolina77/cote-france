@@ -19,38 +19,92 @@ class HoraSeeder extends Seeder
         Hora::create([
             'horas_desde' =>'08:00:00',
             'horas_hasta' =>'09:30:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'09:30:00',
             'horas_hasta' =>'11:00:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'11:00:00',
             'horas_hasta' =>'12:30:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'12:30:00',
             'horas_hasta' =>'14:00:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'14:00:00',
             'horas_hasta' =>'15:30:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'15:30:00',
             'horas_hasta' =>'17:00:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'17:00:00',
             'horas_hasta' =>'18:30:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'18:30:00',
             'horas_hasta' =>'20:00:00',
+            'tipo' => 1,
         ]);
         Hora::create([
             'horas_desde' =>'20:00:00',
             'horas_hasta' =>'21:30:00',
+            'tipo' => 1,
+        ]);
+        Hora::create([
+            'horas_desde' =>'09:00:00',
+            'horas_hasta' =>'10:30:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'10:30:00',
+            'horas_hasta' =>'12:00:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'12:00:00',
+            'horas_hasta' =>'13:30:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'13:30:00',
+            'horas_hasta' =>'15:00:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'15:00:00',
+            'horas_hasta' =>'16:30:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'16:30:00',
+            'horas_hasta' =>'18:00:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'18:00:00',
+            'horas_hasta' =>'19:30:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'19:30:00',
+            'horas_hasta' =>'21:00:00',
+            'tipo' => 2,
+        ]);
+        Hora::create([
+            'horas_desde' =>'21:00:00',
+            'horas_hasta' =>'22:30:00',
+            'tipo' => 2,
         ]);
     }
 }

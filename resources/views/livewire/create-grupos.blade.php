@@ -19,30 +19,30 @@
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Level')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="grupo_nivel">
+                    <x-select class="flex-1 ml-4" wire:model="idnivel">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($arr_niveles as $key => $item)
-                        <option value="{{$key}}">{{$item}}</option>
+                        <option value="{{$key}}">{{ucfirst($item)}} </option>
                         @empty
                         <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="grupo_nivel"/>
+                <x-forms.input-error for="idnivel"/>
             </div>
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Chapter')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="grupo_capitulo">
+                    <x-select class="flex-1 ml-4" wire:model="id_capitulo">
                         <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_capitulos as $key => $item)
-                        <option value="{{$key}}">{{$item}}</option>
+                        @forelse ($arr_capitulos as $item)
+                        <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
                         @empty
                         <option value="">{{__('No Content')}}</option>
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="grupo_capitulo"/>
+                <x-forms.input-error for="id_capitulo"/>
             </div>
             <div>
                 <div class="mb-4 flex">
@@ -103,7 +103,7 @@
             <div class="flex flex-row">
                 <div class="basis-1/4">
                     <div class="mb-4">
-                        <x-select class="flex-1 ml-4" wire:model="dias_id">
+                        <x-select class="flex-1 ml-4" wire:model="diasid">
                             <option value="">{{__('Day')}}</option>
                             @forelse ($dias as $item)
                             <option value="{{$item->dias_id}}">{{$item->dias_nombre}}</option>
@@ -112,13 +112,13 @@
                             @endforelse
                         </x-select>
                     </div>
-                    <x-forms.input-error for="dias_id"/>
+                    <x-forms.input-error for="diasid"/>
                 </div>
                 <div class="basis-1/4">
                     <div class="mb-4">
                         <x-select class="flex-1 ml-4" wire:model="horasid">
                             <option value="">{{__('Hours')}}</option>
-                            @forelse ($horas as $item)
+                            @forelse ($arr_horas as $item)
                             <option value="{{$item->horas_id}}">{{$item->horas_desde}} - {{$item->horas_hasta}}</option>
                             @empty
                             <option value="">{{__('No Content')}}</option>
