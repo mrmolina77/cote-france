@@ -6,7 +6,6 @@ use App\Models\Dia;
 use App\Models\Diario;
 use App\Models\Espacio;
 use App\Models\Grupo;
-use App\Models\GruposDetalles;
 use App\Models\Hora;
 use App\Models\Horario;
 use App\Models\Plan;
@@ -27,7 +26,7 @@ class ShowHorarios extends Component
     public $diarios_horarios_id,$diarios_descripcion;
     public $plan, $diario, $semanal,$year;
     public $semana,$inicio,$fin,$profesores_id;
-    public $porcentajes, $dimenciones,$porcentaje;
+    public $porcentajes, $dimenciones,$porcentaje = 0;
     public $ocupados, $modalidad;
     protected $listeners = ['render','delete'];
 
@@ -69,7 +68,8 @@ class ShowHorarios extends Component
     public function render()
     {
         $espacios = Espacio::all();
-        $horas = Hora::all();
+        $horas = Hora::where('tipo',1)->orderBy('horas_id', 'asc')->get();
+        $horas2 = Hora::where('tipo',2)->orderBy('horas_id', 'asc')->get();
         $horarios = Horario::where('horarios_dia','>=', $this->inicio)
         ->where('horarios_dia','<=', $this->fin)
         ->orderBy('horarios_dia', 'asc')
@@ -78,6 +78,11 @@ class ShowHorarios extends Component
         ->get();
         $array_horario = array();
         foreach ($horarios as $horario) {
+            if($horario->grupo->modalidad_id == 1){
+                $color = 'bg-green-100';
+            } else {
+                $color = 'bg-red-100';
+            }
             $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->profesores_id] = [ 'nombre'=>$horario->grupo->grupo_nombre
                                                                                                  ,'color'=>$horario->profesor->profesores_color
                                                                                                  ,'espacios_id'=>$horario->espacios_id
@@ -85,6 +90,7 @@ class ShowHorarios extends Component
                                                                                                  ,'espacio'=>$horario->espacio->espacios_nombre
                                                                                                  ,'enlace'=>$horario->espacio->espacios_enlace
                                                                                                  ,'modalidad'=>$horario->espacio->modalidad_id
+                                                                                                 ,'bgcolor'=>$color
                                                                                                  ,'id'=>$horario->horarios_id
                                                                                                 ];
         }
@@ -93,15 +99,19 @@ class ShowHorarios extends Component
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
         $grupos = Grupo::where('modalidad_id',$this->modalidad)->where('estado_id',1)->get();
         $profesores = Profesor::where('modalidad_id',$this->modalidad)->get();
-        $dias = Dia::all();
+        $dias = Dia::take(5)->get();
+        $dias2 = Dia::offset(5)->limit(5)->get();
+        // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
                                            ,'horas'=>$horas
+                                           ,'horas2'=>$horas2
                                            ,'horarios'=>$array_horario
                                            ,'grupos'=>$grupos
                                            ,'grupo_deta'=>$grupo_deta
                                            ,'profesores'=>$profesores
                                            ,'dias'=>$dias
+                                           ,'dias2'=>$dias2
                                            ,'fecha'=>$this->fecha
                                             ]);
     }
@@ -233,29 +243,61 @@ class ShowHorarios extends Component
             $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->grupo_id][$horario->profesores_id] = $horario->horarios_id;
         }
 
-        // dd($array_horario);
+       if($modalidad == 2){
+           $detalles = DB::table('grupos_detalles')
+                               ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
+                               ->where('grupos.modalidad_id', $modalidad)
+                               ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
+                               ->orderBy('grupos_detalles.grupo_id', 'asc')
+                               ->orderBy('grupos_detalles.dias_id', 'asc')
+                               ->orderBy('grupos_detalles.horas_id', 'asc')
+                               ->get();
 
-        $detalles = DB::table('grupos_detalles')
-                            ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
-                            ->where('grupos.modalidad_id', $modalidad)
-                            ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
-                            ->get();
+                            } else {
+           $detalles = DB::table('grupos_detalles')
+                               ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
+                               ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
+                               ->orderBy('grupos_detalles.grupo_id', 'asc')
+                               ->orderBy('grupos_detalles.dias_id', 'asc')
+                               ->orderBy('grupos_detalles.horas_id', 'asc')
+                               ->get();
+        }
+
 
         $cantidad=[];
         foreach ($detalles as $item) {
-            $evaluar = \Carbon\Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
-            $proveedor = $this->obtenerProveedores($evaluar,$modalidad);
-            // dd($array_horario);
-            if(! isset($array_horario[$evaluar][$item->horas_id][$item->grupo_id])){
-                if(!isset($cantidad[$evaluar])){
-                    $cantidad[$evaluar]=0;
-                } else {
-                    $cantidad[$evaluar]+= 1;
+            // Fecha exacta del día de la semana del detalle
+            $evaluar = Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
+
+            // Profesores disponibles para ese día
+            $profesores = $this->obtenerProfesores($evaluar,$item->horas_id, $modalidad)->values(); // asegura índices consecutivos
+
+            // Si ese grupo ya tiene asignación para ese día y hora, lo saltamos
+            if (!isset($array_horario[$evaluar][$item->horas_id][$item->grupo_id])) {
+
+                // Inicializar contador para esa combinación día + hora
+                if (!isset($cantidad[$evaluar][$item->horas_id])) {
+                    $cantidad[$evaluar][$item->horas_id] = 0;
                 }
-                $grupo_deta[$item->dias_id][$item->horas_id][$proveedor[$cantidad[$evaluar]]]=[
-                                                'grupo_id'=>$item->grupo_id
-                                               ,'espacios_id'=>$item->espacios_id
-                                               ,'grupo_nombre'=>$item->grupo_nombre];
+
+                $index = $cantidad[$evaluar][$item->horas_id];
+
+                if (isset($profesores[$index])) {
+                    if($item->modalidad_id == 1){
+                        $color = 'bg-green-100';
+                    } else {
+                        $color = 'bg-red-100';
+
+                    }
+                    $grupo_deta[$item->dias_id][$item->horas_id][$profesores[$index]] = [
+                        'grupo_id' => $item->grupo_id,
+                        'espacios_id' => $item->espacios_id,
+                        'grupo_nombre' => $item->grupo_nombre,
+                        'color' => $color,
+                    ];
+                    // Incrementar para el siguiente grupo en esta hora y día
+                    $cantidad[$evaluar][$item->horas_id]++;
+                }
             }
         }
 
@@ -319,12 +361,13 @@ class ShowHorarios extends Component
         }
     }
 
-    public function obtenerProveedores($fecha,$modalidad_id)
+    public function obtenerProfesores($fecha,$hora,$modalidad_id)
     {
-        $profesores = Profesor::whereNotIn('profesores_id', function ($query) use ($fecha) {
+        $profesores = Profesor::whereNotIn('profesores_id', function ($query) use ($fecha, $hora) {
             $query->select('profesores_id')
                 ->from('horarios')
-                ->whereDate('horarios.horarios_dia', $fecha);
+                ->whereDate('horarios.horarios_dia', $fecha)
+                ->where('horas_id', $hora);
         })->where('modalidad_id',$modalidad_id)->pluck('profesores_id');
         return $profesores;
     }
