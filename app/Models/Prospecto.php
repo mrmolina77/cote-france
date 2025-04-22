@@ -52,6 +52,16 @@ class Prospecto extends Model
         return $this->belongsTo(Horario::class, 'horarios_id', 'horarios_id');
     }
 
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class, 'prospectos_id', 'prospectos_id');
+    }
+
+    public function evaluaciones()
+    {
+        return $this->hasMany(Evaluacion::class, 'prospectos_id', 'prospectos_id');
+    }
+
     /**
      * Route notifications for the mail channel.
      *

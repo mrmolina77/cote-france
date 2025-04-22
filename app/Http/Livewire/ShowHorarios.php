@@ -8,8 +8,10 @@ use App\Models\Espacio;
 use App\Models\Grupo;
 use App\Models\Hora;
 use App\Models\Horario;
+use App\Models\Inscripcion;
 use App\Models\Plan;
 use App\Models\Profesor;
+use App\Models\Prospecto;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -27,7 +29,8 @@ class ShowHorarios extends Component
     public $plan, $diario, $semanal,$year;
     public $semana,$inicio,$fin,$profesores_id;
     public $porcentajes, $dimenciones,$porcentaje = 0;
-    public $ocupados, $modalidad;
+    public $ocupados, $modalidad,$asistencias;
+    public $estudiantes;
     protected $listeners = ['render','delete'];
 
     public function boot()
@@ -56,6 +59,8 @@ class ShowHorarios extends Component
 
     public function mount($modalidad){
         $this->modalidad = $modalidad;
+        $this->asistencias = collect([]);
+        $this->estudiantes = collect([]);
     }
 
     public function updatedYdiario($value)
@@ -181,7 +186,23 @@ class ShowHorarios extends Component
     }
 
     public function editDiario($id){
+
         $this->diario = Diario::where('horarios_id',$id)->first();
+
+        $horario = Horario::where('horarios_id',$id)->first();
+
+        $grupoId = $horario->grupo_id;
+
+        $prospectos = Prospecto::whereHas('inscripciones', function($query) use ($grupoId) {
+            $query->where('grupo_id', $grupoId);
+        })
+        ->with('evaluaciones')
+        ->get();
+
+        // dd($prospectos);
+
+        $this->estudiantes = $prospectos;
+
         if($this->diario){
             $this->diarios_horarios_id = $id;
             $this->diarios_descripcion = $this->diario->diarios_descripcion;

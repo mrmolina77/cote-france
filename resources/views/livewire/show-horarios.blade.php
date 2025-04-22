@@ -312,7 +312,7 @@
             </table>
         @endif
     </div>
-    <x-dialog-modal wire:model="open_edit">
+    <x-dialog-modal  wire:model="open_edit">
         <x-slot name="title">
             Agregar diario
         </x-slot>
@@ -370,6 +370,47 @@
                     </x-forms.textarea>
                 </div>
                 <x-forms.input-error for="diarios_descripcion"/>
+            </div>
+            <div class="relative overflow-x-auto">
+                <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 rounded-s-lg">
+                                Estudiante
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                Asistio
+                            </th>
+                            <th scope="col" class="px-6 py-3 rounded-e-lg">
+                                Calificación
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{-- @dd($estudiantes) --}}
+                        @if ( isset($estudiantes) and  count($estudiantes) > 0 )
+                            @foreach ( $estudiantes as $estudiante )
+                                <tr class="bg-white dark:bg-gray-800">
+                                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                        {{$estudiante->prospectos_nombres}} {{$estudiante->prospectos_apellidos}}
+                                    </th>
+                                    <td class="px-6 py-4">
+                                        <x-checkbox id="asistio" wire:model="asistio" />
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <x-input class="text-sm" id="calificacion" maxlength="3" wire:model="calificacion" />
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="3" class="text-center py-4">
+                                    {{__('No hay estudiantes disponibles')}}
+                                </td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
             </div>
 
         </x-slot>

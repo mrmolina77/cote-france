@@ -34,4 +34,9 @@ class Inscripcion extends Model
         return $this->belongsTo(Curso::class,'cursos_id','cursos_id');
     }
 
+    public function grupo()
+    {
+        return $this->belongsTo(Grupo::class,'grupo_id','grupo_id');
+    }
+
 }

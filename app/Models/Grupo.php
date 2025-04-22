@@ -31,5 +31,10 @@ class Grupo extends Model
     {
         return $this->belongsTo(Modalidad::class,'modalidad_id','modalidad_id');
     }
-    
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class, 'grupo_id', 'grupo_id');
+    }
+
 }
