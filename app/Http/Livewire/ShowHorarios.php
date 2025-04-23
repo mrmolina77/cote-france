@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Dia;
 use App\Models\Diario;
 use App\Models\Espacio;
+use App\Models\Evaluacion;
 use App\Models\Grupo;
 use App\Models\Hora;
 use App\Models\Horario;
@@ -29,9 +30,14 @@ class ShowHorarios extends Component
     public $plan, $diario, $semanal,$year;
     public $semana,$inicio,$fin,$profesores_id;
     public $porcentajes, $dimenciones,$porcentaje = 0;
-    public $ocupados, $modalidad,$asistencias;
-    public $estudiantes;
+    public $ocupados, $modalidad;
+    // $asistencias;
+    // public $estudiantes;
     protected $listeners = ['render','delete'];
+    public $estudiantes = [];
+    public $asistencias = [];
+    public $calificaciones = [];
+    public $evaluaciones = [];
 
     public function boot()
     {
@@ -59,7 +65,6 @@ class ShowHorarios extends Component
 
     public function mount($modalidad){
         $this->modalidad = $modalidad;
-        $this->asistencias = collect([]);
         $this->estudiantes = collect([]);
     }
 
@@ -172,18 +177,32 @@ class ShowHorarios extends Component
         $this->emit('alert','El horario fue eliminado satifactoriamente');
     }
 
-    public function editPlan($id){
-        $this->plan = Plan::where('horarios_id',$id)->first();
-        if($this->plan){
-            $this->planes_horarios_id = $id;
-            $this->planes_descripcion = $this->plan->planes_descripcion;
-        } else {
-            $this->planes_horarios_id = $id;
-            $this->planes_descripcion = "";
+    public function editPlan($id)
+{
+    $horarioBase = Horario::findOrFail($id);
 
-        }
-        $this->open_edit_plan = true;
-    }
+    // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
+    $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
+    ->where('horas_id', $horarioBase->horas_id)
+    ->whereRaw('WEEKDAY(horarios_dia) = WEEKDAY(?)', [$horarioBase->horarios_dia])
+    ->whereDate('horarios_dia', '<=', Carbon::today())
+    ->orderBy('horarios_dia', 'desc') // 👈 orden descendente por día
+    ->pluck('horarios_id');
+
+    // Traemos las evaluaciones con sus relaciones
+    $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario'])
+        ->whereIn('horarios_id', $horariosRelacionados)
+        ->get()
+        ->groupBy('horarios_id');
+
+    // Convertimos las colecciones anidadas a arrays planos para que Livewire los maneje bien
+    $this->evaluaciones = $evaluaciones
+        ->map(fn($items) => $items->values()->toArray())
+        ->toArray();
+
+    $this->open_edit_plan = true;
+}
+
 
     public function editDiario($id){
 
@@ -203,14 +222,17 @@ class ShowHorarios extends Component
 
         $this->estudiantes = $prospectos;
 
-        if($this->diario){
-            $this->diarios_horarios_id = $id;
-            $this->diarios_descripcion = $this->diario->diarios_descripcion;
-        } else {
-            $this->diarios_horarios_id = $id;
-            $this->diarios_descripcion = "";
+        foreach ($prospectos as $prospecto) {
+            $evaluacion = $prospecto->evaluaciones
+                ->where('horarios_id', $id)
+                ->first();
 
+            $this->asistencias[$prospecto->prospectos_id] = $evaluacion?->asistio ?? false;
+            $this->calificaciones[$prospecto->prospectos_id] = $evaluacion?->calificacion ?? '';
         }
+
+        $this->diarios_horarios_id = $id;
+        $this->diarios_descripcion = $this->diario?->diarios_descripcion ?? "";
         $this->open_edit_diario = true;
     }
     public function savePlan(){
@@ -235,6 +257,27 @@ class ShowHorarios extends Component
         $validated = $this->validate([
             'diarios_descripcion'=>'required|min:15|max:550',
         ]);
+
+        foreach ($this->estudiantes as $estudiante) {
+            $id = $estudiante->prospectos_id; // o $estudiante->prospectos_id si ese es el nombre real
+
+            // Toma los valores desde los arrays de inputs
+            $asistio = $this->asistencias[$id] ?? false;
+            $calificacion = $this->calificaciones[$id] ?? null;
+
+            // Guarda o actualiza la evaluación del estudiante para este horario
+            Evaluacion::updateOrCreate(
+                [
+                    'prospectos_id' => $id,
+                    'horarios_id' => $this->diarios_horarios_id,
+                ],
+                [
+                    'asistio' => $asistio,
+                    'calificacion' => $calificacion,
+                ]
+            );
+        }
+
         if($this->diario){
             $this->diario->horarios_id = $this->diarios_horarios_id;
             $this->diario->diarios_descripcion = $this->diarios_descripcion;

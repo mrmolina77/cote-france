@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class evaluacion extends Model
+class Evaluacion extends Model
 {
     use HasFactory;
 
@@ -23,5 +23,10 @@ class evaluacion extends Model
     public function prospecto()
     {
         return $this->belongsTo(Prospecto::class, 'prospectos_id', 'prospectos_id');
+    }
+
+    public function horario()
+    {
+    return $this->belongsTo(Horario::class, 'horarios_id', 'horarios_id');
     }
 }

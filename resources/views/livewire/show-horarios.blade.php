@@ -375,40 +375,32 @@
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" class="px-6 py-3 rounded-s-lg">
+                            <th scope="col" class="px-6 py-3 rounded-s-lg w-1/2">
                                 Estudiante
                             </th>
-                            <th scope="col" class="px-6 py-3">
-                                Asistio
+                            <th scope="col" class="px-4 py-3 text-center">
+                                Asistió
                             </th>
-                            <th scope="col" class="px-6 py-3 rounded-e-lg">
+                            <th scope="col" class="px-4 py-3 rounded-e-lg text-center">
                                 Calificación
                             </th>
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- @dd($estudiantes) --}}
-                        @if ( isset($estudiantes) and  count($estudiantes) > 0 )
-                            @foreach ( $estudiantes as $estudiante )
-                                <tr class="bg-white dark:bg-gray-800">
-                                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{$estudiante->prospectos_nombres}} {{$estudiante->prospectos_apellidos}}
-                                    </th>
-                                    <td class="px-6 py-4">
-                                        <x-checkbox id="asistio" wire:model="asistio" />
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <x-input class="text-sm" id="calificacion" maxlength="3" wire:model="calificacion" />
-                                    </td>
-                                </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="3" class="text-center py-4">
-                                    {{__('No hay estudiantes disponibles')}}
+                        @foreach ($estudiantes as $estudiante)
+                            <tr class="bg-white dark:bg-gray-800">
+                                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white w-1/2">
+                                    {{ $estudiante->prospectos_nombres }} {{ $estudiante->prospectos_apellidos }}
+                                </th>
+                                <td class="px-4 py-4 text-center">
+                                    <x-checkbox  wire:model="asistencias.{{ $estudiante->prospectos_id }}" />
+                                </td>
+                                <td class="px-4 py-4 text-center">
+                                    <x-input  wire:model="calificaciones.{{ $estudiante->prospectos_id }}"
+                                            class="h-10 w-12 text-sm text-center" maxlength="3" />
                                 </td>
                             </tr>
-                        @endif
+                        @endforeach
                     </tbody>
                 </table>
             </div>
@@ -429,31 +421,56 @@
         <x-slot name="title">
             Actualizar plan
         </x-slot>
+
         <x-slot name="content">
+            <div class="max-h-96 overflow-y-auto p-4 border rounded-lg shadow bg-white dark:bg-gray-800">
+                @foreach($evaluaciones as $horarioId => $items)
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Horario ID: {{ $horarioId }}</h3>
 
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label for="planes_descripcion" value="{{__('Description')}}: " />
-                    <x-forms.textarea id="planes_descripcion" rows="8" class="flex-1 ml-4" wire:model="planes_descripcion" id="planes_descripcion">
-                    </x-forms.textarea>
-                </div>
-                <x-forms.input-error for="planes_descripcion"/>
+                        @php
+                            $firstItem = $items[0] ?? null;
+                            $descripcion = $firstItem['horario']['diario']['diarios_descripcion'] ?? 'Sin diario';
+                        @endphp
+
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
+                            Descripción: {{ $descripcion }}
+                        </p>
+
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                                <tr>
+                                    <th class="px-4 py-2">Estudiante</th>
+                                    <th class="px-4 py-2">Asistencia</th>
+                                    <th class="px-4 py-2">Calificación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($items as $eval)
+                                    <tr class="bg-white dark:bg-gray-800 border-b">
+                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
+                                            {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
+                                            {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
+                                        </td>
+                                        <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
+                                        <td class="px-4 py-2">{{ $eval['calificacion'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endforeach
             </div>
-
         </x-slot>
+
         <x-slot name="footer">
-            <x-forms.red-button wire:click="$set('open_edit_plan',false)">
-                {{__('Cancel')}}
+            <x-forms.red-button wire:click="$set('open_edit_plan', false)">
+                {{ __('Cancel') }}
             </x-forms.red-button>
-            <x-forms.blue-button wire:click="savePlan"  wire:loading.attr="disabled" wire:click="savePlan" class="disabled:opacity-65">
-                {{__('Update')}}
-            </x-forms.blue-button>
-            {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
     </x-dialog-modal>
-    @push('css')
-        <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css" />
-    @endpush
+
+
     @push('js');
     <script>
         livewire.on('deleteHorario',itemId=>{

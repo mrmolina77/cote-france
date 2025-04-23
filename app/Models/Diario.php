@@ -24,4 +24,10 @@ class Diario extends Model
     */
    protected $primaryKey = 'diarios_id';
 
+   public function diario()
+    {
+        return $this->hasOne(Diario::class, 'horarios_id', 'horarios_id');
+    }
+
+
 }

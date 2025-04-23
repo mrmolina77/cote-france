@@ -41,4 +41,8 @@ class Horario extends Model
     {
         return $this->belongsTo(Grupo::class,'grupo_id','grupo_id');
     }
+    public function diario()
+{
+    return $this->hasOne(Diario::class, 'horarios_id', 'horarios_id');
+}
 }
