@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Models\Capitulo;
 use App\Models\Dia;
 use App\Models\Diario;
 use App\Models\Espacio;
@@ -10,6 +11,7 @@ use App\Models\Grupo;
 use App\Models\Hora;
 use App\Models\Horario;
 use App\Models\Inscripcion;
+use App\Models\Nivel;
 use App\Models\Plan;
 use App\Models\Profesor;
 use App\Models\Prospecto;
@@ -30,7 +32,10 @@ class ShowHorarios extends Component
     public $plan, $diario, $semanal,$year;
     public $semana,$inicio,$fin,$profesores_id;
     public $porcentajes, $dimenciones,$porcentaje = 0;
-    public $ocupados, $modalidad;
+    public $ocupados, $modalidad, $arr_capitulos;
+    public $arr_niveles;
+    public $idnivel;
+    public $id_capitulo;
     // $asistencias;
     // public $estudiantes;
     protected $listeners = ['render','delete'];
@@ -51,6 +56,7 @@ class ShowHorarios extends Component
         $this->fin = $this->fecha->endOfWeek()->toDateString();
         $this->fecha = Carbon::now();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
+        $this->arr_capitulos = collect([]);
         $this->porcentajes[]="100%";
         $this->porcentajes[]="95%";
         $this->porcentajes[]="90%";
@@ -66,6 +72,8 @@ class ShowHorarios extends Component
     public function mount($modalidad){
         $this->modalidad = $modalidad;
         $this->estudiantes = collect([]);
+        $this->arr_capitulos = collect([]);
+        $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
     }
 
     public function updatedYdiario($value)
@@ -184,8 +192,8 @@ class ShowHorarios extends Component
     // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
     $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
     ->where('horas_id', $horarioBase->horas_id)
-    ->whereRaw('WEEKDAY(horarios_dia) = WEEKDAY(?)', [$horarioBase->horarios_dia])
-    ->whereDate('horarios_dia', '<=', Carbon::today())
+    // ->whereRaw('WEEKDAY(horarios_dia) = WEEKDAY(?)', [$horarioBase->horarios_dia])
+    ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
     ->orderBy('horarios_dia', 'desc') // 👈 orden descendente por día
     ->pluck('horarios_id');
 
@@ -200,6 +208,8 @@ class ShowHorarios extends Component
         ->map(fn($items) => $items->values()->toArray())
         ->toArray();
 
+    // dd($this->evaluaciones);
+
     $this->open_edit_plan = true;
 }
 
@@ -211,6 +221,8 @@ class ShowHorarios extends Component
         $horario = Horario::where('horarios_id',$id)->first();
 
         $grupoId = $horario->grupo_id;
+
+        $grupo = Grupo::find($grupoId);
 
         $prospectos = Prospecto::whereHas('inscripciones', function($query) use ($grupoId) {
             $query->where('grupo_id', $grupoId);
@@ -233,30 +245,43 @@ class ShowHorarios extends Component
 
         $this->diarios_horarios_id = $id;
         $this->diarios_descripcion = $this->diario?->diarios_descripcion ?? "";
+        $nivelesid = $grupo->nivel_id;
+        $capitulos_id = $grupo->capitulo_id;
+        $this->idnivel = $this->diario?->niveles_id ?? $nivelesid;
+        $this->arr_capitulos = Capitulo::where('nivel_id', $this->idnivel)->get();
+        $this->id_capitulo = $this->diario?->capitulos_id ?? $capitulos_id;
+
+        // dd($this->id_capitulo,$this->idnivel);
+
+        $grupoId = $horario->grupo_id;
         $this->open_edit_diario = true;
     }
-    public function savePlan(){
-        $validated = $this->validate([
-            'planes_descripcion'=>'required|min:15|max:550',
-        ]);
-        if($this->plan){
-            $this->plan->horarios_id = $this->planes_horarios_id;
-            $this->plan->planes_descripcion = $this->planes_descripcion;
-            $this->plan->save();
-        } else {
-            $asistencia = Plan::create([
-                'horarios_id' => $this->planes_horarios_id,
-                'planes_descripcion' => $this->planes_descripcion,
-            ]);
-        }
-        $this->reset(['open_edit_plan','planes_horarios_id','planes_descripcion']);
-        $this->emit('alert','El plan fue actualización satisfactoriamente');
-    }
+    // public function savePlan(){
+    //     $validated = $this->validate([
+    //         'planes_descripcion'=>'required|min:15|max:550',
+    //     ]);
+    //     if($this->plan){
+    //         $this->plan->horarios_id = $this->planes_horarios_id;
+    //         $this->plan->planes_descripcion = $this->planes_descripcion;
+    //         $this->plan->save();
+    //     } else {
+    //         $asistencia = Plan::create([
+    //             'horarios_id' => $this->planes_horarios_id,
+    //             'planes_descripcion' => $this->planes_descripcion,
+    //         ]);
+    //     }
+    //     $this->reset(['open_edit_plan','planes_horarios_id','planes_descripcion']);
+    //     $this->emit('alert','El plan fue actualización satisfactoriamente');
+    // }
 
     public function saveDiario(){
         $validated = $this->validate([
             'diarios_descripcion'=>'required|min:15|max:550',
+            'idnivel'=>'required',
+            'id_capitulo'=>'required',
         ]);
+
+        // dd($this->idnivel,$this->id_capitulo);
 
         foreach ($this->estudiantes as $estudiante) {
             $id = $estudiante->prospectos_id; // o $estudiante->prospectos_id si ese es el nombre real
@@ -281,14 +306,28 @@ class ShowHorarios extends Component
         if($this->diario){
             $this->diario->horarios_id = $this->diarios_horarios_id;
             $this->diario->diarios_descripcion = $this->diarios_descripcion;
+            $this->diario->niveles_id = $this->idnivel;
+            $this->diario->capitulos_id = $this->id_capitulo;
             $this->diario->save();
         } else {
             $asistencia = Diario::create([
                 'horarios_id' => $this->diarios_horarios_id,
                 'diarios_descripcion' => $this->diarios_descripcion,
+                'niveles_id' => $this->idnivel,
+                'capitulos_id' => $this->id_capitulo
             ]);
+            // Guardar el nivel y capítulo en la tabla de grupos
+            $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
+
+            $grupo = Grupo::find($horario->grupo_id);
+            $grupo->nivel_id = $this->idnivel;
+            $grupo->capitulo_id = $this->id_capitulo;
+            $grupo->save();
         }
-        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_descripcion']);
+
+
+
+        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_descripcion','idnivel','id_capitulo']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
     }
 
@@ -439,6 +478,14 @@ class ShowHorarios extends Component
     public function initializeDragAndDrop()
     {
         $this->dispatchBrowserEvent('initialize-drag-and-drop');
+    }
+
+    public function updatedidnivel($idnivel){
+
+        $this->arr_capitulos = Capitulo::where('nivel_id',$idnivel)->get();
+        if ($this->arr_capitulos->isEmpty()) {
+            $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel") ;
+        }
     }
 
 }

@@ -371,6 +371,34 @@
                 </div>
                 <x-forms.input-error for="diarios_descripcion"/>
             </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Level')}}: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="idnivel">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_niveles as $key => $item)
+                        <option value="{{$key}}">{{ucfirst($item)}} </option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="idnivel"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Chapter')}}: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="id_capitulo">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_capitulos as $item)
+                        <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="id_capitulo"/>
+            </div>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
@@ -426,12 +454,14 @@
             <div class="max-h-96 overflow-y-auto p-4 border rounded-lg shadow bg-white dark:bg-gray-800">
                 @foreach($evaluaciones as $horarioId => $items)
                     <div class="mb-6">
-                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Horario ID: {{ $horarioId }}</h3>
 
                         @php
                             $firstItem = $items[0] ?? null;
                             $descripcion = $firstItem['horario']['diario']['diarios_descripcion'] ?? 'Sin diario';
+                            $fecha = date('Y-m-d', strtotime($firstItem['horario']['horarios_dia']));
                         @endphp
+
+                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
 
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
                             Descripción: {{ $descripcion }}

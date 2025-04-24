@@ -17,9 +17,13 @@ return new class extends Migration
             $table->id('diarios_id');
             $table->unsignedBigInteger('horarios_id')->nullable();
             $table->unsignedBigInteger('modalidades_id')->nullable();
+            $table->unsignedBigInteger('niveles_id')->nullable();
+            $table->unsignedBigInteger('capitulos_id')->nullable();
             $table->longText('diarios_descripcion');
             $table->foreign('horarios_id')->references('horarios_id')->on('horarios');
             $table->foreign('modalidades_id')->references('modalidad_id')->on('modalidades');
+            $table->foreign('niveles_id')->references('nivel_id')->on('niveles');
+            $table->foreign('capitulos_id')->references('capitulo_id')->on('capitulos');
             $table->timestamps();
             $table->softDeletes();
         });
