@@ -451,7 +451,11 @@
         </x-slot>
 
         <x-slot name="content">
-            <div class="max-h-96 overflow-y-auto p-4 border rounded-lg shadow bg-white dark:bg-gray-800">
+            <div
+                wire:init="scrollToBottom"
+                id="scroll-container"
+                class="max-h-96 overflow-y-auto p-4 border rounded-lg shadow bg-white dark:bg-gray-800"
+            >
                 @foreach($evaluaciones as $horarioId => $items)
                     <div class="mb-6">
 
@@ -465,6 +469,9 @@
 
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
                             Descripción: {{ $descripcion }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
+                            Nivel: {{ $arr_niveles[$firstItem['horario']['diario']['niveles_id']] ?? '' }} - Capitulo: {{ $arr_capitulos2[$firstItem['horario']['diario']['capitulos_id']] ?? '' }}
                         </p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -495,7 +502,7 @@
 
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit_plan', false)">
-                {{ __('Cancel') }}
+                {{ __('Close') }}
             </x-forms.red-button>
         </x-slot>
     </x-dialog-modal>
@@ -519,6 +526,12 @@
             }
             });
         })
+        document.addEventListener('livewire:load', function () {
+            Livewire.on('scrollToBottom', () => {
+                const container = document.getElementById('scroll-container');
+                container.scrollTop = container.scrollHeight;
+            });
+        });
     </script>
     {{-- <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script> --}}
 

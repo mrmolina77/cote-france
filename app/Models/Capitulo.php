@@ -11,4 +11,9 @@ class Capitulo extends Model
     protected $table = 'capitulos';
 
     protected $primaryKey = 'capitulo_id';
+
+    public function getFullNameAttribute()
+    {
+    return $this->capitulo_descripcion . ' ' . $this->capitulo_codigo;
+    }
 }

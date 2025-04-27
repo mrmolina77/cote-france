@@ -33,12 +33,12 @@ class ShowHorarios extends Component
     public $semana,$inicio,$fin,$profesores_id;
     public $porcentajes, $dimenciones,$porcentaje = 0;
     public $ocupados, $modalidad, $arr_capitulos;
-    public $arr_niveles;
+    public $arr_niveles, $arr_capitulos2;
     public $idnivel;
     public $id_capitulo;
     // $asistencias;
     // public $estudiantes;
-    protected $listeners = ['render','delete'];
+    protected $listeners = ['render','delete','scrollToBottom'];
     public $estudiantes = [];
     public $asistencias = [];
     public $calificaciones = [];
@@ -194,7 +194,7 @@ class ShowHorarios extends Component
     ->where('horas_id', $horarioBase->horas_id)
     // ->whereRaw('WEEKDAY(horarios_dia) = WEEKDAY(?)', [$horarioBase->horarios_dia])
     ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
-    ->orderBy('horarios_dia', 'desc') // 👈 orden descendente por día
+    ->orderBy('horarios_dia', 'asc') // 👈 orden descendente por día
     ->pluck('horarios_id');
 
     // Traemos las evaluaciones con sus relaciones
@@ -210,7 +210,15 @@ class ShowHorarios extends Component
 
     // dd($this->evaluaciones);
 
+    $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
+    $arr_capitulos = Capitulo::all();
+
+    foreach ($arr_capitulos as $capitulo) {
+        $this->arr_capitulos2[$capitulo->capitulo_id] = $capitulo->capitulo_descripcion . ' - ' . $capitulo->capitulo_codigo;
+    }
+
     $this->open_edit_plan = true;
+
 }
 
 
@@ -486,6 +494,11 @@ class ShowHorarios extends Component
         if ($this->arr_capitulos->isEmpty()) {
             $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel") ;
         }
+    }
+
+    public function scrollToBottom()
+    {
+        $this->dispatchBrowserEvent('scrollToBottom');
     }
 
 }
