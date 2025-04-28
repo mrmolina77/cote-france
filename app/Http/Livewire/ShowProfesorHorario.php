@@ -248,6 +248,13 @@ class ShowProfesorHorario extends Component
             ->get()
             ->groupBy('horarios_id');
 
+
+        // Verificamos si hay estudiantes asignados a este grupo
+        if(! isset($evaluaciones) or count($evaluaciones) == 0){
+            $this->emit('alert', 'No se ha asiganado estudiantes a este grupo', 'Advertencia', 'warning');
+            return;
+        }
+
         // Convertimos las colecciones anidadas a arrays planos para que Livewire los maneje bien
         $this->evaluaciones = $evaluaciones
             ->map(fn($items) => $items->values()->toArray())
@@ -285,6 +292,12 @@ class ShowProfesorHorario extends Component
         })
             ->with('evaluaciones')
             ->get();
+
+        // Check if there are students assigned to the group
+        if(! isset($prospectos) or count($prospectos) == 0){
+            $this->emit('alert', 'No se ha asiganado estudiantes a este grupo', 'Advertencia', 'warning');
+            return;
+        }
 
         $this->estudiantes = $prospectos;
 

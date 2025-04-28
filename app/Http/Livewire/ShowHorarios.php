@@ -203,6 +203,12 @@ class ShowHorarios extends Component
         ->get()
         ->groupBy('horarios_id');
 
+
+    if ($evaluaciones->isEmpty()) {
+        $this->emit('alert', 'No hay estudiantes para este horario', 'Advertencias!', 'warning');
+        return;
+    }
+
     // Convertimos las colecciones anidadas a arrays planos para que Livewire los maneje bien
     $this->evaluaciones = $evaluaciones
         ->map(fn($items) => $items->values()->toArray())
@@ -239,6 +245,12 @@ class ShowHorarios extends Component
         ->get();
 
         // dd($prospectos);
+
+
+        if ($prospectos->isEmpty()) {
+            $this->emit('alert', 'No hay estudiantes inscritos en este grupo', 'Advertencias!', 'warning');
+            return;
+        }
 
         $this->estudiantes = $prospectos;
 
