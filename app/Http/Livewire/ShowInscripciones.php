@@ -19,6 +19,7 @@ class ShowInscripciones extends Component
     public $inscripcion;
     public $cant = 25;
     public $readyToLoad = false;
+    public $prospectos = [];
 
     public $open_edit = false;
     protected $listeners = ['render','delete'];
@@ -59,11 +60,11 @@ class ShowInscripciones extends Component
             $inscripciones = array();
         }
 
-        $prospectos = Prospecto::all();
+
+        // dd($prospectos);
         $cursos = Curso::all();
         $grupos = Grupo::all();
         return view('livewire.show-inscripciones',['inscripciones'=>$inscripciones
-                                                  , 'prospectos'=>$prospectos
                                                   , 'grupos'=>$grupos
                                                   , 'cursos'=>$cursos]);
     }
@@ -87,6 +88,13 @@ class ShowInscripciones extends Component
 
     public function edit($id){
         $inscripcion = Inscripcion::find($id);
+        $id_prospecto = $inscripcion->prospectos_id;
+        $this->prospectos = Prospecto::whereNotIn('prospectos_id', function($query) {
+            $query->select('prospectos_id')->from('inscripciones');
+        })->orWhere('prospectos_id',$id_prospecto)->get();
+        // $prospectos = Prospecto::whereNotIn('prospectos_id', function($query) {
+        //     $query->select('prospectos_id')->from('inscripciones');
+        // })->get();
         // dd($inscripcion);
         $this->inscripcion = $inscripcion;
         $this->open_edit = true;

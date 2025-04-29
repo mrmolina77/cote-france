@@ -83,7 +83,7 @@
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
                     wire:click="order('prospectos_id')">
-                    Propesto
+                    Prospecto
                     @if ($sort == 'prospectos_id')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>

@@ -181,8 +181,16 @@ class ShowHorarios extends Component
     }
 
     public function delete(Horario $horario){
+        // Verificar si el horario tiene evaluaciones asociadas
+        $evaluaciones = Evaluacion::where('horarios_id', $horario->horarios_id)->exists();
+
+        if ($evaluaciones) {
+            $this->emit('alert', 'No se puede eliminar el horario porque tiene evaluaciones asociadas', 'Advertencias!', 'warning');
+            return;
+        }
+
         $horario->delete();
-        $this->emit('alert','El horario fue eliminado satifactoriamente');
+        $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
     }
 
     public function editPlan($id)
@@ -205,7 +213,7 @@ class ShowHorarios extends Component
 
 
     if ($evaluaciones->isEmpty()) {
-        $this->emit('alert', 'No hay estudiantes para este horario', 'Advertencias!', 'warning');
+        $this->emit('alert', 'No hay datos que mostrar', 'Advertencias!', 'warning');
         return;
     }
 

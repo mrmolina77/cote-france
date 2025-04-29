@@ -41,7 +41,9 @@ class CreateInscripciones extends Component
 
     public function render()
     {
-        $prospectos = Prospecto::all();
+        $prospectos = Prospecto::whereNotIn('prospectos_id', function($query) {
+            $query->select('prospectos_id')->from('inscripciones');
+        })->get();
         $cursos = Curso::all();
         $grupos = Grupo::all();
         return view('livewire.create-inscripciones',['prospectos'=>$prospectos
