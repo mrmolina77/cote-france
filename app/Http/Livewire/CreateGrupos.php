@@ -11,6 +11,7 @@ use App\Models\Dia;
 use App\Models\Modalidad;
 use App\Models\Espacio;
 use App\Models\Nivel;
+use App\Models\Profesor;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
@@ -93,33 +94,44 @@ class CreateGrupos extends Component
         ]);
 
         // Verifica si ya existe un registro con los mismos valores
-        $existe = collect($this->detalles_grupos)->contains(function ($registro) use ($validatedData) {
-            return $registro['dias_id'] === $validatedData['diasid']
-                && $registro['horas_id'] === $validatedData['horasid']
-                && $registro['espacios_id'] === $validatedData['espacios_id'];
-        });
-
-        if ($existe) {
-            $this->addError('diasid', "Ya existe en este grupo") ;
+        $cantidad_profesores = Profesor::count();
+        if ($cantidad_profesores == 0) {
+            $this->addError('espacios_id', "No hay profesores disponibles para este espacio");
+            return;
+        }
+        $cantidad_grupos = GruposDetalles::where('dias_id',$validatedData['diasid'])
+                                    ->where('horas_id',$validatedData['horasid'])->count();
+        if( $cantidad_profesores <= $cantidad_grupos){
+            $this->addError('diasid', "No hay susficientes profesores para este horario");
         } else {
-            $existe = GruposDetalles::where('dias_id',$validatedData['diasid'])
-                                    ->where('horas_id',$validatedData['horasid'])
-                                    ->where('espacios_id',$validatedData['espacios_id'])->count();
-            if ($existe > 0) {
-                $this->addError('diasid', "Ya existe en otro grupo.") ;
+            $existe = collect($this->detalles_grupos)->contains(function ($registro) use ($validatedData) {
+                return $registro['dias_id'] === $validatedData['diasid']
+                    && $registro['horas_id'] === $validatedData['horasid']
+                    && $registro['espacios_id'] === $validatedData['espacios_id'];
+            });
+
+            if ($existe) {
+                $this->addError('diasid', "Ya existe en este grupo") ;
             } else {
-                $dia = Dia::find($this->diasid);
-                $hora = Hora::find($this->horasid);
-                $espacio = Espacio::find($this->espacios_id);
-                $this->detalles_grupos[]=[
-                                    'dias_id'=>$this->diasid,
-                                    'dia'=>$dia->dias_nombre,
-                                    'horas_id'=>$this->horasid,
-                                    'hora'=>$hora->horas_desde .' - '.$hora->horas_hasta,
-                                    'espacios_id'=>$this->espacios_id,
-                                    'espacio'=>$espacio->espacios_nombre,
-                                ];
-                $this->reset(['diasid','horasid','espacios_id']); // Revertir los cambios si algo falla
+                $existe = GruposDetalles::where('dias_id',$validatedData['diasid'])
+                                        ->where('horas_id',$validatedData['horasid'])
+                                        ->where('espacios_id',$validatedData['espacios_id'])->count();
+                if ($existe > 0) {
+                    $this->addError('diasid', "Ya existe en otro grupo.") ;
+                } else {
+                    $dia = Dia::find($this->diasid);
+                    $hora = Hora::find($this->horasid);
+                    $espacio = Espacio::find($this->espacios_id);
+                    $this->detalles_grupos[]=[
+                                        'dias_id'=>$this->diasid,
+                                        'dia'=>$dia->dias_nombre,
+                                        'horas_id'=>$this->horasid,
+                                        'hora'=>$hora->horas_desde .' - '.$hora->horas_hasta,
+                                        'espacios_id'=>$this->espacios_id,
+                                        'espacio'=>$espacio->espacios_nombre,
+                                    ];
+                    $this->reset(['diasid','horasid','espacios_id']); // Revertir los cambios si algo falla
+                }
             }
         }
     }
