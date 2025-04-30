@@ -194,46 +194,46 @@ class ShowHorarios extends Component
     }
 
     public function editPlan($id)
-{
-    $horarioBase = Horario::findOrFail($id);
+    {
+        $horarioBase = Horario::findOrFail($id);
 
-    // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
-    $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
-    ->where('horas_id', $horarioBase->horas_id)
-    // ->whereRaw('WEEKDAY(horarios_dia) = WEEKDAY(?)', [$horarioBase->horarios_dia])
-    ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
-    ->orderBy('horarios_dia', 'asc') // 👈 orden descendente por día
-    ->pluck('horarios_id');
+        // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
+        $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
+        ->where('horas_id', $horarioBase->horas_id)
+        // ->whereRaw('WEEKDAY(horarios_dia) = WEEKDAY(?)', [$horarioBase->horarios_dia])
+        ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
+        ->orderBy('horarios_dia', 'asc') // 👈 orden descendente por día
+        ->pluck('horarios_id');
 
-    // Traemos las evaluaciones con sus relaciones
-    $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario'])
-        ->whereIn('horarios_id', $horariosRelacionados)
-        ->get()
-        ->groupBy('horarios_id');
+        // Traemos las evaluaciones con sus relaciones
+        $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario'])
+            ->whereIn('horarios_id', $horariosRelacionados)
+            ->get()
+            ->groupBy('horarios_id');
 
 
-    if ($evaluaciones->isEmpty()) {
-        $this->emit('alert', 'No hay datos que mostrar', 'Advertencias!', 'warning');
-        return;
+        if ($evaluaciones->isEmpty()) {
+            $this->emit('alert', 'No hay datos que mostrar', 'Advertencias!', 'warning');
+            return;
+        }
+
+        // Convertimos las colecciones anidadas a arrays planos para que Livewire los maneje bien
+        $this->evaluaciones = $evaluaciones
+            ->map(fn($items) => $items->values()->toArray())
+            ->toArray();
+
+        // dd($this->evaluaciones);
+
+        $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
+        $arr_capitulos = Capitulo::all();
+
+        foreach ($arr_capitulos as $capitulo) {
+            $this->arr_capitulos2[$capitulo->capitulo_id] = $capitulo->capitulo_descripcion . ' - ' . $capitulo->capitulo_codigo;
+        }
+
+        $this->open_edit_plan = true;
+
     }
-
-    // Convertimos las colecciones anidadas a arrays planos para que Livewire los maneje bien
-    $this->evaluaciones = $evaluaciones
-        ->map(fn($items) => $items->values()->toArray())
-        ->toArray();
-
-    // dd($this->evaluaciones);
-
-    $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
-    $arr_capitulos = Capitulo::all();
-
-    foreach ($arr_capitulos as $capitulo) {
-        $this->arr_capitulos2[$capitulo->capitulo_id] = $capitulo->capitulo_descripcion . ' - ' . $capitulo->capitulo_codigo;
-    }
-
-    $this->open_edit_plan = true;
-
-}
 
 
     public function editDiario($id){
@@ -284,23 +284,7 @@ class ShowHorarios extends Component
         $grupoId = $horario->grupo_id;
         $this->open_edit_diario = true;
     }
-    // public function savePlan(){
-    //     $validated = $this->validate([
-    //         'planes_descripcion'=>'required|min:15|max:550',
-    //     ]);
-    //     if($this->plan){
-    //         $this->plan->horarios_id = $this->planes_horarios_id;
-    //         $this->plan->planes_descripcion = $this->planes_descripcion;
-    //         $this->plan->save();
-    //     } else {
-    //         $asistencia = Plan::create([
-    //             'horarios_id' => $this->planes_horarios_id,
-    //             'planes_descripcion' => $this->planes_descripcion,
-    //         ]);
-    //     }
-    //     $this->reset(['open_edit_plan','planes_horarios_id','planes_descripcion']);
-    //     $this->emit('alert','El plan fue actualización satisfactoriamente');
-    // }
+
 
     public function saveDiario(){
         $validated = $this->validate([
@@ -384,7 +368,7 @@ class ShowHorarios extends Component
                                ->orderBy('grupos_detalles.horas_id', 'asc')
                                ->get();
 
-                            } else {
+            } else {
            $detalles = DB::table('grupos_detalles')
                                ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
                                ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
