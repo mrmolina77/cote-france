@@ -51,6 +51,25 @@ class CreateGrupos extends Component
         $this->validate();
         DB::beginTransaction();
         try {
+            // --- Inicio: Validación de profesores agregada ---
+            if($this->modalidad_id == null || $this->modalidad_id == 0){
+                $this->addError('modalidad_id', "No hay modalidad seleccionada para validar profesores.");
+                DB::rollBack(); // Asegura que no se guarde nada si falla la validación
+                return;
+            }
+
+            if($this->modalidad_id == 1){ // Asumiendo 1 = Presencial
+                $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
+            } else { // Otras modalidades
+                $cantidad_profesores = Profesor::count();
+            }
+
+            if ($cantidad_profesores == 0) {
+                $this->addError('modalidad_id', "No hay profesores disponibles registrados para la modalidad seleccionada.");
+                DB::rollBack(); // Asegura que no se guarde nada si falla la validación
+                return;
+            }
+            // --- Fin: Validación de profesores agregada ---
             $grupo = new Grupo();
             $grupo->grupo_nombre        =$this->grupo_nombre;
             $grupo->nivel_id            =$this->idnivel;
@@ -94,7 +113,17 @@ class CreateGrupos extends Component
         ]);
 
         // Verifica si ya existe un registro con los mismos valores
-        $cantidad_profesores = Profesor::count();
+        if($this->modalidad_id == null || $this->modalidad_id == 0){
+            $this->addError('modalidad_id', "No hay modalidad seleccionada");
+            return;
+        }
+
+        if($this->modalidad_id == 1){
+            $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
+        } else {
+            $cantidad_profesores = Profesor::count();
+        }
+
         if ($cantidad_profesores == 0) {
             $this->addError('espacios_id', "No hay profesores disponibles para este espacio");
             return;
