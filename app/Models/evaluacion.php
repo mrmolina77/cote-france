@@ -17,7 +17,7 @@ class Evaluacion extends Model
         'prospectos_id',
         'horarios_id',
         'asistio',
-        'calificacion'
+        'observacion',
     ];
 
     public function prospecto()

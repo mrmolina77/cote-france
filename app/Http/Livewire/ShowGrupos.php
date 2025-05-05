@@ -131,14 +131,14 @@ class ShowGrupos extends Component
         DB::beginTransaction();
         try {
             // --- Inicio: Validación de profesores agregada ---
-            if($this->modalidad_id == null || $this->modalidad_id == 0){
+            if(is_null($this->grupo->modalidad_id) || $this->grupo->modalidad_id == 0){ // <-- Usar la modalidad del grupo
                 $this->addError('modalidad_id', "No hay modalidad seleccionada para validar profesores.");
                 DB::rollBack(); // Asegura que no se guarde nada si falla la validación
                 return;
             }
 
-            if($this->modalidad_id == 1){ // Asumiendo 1 = Presencial
-                $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
+            if($this->grupo->modalidad_id == 1){ // Asumiendo 1 = Presencial <-- Usar la modalidad del grupo
+                $cantidad_profesores = Profesor::where('modalidad_id', $this->grupo->modalidad_id)->count();
             } else { // Otras modalidades
                 $cantidad_profesores = Profesor::count();
             }

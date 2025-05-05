@@ -98,11 +98,11 @@
                                                         >
                                                         <div class="border-2 w-20 min-h-20 grid grid-cols-1 {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['bgcolor']}}">
                                                             @if ($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['modalidad'] == '2')
-                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm"> <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</a></div>
+                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold"> <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</a></div>
                                                             @else
-                                                                <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</div>
+                                                                <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}</div>
                                                             @endif
-                                                            {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div> --}}
+                                                            {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div> --}}
                                                             <div class="flex items-center justify-center">
                                                                 <div><i class="fas fa-trash text-red-500 m-2 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
                                                                 <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
@@ -163,11 +163,11 @@
                                                         >
                                                         <div class="border-2 w-20 min-h-20 grid grid-cols-1 {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['bgcolor']}}">
                                                             @if ($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['modalidad'] == '2')
-                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="text-sm"> <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['nombre']}}</a></div>
+                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold"> <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['nombre']}}</a></div>
                                                             @else
-                                                                <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['nombre']}}</div>
+                                                                <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['nombre']}}</div>
                                                             @endif
-                                                            {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div> --}}
+                                                            {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}</div> --}}
                                                             <div class="flex items-center justify-center">
                                                                 <div><i class="fas fa-trash text-red-500 m-2 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
                                                                 <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['id'] }})"></i></div>
@@ -258,15 +258,15 @@
                                 >
                                     <div class="w-full h-full flex flex-col items-center justify-center">
                                         @if ($horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['modalidad'] == '2')
-                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">
+                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">
                                                <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer"> {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}} </a>
                                             </div>
                                         @else
-                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">
+                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">
                                                 {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}
                                             </div>
                                         @endif
-                                        {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-sm">
+                                        {{-- <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-base font-bold">
                                             {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['espacio']}}
                                         </div> --}}
                                         <div class="flex items-center justify-center">
@@ -365,11 +365,23 @@
 
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label for="diarios_descripcion" value="{{__('Description')}}: " />
-                    <x-forms.textarea id="diarios_descripcion" rows="8" class="flex-1 ml-4" wire:model="diarios_descripcion">
+                    <x-forms.label value="{{__('Teacher')}}: " class="font-bold mr-4" />
+                    <x-forms.label value="{{ $diarios_profesor}} " /> {{-- Añadido font-bold y margen --}}
+                    <x-forms.label value="{{__('Space')}}: " class="font-bold" />
+                    <x-forms.label value="{{ $diarios_espacio}} " /> {{-- Añadido font-bold --}}
+                </div>
+                <div class="mb-4 flex">
+                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}: " />
+                    <x-forms.textarea id="diarios_hecho" rows="3" class="flex-1 ml-4" wire:model="diarios_hecho">
                     </x-forms.textarea>
                 </div>
-                <x-forms.input-error for="diarios_descripcion"/>
+                <x-forms.input-error for="diarios_hecho"/>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('To do')}}: " />
+                    <x-forms.textarea id="diarios_porhacer" rows="3" class="flex-1 ml-4" wire:model="diarios_porhacer">
+                    </x-forms.textarea>
+                </div>
+                <x-forms.input-error for="diarios_porhacer"/>
             </div>
             <div>
                 <div class="mb-4 flex">
@@ -410,7 +422,7 @@
                                 Asistió
                             </th>
                             <th scope="col" class="px-4 py-3 rounded-e-lg text-center">
-                                Calificación
+                                Observación
                             </th>
                         </tr>
                     </thead>
@@ -424,8 +436,8 @@
                                     <x-checkbox  wire:model="asistencias.{{ $estudiante->prospectos_id }}" />
                                 </td>
                                 <td class="px-4 py-4 text-center">
-                                    <x-input  wire:model="calificaciones.{{ $estudiante->prospectos_id }}"
-                                            class="h-10 w-12 text-sm text-center" maxlength="3" />
+                                    <x-input  wire:model="observaciones.{{ $estudiante->prospectos_id }}"
+                                            class="h-10 w-25 text-sm text-center" maxlength="255" />
                                 </td>
                             </tr>
                         @endforeach
@@ -452,23 +464,28 @@
 
         <x-slot name="content">
             <div
-                wire:init="scrollToBottom"
                 id="scroll-container"
                 class="max-h-96 overflow-y-auto p-4 border rounded-lg shadow bg-white dark:bg-gray-800"
             >
-                @foreach($evaluaciones as $horarioId => $items)
+            @foreach($evaluaciones as $horarioId => $items)
                     <div class="mb-6">
-
                         @php
                             $firstItem = $items[0] ?? null;
-                            $descripcion = $firstItem['horario']['diario']['diarios_descripcion'] ?? 'Sin diario';
-                            $fecha = date('Y-m-d', strtotime($firstItem['horario']['horarios_dia']));
+                            $diarios_hecho = $firstItem['horario']['diario']['diarios_hecho'] ?? 'Sin descripción';
+                            $diarios_porhacer = $firstItem['horario']['diario']['diarios_porhacer'] ?? 'Sin descripción';
+                            $fecha = date('d-m-Y', strtotime($firstItem['horario']['horarios_dia']));
+                            $profesor = $firstItem['horario']['profesor']['profesores_nombres'].' '.$firstItem['horario']['profesor']['profesores_nombres'];
+                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'];
                         @endphp
 
                         <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
+                        <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Espacio: {{ $espacio }} </p>
 
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Descripción: {{ $descripcion }}
+                            Hecho: {{ $diarios_hecho }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
+                            Por hacer: {{ $diarios_porhacer }}
                         </p>
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
                             Nivel: {{ $arr_niveles[$firstItem['horario']['diario']['niveles_id']] ?? '' }} - Capitulo: {{ $arr_capitulos2[$firstItem['horario']['diario']['capitulos_id']] ?? '' }}
@@ -479,7 +496,7 @@
                                 <tr>
                                     <th class="px-4 py-2">Estudiante</th>
                                     <th class="px-4 py-2">Asistencia</th>
-                                    <th class="px-4 py-2">Calificación</th>
+                                    <th class="px-4 py-2">Observación</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -490,7 +507,7 @@
                                             {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
                                         </td>
                                         <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
-                                        <td class="px-4 py-2">{{ $eval['calificacion'] }}</td>
+                                        <td class="px-4 py-2">{{ $eval['observacion'] }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -526,12 +543,20 @@
             }
             });
         })
+        // Este es el listener importante para el scroll
         document.addEventListener('livewire:load', function () {
             Livewire.on('scrollToBottom', () => {
-                const container = document.getElementById('scroll-container');
-                container.scrollTop = container.scrollHeight;
+                // Pequeña demora para asegurar que el DOM esté actualizado
+                setTimeout(() => {
+                    const container = document.getElementById('scroll-container');
+                    if (container) { // Verifica si el contenedor existe
+                       container.scrollTop = container.scrollHeight;
+                    }
+                }, 50); // 50ms de demora, puedes ajustarlo si es necesario
             });
         });
+
+        // ... (resto de tu script de drag and drop) ...
     </script>
     {{-- <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script> --}}
 

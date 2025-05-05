@@ -15,7 +15,7 @@ class Diario extends Model
     */
    protected $table = 'diarios';
 
-   protected $fillable = ['horarios_id','diarios_descripcion','niveles_id','capitulos_id'];
+   protected $fillable = ['horarios_id','diarios_hecho','diarios_porhacer','niveles_id','capitulos_id'];
 
    /**
     * The primary key associated with the table.
