@@ -167,7 +167,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($detalles_grupos as $item )
+                        @forelse ($detalles_grupos as $key => $item )
                             <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
                                 <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                     {{$item['dia']}}
@@ -179,7 +179,7 @@
                                     {{$item['espacio']}}
                                 </td>
                                 <td class="px-6 py-4">
-                                    <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('showDeleteDetalle',{{$loop->index}})"></i>
+                                    <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('showDeleteDetalle',{{$key}})"></i>
                                 </td>
                             </tr>
                         @empty

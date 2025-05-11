@@ -151,8 +151,16 @@ class ShowGrupos extends Component
             // --- Fin: Validación de profesores agregada ---
             $this->grupo->save();
             foreach ($this->borrados as $borrar) {
-                $deta = GruposDetalles::find($borrar);
-                $deta->delete();
+                // $deta = GruposDetalles::find($borrar);
+                // $deta->delete();
+                
+                // Only attempt to delete if $borrar is a valid ID (not 0 for new, unsaved items)
+                if ($borrar != 0) {
+                    $deta = GruposDetalles::find($borrar);
+                    if ($deta) { // Ensure the record exists before trying to delete
+                        $deta->delete();
+                    }
+                }
             }
             foreach ($this->detalles_grupos as $detalle) {
                 if ($detalle['detalles_id'] == '0') {
@@ -188,10 +196,27 @@ class ShowGrupos extends Component
     }
 
 
-    public function deleteDetalle($id){;
-        $this->borrados[]=$this->detalles_grupos[$id]['detalles_id'];
-        unset($this->detalles_grupos[$id]);
-        $this->emit('alert','El horario fue eliminado satifactoriamente');
+    public function deleteDetalle($id){
+        // $this->borrados[]=$this->detalles_grupos[$id]['detalles_id'];
+        // unset($this->detalles_grupos[$id]);
+        // $this->emit('alert','El horario fue eliminado satifactoriamente');
+
+        // Verifica si la clave $id existe en el array antes de intentar acceder a ella.
+        if (array_key_exists($id, $this->detalles_grupos)) {
+            // Agrega el 'detalles_id' del horario a la lista de borrados.
+            // Este ID se usará en el método update() para eliminarlo de la base de datos si existe.
+            $this->borrados[] = $this->detalles_grupos[$id]['detalles_id'];
+            // Elimina el horario del array $this->detalles_grupos.
+            unset($this->detalles_grupos[$id]);
+            // Opcional: Si necesitas que el array $this->detalles_grupos sea re-indexado secuencialmente (0, 1, 2...),
+            // puedes descomentar la siguiente línea. Esto es útil si tu vista o alguna lógica posterior
+            // depende de índices secuenciales y `wire:key` en tu plantilla es simple (ej. `wire:key="item-{{ $loop->index }}"`).
+            // $this->detalles_grupos = array_values($this->detalles_grupos);
+            $this->emit('alert','El horario fue eliminado satifactoriamente');
+        } else {
+            // Emite una alerta si el índice no es válido, lo que podría indicar un problema de sincronización.
+            $this->emit('alert','Error: No se pudo encontrar el horario a eliminar.','Error!','error');
+        }
     }
 
     public function add(){
