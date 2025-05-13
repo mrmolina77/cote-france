@@ -99,9 +99,9 @@ class ShowHorarios extends Component
         $array_horario = array();
         foreach ($horarios as $horario) {
             if($horario->grupo->modalidad_id == 1){
-                $color = 'bg-green-100';
-            } else {
                 $color = 'bg-red-100';
+            } else {
+                $color = 'bg-green-100';
             }
             $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->profesores_id] = [ 'nombre'=>$horario->grupo->grupo_nombre
                                                                                                  ,'color'=>$horario->profesor->profesores_color
@@ -428,10 +428,9 @@ class ShowHorarios extends Component
 
                 if (isset($profesores[$index])) {
                     if($item->modalidad_id == 1){
-                        $color = 'bg-green-100';
-                    } else {
                         $color = 'bg-red-100';
-
+                    } else {
+                        $color = 'bg-green-100';
                     }
                     $grupo_deta[$item->dias_id][$item->horas_id][$profesores[$index]] = [
                         'grupo_id' => $item->grupo_id,
