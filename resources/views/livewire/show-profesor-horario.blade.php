@@ -1,9 +1,9 @@
 <div @class([
-    'scale-100 -translate-x-0 -translate-y-0'  => $porcentaje === '0',
-    'scale-95 -translate-x-0 -translate-y-0' => $porcentaje === '1',
-    'scale-90 -translate-x-10 -translate-y-10' => $porcentaje === '2',
-    'scale-75 -translate-x-40 -translate-y-20' => $porcentaje === '3',
-    'scale-50 -translate-x-80 -translate-y-60' => $porcentaje === '4'
+    'origin-top-left scale-100 -translate-x-0 '  => $porcentaje === '0',
+    'origin-top-left scale-95 -translate-x-0 ' => $porcentaje === '1',
+    'origin-top-left scale-90 -translate-x-0 ' => $porcentaje === '2',
+    'origin-top-left scale-75 -translate-x-0 ' => $porcentaje === '3',
+    'origin-top-left scale-50 -translate-x-0 ' => $porcentaje === '4'
     ]) >
     @section('content')
     <p>{{ __('Timetable') }} {{__('Teacher')}}</p>
