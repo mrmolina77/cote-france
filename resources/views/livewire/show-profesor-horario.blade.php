@@ -58,7 +58,7 @@
                                     <tr>
                                         @foreach ($profesores as $profesor)
                                         <td class="w-24 border-1 items-center justify-center"> {{-- Ancho ajustado --}}
-                                            <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap text-xs">{{$profesor->profesores_nombres}}</div> {{-- Truncamiento y fuente ajustada --}}
+                                            <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm">{{$profesor->profesores_nombres}}</div> {{-- Truncamiento y fuente ajustada --}}
                                         </td>
                                         @endforeach
                                     </tr>
@@ -72,7 +72,7 @@
                                     <tr>
                                         @foreach ($profesores as $profesor)
                                         <td class="w-24 border-1 items-center justify-center"> {{-- Ancho ajustado --}}
-                                            <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap text-xs">{{$profesor->profesores_nombres}}</div> {{-- Truncamiento y fuente ajustada --}}
+                                            <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm">{{$profesor->profesores_nombres}}</div> {{-- Truncamiento y fuente ajustada --}}
                                         </td>
                                         @endforeach
                                     </tr>
@@ -82,7 +82,7 @@
                     </tr>
                     @foreach ( $horas as $pos1 => $hora )
                         <tr>
-                            <td class="border text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
+                            <td class="border text-center align-top"><samp class="font-mono text-sm">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
                             @foreach ( $dias as $dia )
                                 <td class="border p-0 text-center">
                                     <table class="border border-black">
@@ -103,13 +103,13 @@
                                                         @endif --}}
                                                         <div class="border-2 w-24 min-h-20 grid grid-cols-1 bg-gray-100 opacity-75"> {{-- Ancho ajustado --}}
                                                             @if ($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['modalidad'] == '2')
-                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-xs overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
+                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="font-mono text-sm overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
                                                                 <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">
                                                                     {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}
                                                                 </a>
                                                             </div>
                                                             @else
-                                                                <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-xs overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
+                                                                <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="font-mono text-sm overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
                                                                     {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}
                                                                 </div>
                                                             @endif
@@ -137,7 +137,7 @@
                                                             <div class="border-2 w-20 min-h-20 grid grid-cols-1 justify-center items-center bg-gray-100 opacity-75" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                                             @endif --}}
                                                             <div class="border-2 w-24 min-h-20 grid grid-cols-1 justify-center items-center {{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['color'] ?? 'bg-gray-100'}}" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}"> {{-- Ancho ajustado --}}
-                                                                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-center"> {{-- Truncamiento, fuente y centrado --}}
+                                                                <div class="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm text-center"> {{-- Truncamiento, fuente y centrado --}}
                                                                     {{$grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id]['grupo_nombre']}}
                                                                 </div>
                                                                 {{-- @if ($profesor->profesores_id == $id_relacionado) --}}
@@ -170,7 +170,7 @@
                                     </table>
                                 </td>
                             @endforeach
-                            <td class="border text-center align-top"><samp class="text-xs">{{$horas2[$pos1]->horas_desde}} - {{$horas2[$pos1]->horas_hasta}}</samp></td>
+                            <td class="border text-center align-top"><samp class="font-mono text-sm">{{$horas2[$pos1]->horas_desde}} - {{$horas2[$pos1]->horas_hasta}}</samp></td>
                             <td class="border p-0 text-center">
                                 <table class="border border-black">
                                     <tr>
@@ -188,13 +188,13 @@
                                                     @endif --}}
                                                     <div class="border-2 w-24 min-h-20 grid grid-cols-1 {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['bgcolor'] ?? 'bg-gray-100'}}"> {{-- Ancho ajustado --}}
                                                         @if ($horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['modalidad'] == '2')
-                                                        <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="text-xs overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
+                                                        <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="font-mono text-sm overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
                                                             <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">
                                                                 {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['nombre']}}
                                                             </a>
                                                         </div>
                                                         @else
-                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="text-xs overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
+                                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color']}};" class="font-mono text-sm overflow-hidden text-ellipsis whitespace-nowrap"> {{-- Fuente y truncamiento ajustado --}}
                                                                 {{$horarios[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')][$horas2[$pos1]->horas_id][$profesor->profesores_id]['nombre']}}
                                                             </div>
                                                         @endif
@@ -221,7 +221,7 @@
                                                         @else
                                                         @endif --}}
                                                         <div class="border-2 w-24 min-h-20 grid grid-cols-1 justify-center items-center {{$grupo_deta[$dias2[0]->dias_id][$horas2[$pos1]->horas_id][$profesor->profesores_id]['color'] ?? 'bg-gray-100'}}" wire:key="task-{{ $dias2[0]->dias_id }}-{{ $horas2[$pos1]->horas_id }}-{{ $profesor->profesores_id }}"> {{-- Ancho ajustado --}}
-                                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-xs text-center"> {{-- Truncamiento, fuente y centrado --}}
+                                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm text-center"> {{-- Truncamiento, fuente y centrado --}}
                                                                 {{$grupo_deta[$dias2[0]->dias_id][$horas2[$pos1]->horas_id][$profesor->profesores_id]['grupo_nombre']}}
                                                             </div>
                                                             {{-- @if ($profesor->profesores_id == $id_relacionado) --}}
@@ -282,13 +282,13 @@
                         <th class="border p-2 w-40">{{ __('Hours') }}</th>
                         @foreach ( $profesores as $profesor )
                         <th class="border p-2 w-24"> {{-- Ancho ajustado --}}
-                            <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap text-xs">{{$profesor->profesores_nombres}}</div> {{-- Truncamiento y fuente ajustada --}}
+                            <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm">{{$profesor->profesores_nombres}}</div> {{-- Truncamiento y fuente ajustada --}}
                         </th>
                         @endforeach
                     </tr>
                     @foreach ( $horas as $hora )
                         <tr>
-                            <td class="border text-center align-top"><samp class="text-xs">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
+                            <td class="border text-center align-top"><samp class="font-mono text-sm">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></td>
                             @foreach ($profesores as $profesor)
                                 @if (isset($horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]))
                                 <td class="h-full grupo-cell text-center align-middle w-24" {{-- Ancho ajustado --}}
@@ -305,13 +305,13 @@
                                         <div class="w-full h-full flex flex-col items-center justify-center bg-gray-100 opacity-75">
                                     @endif --}}
                                         @if ($horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['modalidad'] == '2')
-                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-xs font-bold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center"> {{-- Fuente, truncamiento, w-full y centrado --}}
+                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="font-mono text-sm font-bold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center"> {{-- Fuente, truncamiento, w-full y centrado --}}
                                                <a href="{{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['enlace']}}" target="_blank" rel="noopener noreferrer">
                                                    {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}
                                                </a>
                                             </div>
                                         @else
-                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="text-xs font-bold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center"> {{-- Fuente, truncamiento, w-full y centrado --}}
+                                            <div style="color: {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['color']}};" class="font-mono text-sm font-bold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center"> {{-- Fuente, truncamiento, w-full y centrado --}}
                                                 {{$horarios[\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')][$hora->horas_id][$profesor->profesores_id]['nombre']}}
                                             </div>
                                         @endif
@@ -339,7 +339,7 @@
                                             @else
                                                 <div class="border-1 min-h-20 grid grid-cols-1 justify-center items-center bg-gray-100 opacity-75" wire:key="task-{{ \Carbon\Carbon::parse($fecha)->isoFormat('d')+1 }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             @endif --}}
-                                                <div class="overflow-hidden text-ellipsis whitespace-nowrap text-xs w-full text-center"> {{-- Truncamiento, fuente, w-full y centrado --}}
+                                                <div class="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm w-full text-center"> {{-- Truncamiento, fuente, w-full y centrado --}}
                                                     {{$grupo_deta[\Carbon\Carbon::parse($fecha)->isoFormat('d')+1][$hora->horas_id][$profesor->profesores_id]['grupo_nombre']}}
                                                 </div>
                                                 {{-- @if ($profesor->profesores_id == $id_relacionado) --}}
@@ -476,7 +476,7 @@
             </div>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                    <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th scope="col" class="px-6 py-3 rounded-s-lg w-1/2">
                                 Estudiante
@@ -555,7 +555,7 @@
                         </p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-4 py-2">Estudiante</th>
                                     <th class="px-4 py-2">Asistencia</th>
