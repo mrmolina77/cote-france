@@ -109,7 +109,7 @@ class CreateGrupos extends Component
         $validatedData = $this->validate([
             'diasid' => 'required',
             'horasid' => 'required',
-            'espacios_id' => 'required',
+            'espacios_id' => 'nullable',
         ]);
 
         // Verifica si ya existe un registro con los mismos valores
@@ -118,6 +118,8 @@ class CreateGrupos extends Component
             return;
         }
 
+
+        // Contar profesores disponibles según la modalidad
         if($this->modalidad_id == 1){
             $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
         } else {
@@ -125,41 +127,63 @@ class CreateGrupos extends Component
         }
 
         if ($cantidad_profesores == 0) {
-            $this->addError('espacios_id', "No hay profesores disponibles para este espacio");
+            // Error más preciso, asociado a la modalidad
+            $this->addError('modalidad_id', "No hay profesores disponibles registrados para la modalidad seleccionada.");
             return;
         }
+
+        // Contar grupos ya existentes para ese día y hora (para verificar capacidad de profesores)
         $cantidad_grupos = GruposDetalles::where('dias_id',$validatedData['diasid'])
                                     ->where('horas_id',$validatedData['horasid'])->count();
         if( $cantidad_profesores <= $cantidad_grupos){
             $this->addError('diasid', "No hay susficientes profesores para este horario");
         } else {
-            $existe = collect($this->detalles_grupos)->contains(function ($registro) use ($validatedData) {
-                return $registro['dias_id'] === $validatedData['diasid']
-                    && $registro['horas_id'] === $validatedData['horasid']
-                    && $registro['espacios_id'] === $validatedData['espacios_id'];
+             // Verificar duplicados en el array $this->detalles_grupos
+            $existe_en_array = collect($this->detalles_grupos)->contains(function ($registro) use ($validatedData) {
+                $diasIguales = $registro['dias_id'] === $validatedData['diasid'];
+                $horasIguales = $registro['horas_id'] === $validatedData['horasid'];
+
+                if (is_null($validatedData['espacios_id'])) {
+                    return $diasIguales && $horasIguales && is_null($registro['espacios_id']);
+                } else {
+                    return $diasIguales && $horasIguales && ($registro['espacios_id'] === $validatedData['espacios_id']);
+                }
             });
 
-            if ($existe) {
+            if ($existe_en_array) {
                 $this->addError('diasid', "Ya existe en este grupo") ;
             } else {
-                $existe = GruposDetalles::where('dias_id',$validatedData['diasid'])
-                                        ->where('horas_id',$validatedData['horasid'])
-                                        ->where('espacios_id',$validatedData['espacios_id'])->count();
-                if ($existe > 0) {
+                // Verificar duplicados en la base de datos
+                $queryDB = GruposDetalles::where('dias_id',$validatedData['diasid'])
+                                        ->where('horas_id',$validatedData['horasid']);
+                if (is_null($validatedData['espacios_id'])) {
+                    $queryDB->whereNull('espacios_id');
+                } else {
+                    $queryDB->where('espacios_id',$validatedData['espacios_id']);
+                }
+                $existe_en_db = $queryDB->exists();
+
+                if ($existe_en_db) {
                     $this->addError('diasid', "Ya existe en otro grupo.") ;
                 } else {
-                    $dia = Dia::find($this->diasid);
-                    $hora = Hora::find($this->horasid);
-                    $espacio = Espacio::find($this->espacios_id);
+                    $dia = Dia::find($validatedData['diasid']);
+                    $hora = Hora::find($validatedData['horasid']);
+                    $espacio_actual_id = $validatedData['espacios_id'];
+                    $espacio_nombre = null;
+
+                    if ($espacio_actual_id) {
+                        $espacio = Espacio::find($espacio_actual_id);
+                        $espacio_nombre = $espacio ? $espacio->espacios_nombre : null;
+                    }
                     $this->detalles_grupos[]=[
-                                        'dias_id'=>$this->diasid,
+                                        'dias_id'=>$validatedData['diasid'],
                                         'dia'=>$dia->dias_nombre,
-                                        'horas_id'=>$this->horasid,
+                                        'horas_id'=>$validatedData['horasid'],
                                         'hora'=>$hora->horas_desde .' - '.$hora->horas_hasta,
-                                        'espacios_id'=>$this->espacios_id,
-                                        'espacio'=>$espacio->espacios_nombre,
+                                        'espacios_id'=>$espacio_actual_id,
+                                        'espacio'=>$espacio_nombre,
                                     ];
-                    $this->reset(['diasid','horasid','espacios_id']); // Revertir los cambios si algo falla
+                    $this->reset(['diasid','horasid','espacios_id']);
                 }
             }
         }
