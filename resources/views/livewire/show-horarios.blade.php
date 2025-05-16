@@ -380,7 +380,14 @@
                     <x-forms.label value="{{__('Teacher')}}: " class="font-bold mr-4" />
                     <x-forms.label value="{{ $diarios_profesor}} " /> {{-- Añadido font-bold y margen --}}
                     <x-forms.label value="{{__('Space')}}: " class="font-bold" />
-                    <x-forms.label value="{{ $diarios_espacio}} " /> {{-- Añadido font-bold --}}
+                    <x-select class="flex-1 ml-4" wire:model="espacios_id">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($espacios as $item)
+                        <option value="{{$item->espacios_id}}">{{$item->espacios_nombre}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
                 </div>
                 <div class="mb-4 flex">
                     <x-forms.label for="diarios_hecho" value="{{__('Done')}}: " />

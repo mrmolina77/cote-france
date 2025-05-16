@@ -38,6 +38,7 @@ class ShowHorarios extends Component
     public $id_capitulo;
     public $diarios_profesor = '';
     public $diarios_espacio = '';
+    public $espacios;
     // $asistencias;
     // public $estudiantes;
     protected $listeners = ['render','delete','scrollToBottom'];
@@ -76,6 +77,8 @@ class ShowHorarios extends Component
         $this->estudiantes = collect([]);
         $this->arr_capitulos = collect([]);
         $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
+        $this->espacios = Espacio::all();
+
     }
 
     public function updatedYdiario($value)
@@ -170,7 +173,7 @@ class ShowHorarios extends Component
         ]);
         $prospecto = Horario::create([
             'horarios_dia' =>$this->horarios_dia,
-            'espacios_id' =>$this->espacios_id,
+            'espacios_id' =>$this->espacios_id ?? 0,
             'horas_id' =>$this->horas_id,
             'grupo_id' =>$this->grupo_id,
             'profesores_id' =>$this->profesores_id
@@ -247,7 +250,7 @@ class ShowHorarios extends Component
 
         $horario = Horario::where('horarios_id',$id)->first();
         $this->diarios_profesor = $horario->profesor->profesores_nombres .' '.$horario->profesor->profesores_apellidos;
-        $this->diarios_espacio = $horario->espacio->espacios_nombre;
+        $this->espacios_id = $horario->espacios_id;
 
         $grupoId = $horario->grupo_id;
 
@@ -366,7 +369,9 @@ class ShowHorarios extends Component
             $grupo->save();
         }
 
-
+        $horario = Horario::find($this->diarios_horarios_id);
+        $horario->espacios_id = $this->espacios_id;
+        $horario->save();
 
         $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
@@ -456,6 +461,8 @@ class ShowHorarios extends Component
         } elseif ($horarios_id != '0' && $horarios_id == $anterior_id) {
             $this->emit('alert', 'El horario es el mismo, no se puede realizar esta operación', 'Advertencias!', 'warning');
         } else {
+            $id_espacios = (int)($espacios_id ?? 0);
+            // dd($id_espacios);
             if ($anterior_id != '0') {
                 $horario = Horario::find($anterior_id);
                 if (!is_null($horario) && is_object($horario)) {
@@ -471,7 +478,7 @@ class ShowHorarios extends Component
                         'horarios_dia' => $horarios_dia,
                         'horas_id' => $horas_id,
                         'grupo_id' => $grupo_id,
-                        'espacios_id' => $espacios_id,
+                        'espacios_id' => $id_espacios,
                         'profesores_id' => $profesores_id,
                     ]);
                 } else {
@@ -479,7 +486,7 @@ class ShowHorarios extends Component
                         'horarios_dia' => $horarios_dia,
                         'horas_id' => $horas_id,
                         'grupo_id' => $grupo_id,
-                        'espacios_id' => $espacios_id,
+                        'espacios_id' => $id_espacios,
                         'profesores_id' => $profesores_id,
                     ]);
                 }
@@ -495,7 +502,7 @@ class ShowHorarios extends Component
                         'horarios_dia' => $horarios_dia,
                         'horas_id' => $horas_id,
                         'grupo_id' => $grupo_id,
-                        'espacios_id' => $espacios_id,
+                        'espacios_id' => $id_espacios,
                         'profesores_id' => $profesores_id,
                     ]);
                 }

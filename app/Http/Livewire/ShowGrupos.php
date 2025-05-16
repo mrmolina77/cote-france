@@ -304,7 +304,7 @@ class ShowGrupos extends Component
 
     public function updatedhorasid($horasid){
         $espacios_registrados = GruposDetalles::where('horas_id',$horasid)->where('dias_id',$this->dias_id)->pluck('espacios_id');
-        $this->espacios = Espacio::wherenotIn('espacios_id',$espacios_registrados)->get();
+        $this->espacios = Espacio::wherenotIn('espacios_id',$espacios_registrados)->where('espacios_id','>',0)->get();
         if ($this->espacios->isEmpty()) {
             $this->addError('espacios_id', "No hay espacios disponibles para esta hora") ;
         }
