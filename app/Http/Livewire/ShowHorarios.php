@@ -10,11 +10,10 @@ use App\Models\Evaluacion;
 use App\Models\Grupo;
 use App\Models\Hora;
 use App\Models\Horario;
-use App\Models\Inscripcion;
 use App\Models\Nivel;
-use App\Models\Plan;
 use App\Models\Profesor;
 use App\Models\Prospecto;
+use App\Models\BloqueosProfesores;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -91,32 +90,92 @@ class ShowHorarios extends Component
     public function render()
     {
         $espacios = Espacio::all();
-        $horas = Hora::where('tipo',1)->orderBy('horas_id', 'asc')->get();
-        $horas2 = Hora::where('tipo',2)->orderBy('horas_id', 'asc')->get();
-        $horarios = Horario::where('horarios_dia','>=', $this->inicio)
-        ->where('horarios_dia','<=', $this->fin)
-        ->orderBy('horarios_dia', 'asc')
-        ->orderBy('horas_id', 'asc')
-        ->orderBy('profesores_id', 'asc')
-        ->get();
+        $horas_semana = Hora::where('tipo',1)->orderBy('horas_id', 'asc')->get(); // Assuming 'tipo' 1 for Mon-Fri
+        $horas_fds = Hora::where('tipo',2)->orderBy('horas_id', 'asc')->get();
         $array_horario = array();
-        foreach ($horarios as $horario) {
-            if($horario->grupo->modalidad_id == 1){
-                $color = 'bg-red-100';
-            } else {
-                $color = 'bg-green-100';
+
+        // 1. Fetch all professor blocks (can be optimized by date range if performance is an issue)
+        $todosLosBloqueos = BloqueosProfesores::all();
+
+        // 2. Fetch existing Horario records for the week
+        $horariosCollection = Horario::where('horarios_dia','>=', $this->inicio)
+            ->where('horarios_dia','<=', $this->fin)
+            ->with(['grupo.modalidad', 'profesor', 'espacio']) // Eager load relations
+            ->orderBy('horarios_dia', 'asc')
+            ->orderBy('horas_id', 'asc')
+            ->orderBy('profesores_id', 'asc')
+            ->get()
+            ->keyBy(function ($item) { // Key by composite key for easy lookup
+                return $item->horarios_dia . '_' . $item->horas_id . '_' . $item->profesores_id;
+            });
+
+        $profesores = Profesor::where('modalidad_id',$this->modalidad)->get();
+
+        // Iterate through all displayable slots
+        $currentIterDay = Carbon::parse($this->inicio);
+        while ($currentIterDay->lte(Carbon::parse($this->fin))) {
+            $fechaStr = $currentIterDay->toDateString();
+            $diaDeSemanaIso = $currentIterDay->dayOfWeekIso; // 1 (Mon) to 7 (Sun)
+
+            $horasParaIterar = ($diaDeSemanaIso >= 1 && $diaDeSemanaIso <= 5) ? $horas_semana : $horas_fds;
+
+            foreach ($horasParaIterar as $hora) {
+                foreach ($profesores as $profesor) {
+                    $slotKey = $fechaStr . '_' . $hora->horas_id . '_' . $profesor->profesores_id;
+                    $isBlockedForThisSlot = false;
+
+                    // Check for blocks
+                    foreach ($todosLosBloqueos as $bloqueo) {
+                        if ($bloqueo->profesor_id == $profesor->profesores_id) {
+                            if ($bloqueo->fecha && Carbon::parse($bloqueo->fecha)->isSameDay($currentIterDay)) {
+                                $isBlockedForThisSlot = true; // Full day block
+                                break;
+                            }
+                            if (!$bloqueo->fecha && $bloqueo->dias_id == $diaDeSemanaIso && $bloqueo->horas_id == $hora->horas_id) {
+                                $isBlockedForThisSlot = true; // Recurring block
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($isBlockedForThisSlot) {
+                        $array_horario[$fechaStr][$hora->horas_id][$profesor->profesores_id] = [
+                            'nombre' => 'BLOQUEADO',
+                            'color' => $profesor->profesores_color,
+                            'espacios_id' => null,
+                            'grupo_id' => null,
+                            'espacio' => 'N/A',
+                            'enlace' => null,
+                            'modalidad' => null,
+                            'bgcolor' => 'bg-gray-200', // Grey for blocked
+                            'id' => 'blocked-' . $profesor->profesores_id . '-' . $fechaStr . '-' . $hora->horas_id,
+                            'is_blocked' => true,
+                            'is_assigned' => false,
+                        ];
+                    } elseif ($horariosCollection->has($slotKey)) {
+                        $horario = $horariosCollection->get($slotKey);
+                        $bgColor = ($horario->grupo && $horario->grupo->modalidad_id == 1) ? 'bg-red-100' : 'bg-green-100';
+                        $groupName = $horario->grupo ? $horario->grupo->grupo_nombre : 'Error: Grupo no cargado';
+
+                        $array_horario[$fechaStr][$hora->horas_id][$profesor->profesores_id] = [
+                            'nombre' => $groupName,
+                            'color' => $horario->profesor->profesores_color,
+                            'espacios_id' => $horario->espacios_id,
+                            'grupo_id' => $horario->grupo_id,
+                            'espacio' => $horario->espacio ? $horario->espacio->espacios_nombre : 'N/A',
+                            'enlace' => $horario->espacio ? $horario->espacio->espacios_enlace : null,
+                            'modalidad' => $horario->espacio ? $horario->espacio->modalidad_id : null,
+                            'bgcolor' => $bgColor,
+                            'id' => $horario->horarios_id,
+                            'is_blocked' => false,
+                            'is_assigned' => true,
+                        ];
+                    }
+                }
             }
-            $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->profesores_id] = [ 'nombre'=>$horario->grupo->grupo_nombre
-                                                                                                 ,'color'=>$horario->profesor->profesores_color
-                                                                                                 ,'espacios_id'=>$horario->espacios_id
-                                                                                                 ,'grupo_id'=>$horario->grupo_id
-                                                                                                 ,'espacio'=>$horario->espacio->espacios_nombre
-                                                                                                 ,'enlace'=>$horario->espacio->espacios_enlace
-                                                                                                 ,'modalidad'=>$horario->espacio->modalidad_id
-                                                                                                 ,'bgcolor'=>$color
-                                                                                                 ,'id'=>$horario->horarios_id
-                                                                                                ];
+            $currentIterDay->addDay();
         }
+
 
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
@@ -127,8 +186,8 @@ class ShowHorarios extends Component
         // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
-                                           ,'horas'=>$horas
-                                           ,'horas2'=>$horas2
+                                           ,'horas'=>$horas_semana // Pass the correct hour sets
+                                           ,'horas2'=>$horas_fds
                                            ,'horarios'=>$array_horario
                                            ,'grupos'=>$grupos
                                            ,'grupo_deta'=>$grupo_deta
@@ -171,7 +230,27 @@ class ShowHorarios extends Component
             'espacios_id'=>'required',
             'grupo_id'=>'required',
         ]);
-        $prospecto = Horario::create([
+        // Check for blocks BEFORE creating
+        $carbonFecha = Carbon::parse($this->horarios_dia);
+        $isBlocked = BloqueosProfesores::isBlocked($this->profesores_id, $carbonFecha, $this->horas_id)->exists();
+
+        if ($isBlocked) {
+            $this->emit('alert', 'Este horario está bloqueado para el profesor seleccionado.', 'Error!', 'error');
+            return;
+        }
+
+        // Check if professor is already scheduled
+        $isOccupied = Horario::where('profesores_id', $this->profesores_id)
+            ->where('horarios_dia', $this->horarios_dia)
+            ->where('horas_id', $this->horas_id)
+            ->exists();
+
+        if ($isOccupied) {
+            $this->emit('alert', 'El profesor ya tiene un horario asignado en esta fecha y hora.', 'Error!', 'error');
+            return;
+        }
+
+        $horario = Horario::create([
             'horarios_dia' =>$this->horarios_dia,
             'espacios_id' =>$this->espacios_id ?? 0,
             'horas_id' =>$this->horas_id,
@@ -458,9 +537,22 @@ class ShowHorarios extends Component
         // dd($horarios_id, $horarios_dia, $horas_id, $grupo_id, $profesores_id, $espacios_id, $anterior_id);
         if ($grupo_id == '0') {
             $this->emit('alert', 'El horario está vacío, no se puede realizar esta operación', 'Advertencias!', 'warning');
+            $this->emitTo('show-horarios','render');
+            return;
         } elseif ($horarios_id != '0' && $horarios_id == $anterior_id) {
             $this->emit('alert', 'El horario es el mismo, no se puede realizar esta operación', 'Advertencias!', 'warning');
+            $this->emitTo('show-horarios','render');
+            return;
         } else {
+             // Check for blocks for the target professor, date, and hour
+            $carbonFecha = Carbon::parse($horarios_dia);
+            $isTargetSlotBlocked = BloqueosProfesores::isBlocked($profesores_id, $carbonFecha, $horas_id)->exists();
+
+            if ($isTargetSlotBlocked) {
+                $this->emit('alert', 'El horario de destino está bloqueado para el profesor.', 'Error!', 'error');
+                $this->emitTo('show-horarios','render'); // Re-render to reflect current state
+                return;
+            }
             $id_espacios = (int)($espacios_id ?? 0);
             // dd($id_espacios);
             if ($anterior_id != '0') {
@@ -507,19 +599,41 @@ class ShowHorarios extends Component
                     ]);
                 }
             }
+            $this->emitTo('show-horarios','render');
             $this->emit('alert', 'El horario fue agregado satisfactoriamente');
         }
     }
 
     public function obtenerProfesores($fecha,$hora,$modalidad_id)
     {
-        $profesores = Profesor::whereNotIn('profesores_id', function ($query) use ($fecha, $hora) {
-            $query->select('profesores_id')
-                ->from('horarios')
-                ->whereDate('horarios.horarios_dia', $fecha)
-                ->where('horas_id', $hora);
-        })->where('modalidad_id',$modalidad_id)->pluck('profesores_id');
-        return $profesores;
+        $carbonFecha = Carbon::parse($fecha);
+        $dayOfWeek = $carbonFecha->dayOfWeekIso; // 1 (Mon) to 7 (Sun)
+
+        // Profesores con bloqueo en la fecha y hora especificadas
+        $profesoresConBloqueo = BloqueosProfesores::where(function ($query) use ($carbonFecha, $dayOfWeek, $hora) {
+            // Bloqueos de día completo
+            $query->where(function ($q_full_day) use ($carbonFecha) {
+                $q_full_day->whereNotNull('fecha')
+                           ->where('fecha', $carbonFecha->toDateString());
+            })
+            // Bloqueos recurrentes
+            ->orWhere(function ($q_recurrent) use ($dayOfWeek, $hora) {
+                $q_recurrent->whereNull('fecha')
+                            ->where('dias_id', $dayOfWeek)
+                            ->where('horas_id', $hora); // $hora es horas_id
+            });
+        })->distinct()->pluck('profesor_id')->toArray();
+
+        // Profesores ya ocupados con otro horario
+        $profesoresOcupados = Horario::whereDate('horarios_dia', $carbonFecha->toDateString())
+            ->where('horas_id', $hora)
+            ->distinct()->pluck('profesores_id')->toArray();
+
+        $todosExcluidos = array_unique(array_merge($profesoresConBloqueo, $profesoresOcupados));
+
+        return Profesor::where('modalidad_id', $modalidad_id)
+            ->whereNotIn('profesores_id', $todosExcluidos)
+            ->pluck('profesores_id');
     }
 
     public function initializeDragAndDrop()

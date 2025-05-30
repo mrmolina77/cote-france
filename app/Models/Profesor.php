@@ -50,4 +50,10 @@ class Profesor extends Model
         // Return email address only...
         return $this->profesores_email;
     }
+
+    public function bloqueos()
+    {
+        return $this->hasMany(BloqueosProfesores::class, 'profesor_id', 'profesores_id');
+    }
+
 }
