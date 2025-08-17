@@ -136,7 +136,11 @@
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->grupo_id }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteGrupo',{{$item->grupo_id}})"></i>
+                        @if ($item->estado_id == 2)
+                            <i class="fas fa-check text-blue-500 mr-4 cursor-pointer" wire:click="activate({{ $item->grupo_id }})"></i>
+                        @else
+                            <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteGrupo',{{$item->grupo_id}})"></i>
+                        @endif
                     </td>
                 </tr>
                 @empty

@@ -60,7 +60,8 @@ class ShowGrupos extends Component
         if($this->readyToLoad){
             $grupos = DB::table('grupos')
                         ->select('grupo_id','grupo_nombre','nivel_descripcion','capitulo_descripcion',
-                                 'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','modalidad_nombre','estado_nombre')
+                                 'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion',
+                                 'modalidad_nombre','estado_nombre','grupos.estado_id')
                         ->join('modalidades','grupos.modalidad_id','=','modalidades.modalidad_id')
                         ->join('estados','grupos.estado_id','=','estados.estado_id')
                         ->join('niveles','grupos.nivel_id','=','niveles.nivel_id')
@@ -183,6 +184,17 @@ class ShowGrupos extends Component
         }
     }
 
+    public function activate($id){
+        $grupo = Grupo::find($id);
+        if ($grupo) {
+            $grupo->estado_id = 1; // Activo
+            $grupo->save();
+            $this->emit('alert','El grupo fue activado satisfactoriamente.');
+        } else {
+            $this->emit('alert','El grupo no fue encontrado.','Error!','error');
+        }
+    }
+
     public function delete(Grupo $grupo){
 
         DB::beginTransaction();
@@ -190,10 +202,15 @@ class ShowGrupos extends Component
             GruposDetalles::where('grupo_id',$grupo->grupo_id)->delete();
             $grupo->delete();
             DB::commit();
-            $this->emit('alert','El grupo fue eliminado satifactoriamente');
+            $this->emit('alert','El grupo fue eliminado satisfactoriamente.');
         } catch (\Throwable $th) {
             DB::rollBack(); // Revertir los cambios si algo falla
-            $this->emit('alert','El grupo presento problema no fue eliminado satifactoriamente','Error!','error');
+
+            // Si no se puede eliminar, se actualiza el estado a 0 (inactivo)
+            $grupo->estado_id = 2;
+            $grupo->save();
+
+            $this->emit('alert','El grupo no se pudo eliminar porque tiene registros asociados. Se ha desactivado.','Advertencia!','warning');
         }
     }
 

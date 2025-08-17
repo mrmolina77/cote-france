@@ -460,8 +460,8 @@
                 <x-forms.input-error for="grupo_id"/>
                 <div>
                     <div class="mb-4 flex">
-                        <x-forms.label  for="espacios_id" value="{{__('Spaces')}}: " />
-                        <x-select class="flex-1 ml-4" wire:model="espacios_id" id="espacios_id">
+                        <x-forms.label  for="id_espacios" value="{{__('Spaces')}}: " />
+                        <x-select class="flex-1 ml-4" wire:model="id_espacios" id="id_espacios">
                             <option value="">{{__('Select')}}</option>
                             @forelse ($espacios as $item)
                             <option value="{{$item->espacios_id}}">{{$item->espacios_nombre}}</option>
@@ -470,7 +470,7 @@
                             @endforelse
                         </x-select>
                     </div>
-                    <x-forms.input-error for="espacios_id"/>
+                    <x-forms.input-error for="id_espacios"/>
                 </div>
             </div>
         </x-slot>

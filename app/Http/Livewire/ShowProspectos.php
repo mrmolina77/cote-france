@@ -124,8 +124,13 @@ class ShowProspectos extends Component
     }
 
     public function delete(Prospecto $prospecto){
-        $prospecto->delete();
-        $this->emit('alert','El prospecto fue eliminado satifactoriamente');
+        try {
+            $prospecto->delete();
+            $this->emit('alert','El prospecto fue eliminado satifactoriamente');
+        } catch (\Exception $e) {
+            $this->emit('alert','No se pudo eliminar el prospecto, tiene información relacionada','Error!', 'error');
+            return;
+        }
     }
 
     public function updatedGrupoid($grupo_id){

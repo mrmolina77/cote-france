@@ -122,7 +122,12 @@ class ShowTareas extends Component
     }
 
     public function delete(Tarea $tarea){
-        $tarea->delete();
-        $this->emit('alert','La tarea fue eliminado satifactoriamente');
+        try {
+            $tarea->delete();
+            $this->emit('alert','La tarea fue eliminado satifactoriamente');
+        } catch (\Exception $e) {
+            $this->emit('alert','No se pudo eliminar la tarea, tiene información relacionada','Error!', 'error');
+            return;
+        }
     }
 }

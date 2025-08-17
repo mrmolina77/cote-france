@@ -33,7 +33,7 @@ class ShowHorarios extends Component
     public $porcentajes, $dimenciones,$porcentaje = 0;
     public $ocupados, $modalidad, $arr_capitulos;
     public $arr_niveles, $arr_capitulos2;
-    public $idnivel;
+    public $idnivel, $id_espacios;
     public $id_capitulo;
     public $diarios_profesor = '';
     public $diarios_espacio = '';
@@ -227,7 +227,6 @@ class ShowHorarios extends Component
 
     public function save(){
         $validated = $this->validate([
-            'espacios_id'=>'required',
             'grupo_id'=>'required',
         ]);
         // Check for blocks BEFORE creating
@@ -250,9 +249,11 @@ class ShowHorarios extends Component
             return;
         }
 
+
+
         $horario = Horario::create([
             'horarios_dia' =>$this->horarios_dia,
-            'espacios_id' =>$this->espacios_id ?? 0,
+            'espacios_id' =>$this->id_espacios ?? 0,
             'horas_id' =>$this->horas_id,
             'grupo_id' =>$this->grupo_id,
             'profesores_id' =>$this->profesores_id
@@ -475,6 +476,7 @@ class ShowHorarios extends Component
            $detalles = DB::table('grupos_detalles')
                                ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
                                ->where('grupos.modalidad_id', $modalidad)
+                               ->where('grupos.estado_id', 1) // Solo grupos activos
                                ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
                                ->orderBy('grupos_detalles.grupo_id', 'asc')
                                ->orderBy('grupos_detalles.dias_id', 'asc')
@@ -485,6 +487,7 @@ class ShowHorarios extends Component
            $detalles = DB::table('grupos_detalles')
                                ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
                                ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
+                               ->where('grupos.estado_id', 1) // Solo grupos activos
                                ->orderBy('grupos_detalles.grupo_id', 'asc')
                                ->orderBy('grupos_detalles.dias_id', 'asc')
                                ->orderBy('grupos_detalles.horas_id', 'asc')
