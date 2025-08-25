@@ -112,7 +112,7 @@
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->espacios_id }})"></i>
-                            <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteAsistencia',{{$item->espacios_id}})"></i>
+                            <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteEspacio',{{$item->espacios_id}})"></i>
                         </td>
                     </tr>
                     @empty
