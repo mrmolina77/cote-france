@@ -192,8 +192,13 @@
                                 </td>
 
                             @endforeach
-
-                           <td class="border text-center align-top"><samp class="font-serif font-extrabold text-sm">{{$horas2[$pos1]->horas_desde}} - {{$horas2[$pos1]->horas_hasta}}</samp></td>
+                           <td class="border text-center align-top">
+                            @if ($horas2[$pos1]->horas_id < 14)
+                                <samp class="font-serif font-extrabold text-sm">{{$horas2[$pos1]->horas_desde}} - {{$horas2[$pos1]->horas_hasta}}</samp>
+                            @else
+                                <samp class="font-serif font-extrabold text-sm"> </samp>
+                            @endif
+                           </td>
                            <td class="border p-0 text-center">
                                     <table class="border border-black">
                                         <tr>
@@ -286,9 +291,15 @@
                                                         data-grupo="0"
                                                         data-profesor="{{ $profesor->profesores_id }}"
                                                         >
-                                                            <div class="border-2 w-24 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dias2[0]->dias_id }}-{{ $horas2[$pos1]->horas_id }}-{{ $profesor->profesores_id }}"> {{-- Ancho ajustado --}}
-                                                                <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$horas2[$pos1]->horas_id}},{{$profesor->profesores_id}})"></i>
-                                                            </div>
+                                                            @if ($horas2[$pos1]->horas_id < 14)
+                                                                <div class="border-2 w-24 min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dias2[0]->dias_id }}-{{ $horas2[$pos1]->horas_id }}-{{ $profesor->profesores_id }}"> {{-- Ancho ajustado --}}
+                                                                    <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dias2[0]->dias_id)->isoFormat('YYYY-MM-DD')}}',{{ $profesor->profesores_id }},{{$horas2[$pos1]->horas_id}},{{$profesor->profesores_id}})"></i>
+                                                                </div>
+                                                            @else
+                                                                <div class="border-2 w-24 min-h-20 grid grid-cols-1 justify-center items-center"> {{-- Ancho ajustado --}}
+                                                                    <samp class="font-serif font-extrabold text-sm"> </samp>
+                                                                </div>
+                                                            @endif
                                                         </td>
                                                     @endif
                                                 @endif

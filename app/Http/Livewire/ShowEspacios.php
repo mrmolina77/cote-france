@@ -88,7 +88,11 @@ class ShowEspacios extends Component
     }
 
     public function delete(Espacio $espacio){
-        $espacio->delete();
-        $this->emit('alert','El espacio fue eliminado satifactoriamente');
+        try {
+            $espacio->delete();
+            $this->emit('alert','El espacio fue eliminado satifactoriamente');
+        } catch (\Exception $e) {
+            $this->emit('alert','Error al eliminar el espacio ya esta siendo utilizado','warning');
+        }
     }
 }
