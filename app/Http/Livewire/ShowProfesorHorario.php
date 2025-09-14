@@ -275,7 +275,7 @@ class ShowProfesorHorario extends Component
 
         $horario = Horario::where('horarios_id',$id)->first();
         $this->diarios_profesor = $horario->profesor->profesores_nombres .' '.$horario->profesor->profesores_apellidos;
-        $this->diarios_espacio = $horario->espacio->espacios_nombre;
+        $this->diarios_espacio = $horario->espacio->espacios_nombre ?? 'N/A';
 
         $grupoId = $horario->grupo_id;
 

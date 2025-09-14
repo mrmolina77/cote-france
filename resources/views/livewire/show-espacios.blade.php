@@ -1,6 +1,6 @@
 <div wire:init="loadPosts">
     @section('content')
-    <p>{{__('Spaces')}}</p>
+    <p>{{__('Salons')}}</p>
     @endsection
     <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
         <x-table>
@@ -176,7 +176,7 @@
 
     <x-dialog-modal wire:model="open_edit">
         <x-slot name="title">
-            Editar espacio
+            Editar salón
         </x-slot>
         <x-slot name="content">
             <div>

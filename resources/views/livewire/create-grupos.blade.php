@@ -130,7 +130,7 @@
                 <div class="basis-1/4">
                     <div class="mb-4">
                         <x-select class="flex-1 ml-4" wire:model="espacios_id">
-                            <option value="">{{__('Spaces')}}</option>
+                            <option value="">{{__('Salons')}}</option>
                             @forelse ($espacios as $item)
                             <option value="{{$item->espacios_id}}">{{$item->espacios_nombre}}</option>
                             @empty
@@ -159,7 +159,7 @@
                                 Horas
                             </th>
                             <th scope="col" class="px-6 py-3">
-                                Espacios
+                                Salones
                             </th>
                             <th scope="col" class="px-6 py-3">
                                 Acción

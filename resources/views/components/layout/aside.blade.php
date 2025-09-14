@@ -66,7 +66,7 @@
         @if(auth()->user()->role->roles_codigo == 'admin' )
         <x-layout.aside-link href="{{ route('espacios') }}" :active="request()->routeIs('espacios')">
             <i class="fas fa-align-left mr-3"></i>
-            {{ __('Spaces') }}
+            {{ __('Salons') }}
         </x-layout.aside-link>
         @endif
         @if(auth()->user()->role->roles_codigo == 'admin' )

@@ -402,7 +402,7 @@
         <x-slot name="content">
             <div>
                 <div class="mb-4 flex">
-                    <x-forms.label for="grupo_id" value="{{__('Group')}}: " />
+                    <x-forms.label for="grupo_id" value="{{__('Group')}}: "/>
                     <x-select class="flex-1 ml-4" wire:model.defer="grupo_id" id="grupo_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($grupos as $item)
@@ -415,7 +415,7 @@
                 <x-forms.input-error for="grupo_id"/>
                 <div>
                     <div class="mb-4 flex">
-                        <x-forms.label  for="id_espacios" value="{{__('Spaces')}}: " />
+                        <x-forms.label for="id_espacios" value="{{__('Salons')}}: "/>
                         <x-select class="flex-1 ml-4" wire:model="id_espacios" id="id_espacios">
                             <option value="">{{__('Select')}}</option>
                             @forelse ($espacios as $item)
@@ -449,8 +449,8 @@
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Teacher')}}: " class="font-bold mr-4" />
-                    <x-forms.label value="{{ $diarios_profesor}} " /> {{-- Añadido font-bold y margen --}}
-                    <x-forms.label value="{{__('Space')}}: " class="font-bold" />
+                    <x-forms.label value="{{ $diarios_profesor}} "/> {{-- Añadido font-bold y margen --}}
+                    <x-forms.label value="{{__('Salon')}}: " class="font-bold"/>
                     <x-select class="flex-1 ml-4" wire:model="espacios_id">
                         <option value="">{{__('Select')}}</option>
                         @forelse ($espacios as $item)
@@ -461,13 +461,13 @@
                     </x-select>
                 </div>
                 <div class="mb-4 flex">
-                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}: " />
+                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}: "/>
                     <x-forms.textarea id="diarios_hecho" rows="3" class="flex-1 ml-4" wire:model="diarios_hecho">
                     </x-forms.textarea>
                 </div>
                 <x-forms.input-error for="diarios_hecho"/>
                 <div class="mb-4 flex">
-                    <x-forms.label value="{{__('To do')}}: " />
+                    <x-forms.label value="{{__('To do')}}: "/>
                     <x-forms.textarea id="diarios_porhacer" rows="3" class="flex-1 ml-4" wire:model="diarios_porhacer">
                     </x-forms.textarea>
                 </div>
@@ -564,12 +564,12 @@
                             $diarios_hecho = $firstItem['horario']['diario']['diarios_hecho'] ?? 'Sin descripción';
                             $diarios_porhacer = $firstItem['horario']['diario']['diarios_porhacer'] ?? 'Sin descripción';
                             $fecha = date('d-m-Y', strtotime($firstItem['horario']['horarios_dia']));
-                            $profesor = $firstItem['horario']['profesor']['profesores_nombres'].' '.$firstItem['horario']['profesor']['profesores_nombres'];
+                            $profesor = ($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '');
                             $espacio = $firstItem['horario']['espacio']['espacios_nombre'];
                         @endphp
 
                         <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
-                        <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Espacio: {{ $espacio }} </p>
+                        <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Salón: {{ $espacio }} </p>
 
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
                             Hecho: {{ $diarios_hecho }}
