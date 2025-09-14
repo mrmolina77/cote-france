@@ -537,6 +537,15 @@ class ShowHorarios extends Component
 
     public function updateGrupoHorario($horarios_id, $horarios_dia, $horas_id, $grupo_id, $profesores_id, $espacios_id, $anterior_id)
     {
+        // --- INICIO: Validación de datos relacionados ---
+        // Si se está moviendo un horario existente (no creando uno nuevo desde un grupo base)
+        if ($anterior_id != '0') {
+            if (Evaluacion::where('horarios_id', $anterior_id)->exists()) {
+                $this->emit('alert', 'No se puede mover el horario porque ya tiene una clase asociada con evaluaciones.', 'Advertencia!', 'warning');
+                return;
+            }
+        }
+        // --- FIN: Validación de datos relacionados ---
         // dd($horarios_id, $horarios_dia, $horas_id, $grupo_id, $profesores_id, $espacios_id, $anterior_id);
         if ($grupo_id == '0') {
             $this->emit('alert', 'El horario está vacío, no se puede realizar esta operación', 'Advertencias!', 'warning');
