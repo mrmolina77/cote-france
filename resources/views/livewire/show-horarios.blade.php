@@ -47,29 +47,29 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(8rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(8rem, 1fr)); border: 2px solid; border-spacing: 2px;">
+                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(8rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(8rem, 1fr));">
                 {{-- Day/Professor Headers --}}
-                <div class="border p-2 w-40 sticky top-0 bg-gray-50 z-10">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
-                    <div class="border border-black p-[10px] sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
-                        <div class="text-center">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
+                    <div class="border-r border-gray-200 p-[10px] sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
+                        <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full border-1 items-center justify-center">
-                                <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-serif font-extrabold text-sm text-center">{{$profesor->profesores_nombres}}</div>
+                            <div class="w-full items-center justify-center p-1">
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
                     </div>
                 @endforeach
-                <div class="border p-2 w-40 sticky top-0 bg-gray-50 z-10">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
-                    <div class="border border-black p-[10px] sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
-                        <div class="text-center">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
+                    <div class="border-r border-gray-200 p-[10px] sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
+                        <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full border-1 items-center justify-center">
-                                <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-serif font-extrabold text-sm text-center">{{$profesor->profesores_nombres}}</div>
+                            <div class="w-full items-center justify-center p-1">
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
@@ -79,7 +79,7 @@
                 {{-- Schedule Body --}}
                 @foreach ($horas as $pos1 => $hora)
                     {{-- Hour Cell --}}
-                    <div class="border text-center align-top p-2"><samp class="font-serif font-extrabold text-sm">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></div>
+                    <div class="border-r border-gray-200 text-center p-2 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Dias (Mon-Fri) --}}
                     @foreach ($dias as $dia)
@@ -102,14 +102,14 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div class="h-full border p-0 text-center {{$cellgrupo}}"
+                                <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
                                     data-hora="{{ $hora->horas_id }}"
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                    <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
@@ -129,36 +129,36 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full border p-0 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                <div class="h-full p-1 text-center">
+                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
                                 </div>
                             @else
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full border p-0 text-center grupo-cell"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
                                         data-hora="{{$hora->horas_id}}"
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full border p-0 text-center grupo-cell"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
                                         data-hora="{{$hora->horas_id}}"
                                         data-grupo="0"
                                         data-profesor="{{ $profesor->profesores_id }}">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                         </div>
                                     </div>
@@ -168,9 +168,9 @@
                     @endforeach
 
                     {{-- Hour Cell (Weekend) --}}
-                    <div class="border text-center align-top p-2">
+                    <div class="border-r border-gray-200 text-center p-2 flex items-center justify-center">
                         @if (isset($horas2[$pos1]) && $horas2[$pos1]->horas_id < 14)
-                            <samp class="font-serif font-extrabold text-sm">{{$horas2[$pos1]->horas_desde}} - {{$horas2[$pos1]->horas_hasta}}</samp>
+                            <samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($horas2[$pos1]->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($horas2[$pos1]->horas_hasta)->format('H:i')}}</samp>
                         @else
                             <samp class="font-serif font-extrabold text-sm">&nbsp;</samp>
                         @endif
@@ -198,14 +198,14 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div class="h-full border p-0 text-center {{$cellgrupo}}"
+                                <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
                                     data-hora="{{ $currentHourId }}"
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                    <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
@@ -223,29 +223,29 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full border p-0 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                <div class="h-full p-1 text-center">
+                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
                                 </div>
                             @else
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full border p-0 text-center grupo-cell"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
                                         data-hora="{{$currentHourId}}"
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full border p-0 text-center grupo-cell"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -253,11 +253,11 @@
                                         data-grupo="0"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         @if ($currentHourId && $currentHourId < 14)
-                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                                 <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$currentHourId}},{{$profesor->profesores_id}})"></i>
                                             </div>
                                         @else
-                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center"></div>
+                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
                                         @endif
                                     </div>
                                 @endif
@@ -292,19 +292,19 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(8rem, 1fr)); border: 2px solid; border-spacing: 2px;">
+                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(8rem, 1fr));">
                 {{-- Professor Headers --}}
-                <div class="border p-2 w-40 sticky top-0 bg-gray-50 z-10">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
                     <div class="border p-2 sticky top-0 bg-gray-50 z-10 text-center">
-                        <div style="color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-serif font-extrabold text-sm">{{$profesor->profesores_nombres}}</div>
+                        <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                     </div>
                 @endforeach
 
                 {{-- Schedule Body --}}
                 @foreach ( $horas as $hora )
                     {{-- Hour Cell --}}
-                    <div class="border text-center align-top p-2"><samp class="font-serif font-extrabold text-sm">{{$hora->horas_desde}} - {{$hora->horas_hasta}}</samp></div>
+                    <div class="border-r border-gray-200 text-center p-2 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Professor Slots for this Hour --}}
                     @foreach ($profesores as $profesor)
@@ -383,7 +383,7 @@
                                     data-hora="{{$hora->horas_id}}"
                                     data-grupo="0"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDailyDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                     </div>
                                 </div>
