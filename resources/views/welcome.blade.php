@@ -18,7 +18,7 @@
 
             <!-- Lado izquierdo con el logo -->
             <div class="md:w-1/2 w-full flex items-center justify-center bg-[#0B1A4A] p-10">
-                <img src="{{ asset('images/cote_logo.png') }}" alt="Logo Côte Français" class="w-56 md:w-64">
+                <img src="{{ asset('images/cote_logo_white.png') }}" alt="Logo Côte Français" class="w-56 md:w-64">
             </div>
 
             <!-- Lado derecho con el formulario -->
