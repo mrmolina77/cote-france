@@ -1,7 +1,7 @@
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B1A4A] via-[#152C70] to-[#1E3A8A] px-4 relative overflow-hidden">
 
-        <!-- Patrón decorativo en el fondo -->
+        <!-- Fondo rejilla -->
         <div class="absolute inset-0 opacity-20">
             <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                 <defs>
