@@ -3,16 +3,24 @@
        :class="open ? 'w-64' : 'w-20'">
 
     <!-- Header -->
-    <div class="p-6 flex items-center justify-between bg-gradient-to-r from-indigo-700 to-indigo-500">
+    <div class="p-6 flex items-center bg-sidebar" :class="open ? 'justify-between' : 'justify-center'">
         <a href="{{ route('dashboard') }}"
            class="text-white text-2xl font-semibold capitalize hover:text-gray-200"
            x-show="open">
             Côté France
         </a>
 
+        <!-- Logo colapsado (se muestra cuando el menú está cerrado) -->
+        <a href="{{ route('dashboard') }}"
+           x-show="!open"
+           class="transition-opacity duration-300">
+            <img src="{{ asset('images/cote_logo_white.png') }}" alt="Logo" class="h-8 w-auto">
+        </a>
+
         <!-- Botón colapsar -->
         <button @click="open = !open"
-                class="text-white ml-auto focus:outline-none">
+                class="text-white focus:outline-none"
+                :class="open ? 'ml-auto' : 'absolute top-7 right-4'">
             <i :class="open ? 'fas fa-angle-left' : 'fas fa-angle-right'"></i>
         </button>
     </div>

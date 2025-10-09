@@ -144,24 +144,6 @@ class ShowProfesorHorario extends Component
         ]);
     }
 
-    public function edit($horarios_dia, $espacios_id, $horas_id, $profesores_id, $grupo_id = '')
-    {
-        $id_relacionado = auth()->user()->relacionados_id;
-
-        // Only allow editing if it's the logged-in professor's schedule
-        if ($profesores_id != $id_relacionado) {
-            $this->emit('alert', 'Solo puedes editar tu propio horario', 'Advertencia', 'warning');
-            return;
-        }
-
-        $this->horarios_dia = $horarios_dia;
-        $this->espacios_id = $espacios_id;
-        $this->horas_id = $horas_id;
-        $this->grupo_id = $grupo_id;
-        $this->profesores_id = $profesores_id;
-        $this->open_edit = true;
-    }
-
     public function anterior()
     {
         $this->fecha = $this->fecha->subWeek();
@@ -180,34 +162,6 @@ class ShowProfesorHorario extends Component
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
-    }
-
-    public function save()
-    {
-        $id_relacionado = auth()->user()->relacionados_id;
-
-        // Only allow saving if it's the logged-in professor's schedule
-        if ($this->profesores_id != $id_relacionado) {
-            $this->emit('alert', 'Solo puedes editar tu propio horario', 'Advertencia', 'warning');
-            return;
-        }
-
-        $validated = $this->validate([
-            'espacios_id' => 'required',
-            'grupo_id' => 'required',
-        ]);
-
-        $prospecto = Horario::create([
-            'horarios_dia' => $this->horarios_dia,
-            'espacios_id' => $this->espacios_id,
-            'horas_id' => $this->horas_id,
-            'grupo_id' => $this->grupo_id,
-            'profesores_id' => $this->profesores_id
-        ]);
-
-        $this->reset(['open_edit', 'horarios_dia', 'espacios_id', 'grupo_id', 'horas_id', 'profesores_id']);
-        $this->emitTo('show-profesor-horario', 'render');
-        $this->emit('alert', 'El horario fue agregado satisfactoriamente');
     }
 
     public function delete(Horario $horario)
@@ -472,71 +426,6 @@ class ShowProfesorHorario extends Component
         }
 
         return $grupo_deta;
-    }
-
-    public function updateGrupoHorario($horarios_id, $horarios_dia, $horas_id, $grupo_id, $profesores_id, $espacios_id, $anterior_id)
-    {
-        $id_relacionado = auth()->user()->relacionados_id;
-
-        // Only allow updating if it's the logged-in professor's schedule
-        if ($profesores_id != $id_relacionado) {
-            $this->emit('alert', 'Solo puedes editar tu propio horario', 'Advertencia', 'warning');
-            return;
-        }
-
-        if ($grupo_id == '0') {
-            $this->emit('alert', 'El horario está vacío, no se puede realizar esta operación', 'Advertencias!', 'warning');
-        } elseif ($horarios_id != '0' && $horarios_id == $anterior_id) {
-            $this->emit('alert', 'El horario es el mismo, no se puede realizar esta operación', 'Advertencias!', 'warning');
-        } else {
-            if ($anterior_id != '0') {
-                $horario = Horario::find($anterior_id);
-                if (!is_null($horario) && is_object($horario)) {
-                    $horario->delete();
-                    unset($horario);
-                }
-            }
-
-            if ($horarios_id != '0') {
-                $horario = Horario::find($horarios_id);
-                if ($horario) {
-                    $horario->update([
-                        'horarios_dia' => $horarios_dia,
-                        'horas_id' => $horas_id,
-                        'grupo_id' => $grupo_id,
-                        'espacios_id' => $espacios_id,
-                        'profesores_id' => $profesores_id,
-                    ]);
-                } else {
-                    $horario = Horario::create([
-                        'horarios_dia' => $horarios_dia,
-                        'horas_id' => $horas_id,
-                        'grupo_id' => $grupo_id,
-                        'espacios_id' => $espacios_id,
-                        'profesores_id' => $profesores_id,
-                    ]);
-                }
-            } else {
-                $cantidad = Horario::where('horarios_dia', $horarios_dia)
-                    ->where('espacios_id', $espacios_id)
-                    ->where('horas_id', $horas_id)
-                    ->where('grupo_id', $grupo_id)
-                    ->where('profesores_id', $profesores_id)
-                    ->count();
-
-                if ($cantidad == 0) {
-                    $horario = Horario::create([
-                        'horarios_dia' => $horarios_dia,
-                        'horas_id' => $horas_id,
-                        'grupo_id' => $grupo_id,
-                        'espacios_id' => $espacios_id,
-                        'profesores_id' => $profesores_id,
-                    ]);
-                }
-            }
-
-            $this->emit('alert', 'El horario fue agregado satisfactoriamente');
-        }
     }
 
     public function obtenerProfesores($fecha, $hora, $modalidad_id)
