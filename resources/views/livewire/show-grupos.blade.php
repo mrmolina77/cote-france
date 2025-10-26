@@ -198,7 +198,7 @@
             </table>
             @if (count($grupos) > 0 and !is_array($grupos) and $grupos->hasPages())
                 <div class="px-6 py-3">
-                    {{$prospectos->links()}}
+                    {{$grupos->links()}}
                 </div>
             @endif
         </x-table>
