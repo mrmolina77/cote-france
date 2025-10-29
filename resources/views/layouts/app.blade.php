@@ -8,8 +8,9 @@
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
         <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
         <link rel="icon" href="{{ asset('favicon.ico') }}">
@@ -23,7 +24,7 @@
         @stack('css')
         @livewireStyles
     </head>
-    <body class="bg-gray-100 font-family-karla flex">
+    <body class="bg-gray-100 font-sans flex">
         <x-layout.aside />
         <div class="relative w-full flex flex-col h-screen">
             <!-- Desktop Header -->
