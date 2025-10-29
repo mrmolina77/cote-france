@@ -109,7 +109,7 @@
                                     data-hora="{{ $hora->horas_id }}"
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div style="{{$estilosDisplay}}" class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
@@ -130,7 +130,7 @@
                                 </div>
                             @elseif ($isBlocked)
                                 <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
                                 </div>
@@ -144,7 +144,7 @@
                                         data-hora="{{$hora->horas_id}}"
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
@@ -158,7 +158,7 @@
                                         data-hora="{{$hora->horas_id}}"
                                         data-grupo="0"
                                         data-profesor="{{ $profesor->profesores_id }}">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                         </div>
                                     </div>
@@ -205,7 +205,7 @@
                                     data-hora="{{ $currentHourId }}"
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div style="{{$estilosDisplay}}" class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
@@ -224,7 +224,7 @@
                                 </div>
                             @elseif ($isBlocked)
                                 <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
                                 </div>
@@ -238,7 +238,7 @@
                                         data-hora="{{$currentHourId}}"
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
@@ -253,11 +253,11 @@
                                         data-grupo="0"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         @if ($currentHourId && $currentHourId < 14)
-                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                                 <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$currentHourId}},{{$profesor->profesores_id}})"></i>
                                             </div>
                                         @else
-                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
+                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
                                         @endif
                                     </div>
                                 @endif
@@ -334,7 +334,7 @@
                                 data-hora="{{ $hora->horas_id }}"
                                 data-grupo="{{ $horarioItem['grupo_id'] }}"
                                 data-profesor="{{ $profesor->profesores_id }}">
-                                <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                <div style="{{$estilosDisplay}}" class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
                                     <div style="{{ $estilosParaDiv }}" class="font-sans text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
@@ -355,7 +355,7 @@
                             </div>
                         @elseif ($isBlockedDaily)
                             <div class="h-full border p-0 text-center">
-                                <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600" wire:key="blocked-daily-{{ $currentDailyDateString }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600" wire:key="blocked-daily-{{ $currentDailyDateString }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                     <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                 </div>
                             </div>
@@ -369,7 +369,7 @@
                                     data-hora="{{$hora->horas_id}}"
                                     data-grupo="{{$grupoDetalle['grupo_id']}}"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-sm uppercase">
                                             {{$grupoDetalle['grupo_nombre']}}
                                         </div>
@@ -383,7 +383,7 @@
                                     data-hora="{{$hora->horas_id}}"
                                     data-grupo="0"
                                     data-profesor="{{ $profesor->profesores_id }}">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDailyDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                     </div>
                                 </div>
