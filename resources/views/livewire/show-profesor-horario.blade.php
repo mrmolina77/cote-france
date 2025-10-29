@@ -92,7 +92,7 @@
 
                             @if ($horarioItem)
                                 <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -110,7 +110,7 @@
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
                                     <div class="h-full p-1 text-center">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
@@ -118,7 +118,7 @@
                                     </div>
                                 @else
                                     <div class="h-full p-1 text-center">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             {{-- Celda vacía sin acciones --}}
                                         </div>
                                     </div>
@@ -148,7 +148,7 @@
 
                             @if ($horarioItem)
                                 <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             {{$horarioItem['nombre']}}
                                         </div>
@@ -162,7 +162,7 @@
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
                                     <div class="h-full p-1 text-center">
-                                        <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
@@ -171,11 +171,11 @@
                                 @else
                                     <div class="h-full p-1 text-center">
                                         @if ($currentHourId)
-                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                                 {{-- Celda vacía sin acciones --}}
                                             </div>
                                         @else
-                                            <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
+                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
                                         @endif
                                     </div>
                                 @endif
@@ -235,7 +235,7 @@
 
                         @if ($horarioItem)
                             <div class="h-full border p-0 text-center">
-                                <div class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
                                     <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -253,7 +253,7 @@
                             @php $grupoDetalle = $grupo_deta[$currentDayOfWeek][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                             @if($grupoDetalle)
                                 <div class="h-full border p-0 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                             {{$grupoDetalle['grupo_nombre']}}
                                         </div>
@@ -261,7 +261,7 @@
                                 </div>
                             @else
                                 <div class="h-full border p-0 text-center">
-                                    <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         {{-- Celda vacía sin acciones --}}
                                     </div>
                                 </div>
