@@ -16,7 +16,7 @@ class ShowAsistencias extends Component
     public $sort = 'asistencias_id';
     public $direction = 'asc';
     public $asistencia;
-    public $cant = 25;
+    public $cant = 50;
     public $readyToLoad = false;
 
     public $open_edit = false;

@@ -16,7 +16,7 @@ class ShowProgramadas extends Component
     public $sort = 'horarios_dia';
     public $direction = 'asc';
     public $prospecto;
-    public $cant = 25;
+    public $cant = 50;
     public $readyToLoad = false;
     public $open_edit = false;
     public $asistencia;

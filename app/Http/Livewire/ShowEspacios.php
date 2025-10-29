@@ -14,7 +14,7 @@ class ShowEspacios extends Component
     public $search = "";
     public $sort = 'espacios_id';
     public $direction = 'asc';
-    public $cant = 25;
+    public $cant = 50;
     public $readyToLoad = false;
 
     public $open_edit = false;

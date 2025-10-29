@@ -23,7 +23,7 @@ class ShowGrupos extends Component
     public $sort = 'grupo_id';
     public $direction = 'asc';
     public $grupo,$espacios_id,$dias_id,$horasid,$nivelid,$diasid;
-    public $cant = 25;
+    public $cant = 50;
     public $readyToLoad = false;
     public $detalles_grupos=array(),$espacios,$arr_capitulos,$arr_horas,$arr_niveles;
     public $borrados=array();
