@@ -21,7 +21,7 @@ class ShowProspectos extends Component
     public $sort = 'prospectos_id';
     public $direction = 'asc';
     public $prospecto;
-    public $cant = 25;
+    public $cant = 50;
     public $readyToLoad = false;
     public $horarios,$grupoid;
 
