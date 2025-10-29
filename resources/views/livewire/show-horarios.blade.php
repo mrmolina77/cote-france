@@ -110,7 +110,7 @@
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
-                                        <div style="{{ $estilosParaDiv }}" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
+                                        <div style="{{ $estilosParaDiv }}" class="font-sans text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
                                             @elseif ($nombreDelHorario === "BLOQUEADO")
@@ -145,7 +145,7 @@
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
+                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
@@ -172,7 +172,7 @@
                         @if (isset($horas2[$pos1]) && $horas2[$pos1]->horas_id < 14)
                             <samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($horas2[$pos1]->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($horas2[$pos1]->horas_hasta)->format('H:i')}}</samp>
                         @else
-                            <samp class="font-serif font-extrabold text-sm">&nbsp;</samp>
+                            <samp class="font-sans font-extrabold text-sm">&nbsp;</samp>
                         @endif
                     </div>
 
@@ -206,7 +206,7 @@
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
-                                        <div style="{{ $estilosParaDiv }}" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
+                                        <div style="{{ $estilosParaDiv }}" class="font-sans text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
                                             @else
@@ -239,7 +239,7 @@
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
+                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
@@ -335,7 +335,7 @@
                                 data-grupo="{{ $horarioItem['grupo_id'] }}"
                                 data-profesor="{{ $profesor->profesores_id }}">
                                 <div style="{{$estilosDisplay}}" class="w-full min-h-20 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
-                                    <div style="{{ $estilosParaDiv }}" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
+                                    <div style="{{ $estilosParaDiv }}" class="font-sans text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
                                         @elseif ($nombreDelHorario === "BLOQUEADO")
@@ -370,7 +370,7 @@
                                     data-grupo="{{$grupoDetalle['grupo_id']}}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-20 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                        <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
+                                        <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-sm uppercase">
                                             {{$grupoDetalle['grupo_nombre']}}
                                         </div>
                                     </div>
@@ -503,7 +503,7 @@
             </div>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="font-serif font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                    <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th scope="col" class="px-6 py-3 rounded-s-lg w-1/2">
                                 Estudiante
@@ -582,7 +582,7 @@
                         </p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="font-serif font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-4 py-2">Estudiante</th>
                                     <th class="px-4 py-2">Asistencia</th>
