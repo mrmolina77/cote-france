@@ -108,6 +108,19 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
+                    wire:click="order('profesores_activo')">
+                    Activo
+                    @if ($sort == 'profesores_activo')
+                        @if ($direction == 'asc')
+                            <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
+                        @else
+                            <i class="fas fa-sort-alpha-down-alt float-right mt-1"></i>
+                        @endif
+                    @else
+                        <i class="fas fa-sort float-right mt-1"></i>
+                    @endif
+                    </th>
+                <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
                     wire:click="order('profesores_email')">
                     Color
                     @if ($sort == 'profesores_color')
@@ -147,6 +160,9 @@
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->modalidad_nombre}}
+                    </td>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{ $item->profesores_activo ? 'Si' : 'No' }}
                     </td>
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <div class="w-16 h-8 rounded" style="background-color: {{$item->profesores_color}};"></div>

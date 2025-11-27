@@ -79,11 +79,12 @@ class ShowProfesores extends Component
             ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
                     ,'profesores.profesores_email','profesores.profesores_id'
                     ,'profesores.profesores_fecha_ingreso','profesores.profesores_color'
-                    ,'modalidades.modalidad_nombre')
+                    ,'profesores.profesores_activo','modalidades.modalidad_nombre')
             ->join('modalidades','profesores.modalidad_id','=','modalidades.modalidad_id')
             ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_email','like','%'.trim($this->search).'%')
+            ->orderBy($this->sort, $this->direction)
             ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
@@ -208,7 +209,9 @@ class ShowProfesores extends Component
             $profesor->delete();
             $this->emit('alert','El profesor fue eliminado satifactoriamente');
         } catch (\Throwable $th) {
-            $this->emit('alert', 'Error al eliminar el profesor: '.$th->getMessage(), 'Error!', 'error');
+            $profesor->profesores_activo = false;
+            $profesor->save();
+            $this->emit('alert', 'El profesor no se pudo eliminar y se marcó como inactivo.', 'Advertencia', 'warning');
         }
     }
     // Métodos para añadir/quitar bloques en el formulario de EDICIÓN
