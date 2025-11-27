@@ -400,7 +400,7 @@
             confirmButtonText: "{{__('Yes, delete it!')}}"
             }).then((result) => {
             if (result.isConfirmed) {
-                livewire.emitTo('show-prospectos','delete',itemId);
+                livewire.emitTo('show-profesores','delete',itemId);
             }
             });
         })
