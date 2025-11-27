@@ -214,6 +214,18 @@ class ShowProfesores extends Component
             $this->emit('alert', 'El profesor no se pudo eliminar y se marcó como inactivo.', 'Advertencia', 'warning');
         }
     }
+
+    public function activate($profesorId)
+    {
+        $profesor = Profesor::find($profesorId);
+
+        if ($profesor) {
+            $profesor->profesores_activo = true;
+            $profesor->save();
+
+            $this->emit('alert', 'El profesor fue activado satisfactoriamente');
+        }
+    }
     // Métodos para añadir/quitar bloques en el formulario de EDICIÓN
     public function addRecurringBlockForUpdate()
     {
