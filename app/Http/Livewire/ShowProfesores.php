@@ -204,8 +204,12 @@ class ShowProfesores extends Component
     }
 
     public function delete(Profesor $profesor){
-        $profesor->delete();
-        $this->emit('alert','El profesor fue eliminado satifactoriamente');
+        try {
+            $profesor->delete();
+            $this->emit('alert','El profesor fue eliminado satifactoriamente');
+        } catch (\Throwable $th) {
+            $this->emit('alert', 'Error al eliminar el profesor: '.$th->getMessage(), 'Error!', 'error');
+        }
     }
     // Métodos para añadir/quitar bloques en el formulario de EDICIÓN
     public function addRecurringBlockForUpdate()
