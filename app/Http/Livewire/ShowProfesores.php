@@ -75,6 +75,10 @@ class ShowProfesores extends Component
         if($this->readyToLoad){
             // $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
             //                             ->paginate($this->cant);
+            $sortColumn = $this->sort === 'modalidad_id'
+                ? 'modalidades.modalidad_id'
+                : 'profesores.' . $this->sort;
+
             $profesores = DB::table('profesores')
             ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
                     ,'profesores.profesores_email','profesores.profesores_id'
@@ -84,7 +88,7 @@ class ShowProfesores extends Component
             ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
             ->orWhere('profesores.profesores_email','like','%'.trim($this->search).'%')
-            ->orderBy($this->sort, $this->direction)
+            ->orderBy($sortColumn, $this->direction)
             ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
