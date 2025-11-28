@@ -441,6 +441,7 @@ class ShowProfesorHorario extends Component
                 ->where('horas_id', $hora);
         })
         ->where('modalidad_id', $modalidad_id)
+        ->where('profesores_activo', true)
         ->where('profesores_id', $id_relacionado) // Only the logged-in professor
         ->pluck('profesores_id');
 
