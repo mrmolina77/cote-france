@@ -124,7 +124,9 @@ class ShowProfesorHorario extends Component
         $this->ocupados = array();
         $grupo_deta = $this->cargaDetalleGrupo();
         $grupos = Grupo::where('modalidad_id', $this->modalidad)->where('estado_id', 1)->get();
-        $profesores = Profesor::where('modalidad_id', $this->modalidad)->get();
+        $profesores = Profesor::where('modalidad_id', $this->modalidad)
+            ->where('profesores_activo', true)
+            ->get();
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
 
