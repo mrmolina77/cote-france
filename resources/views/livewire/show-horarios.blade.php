@@ -49,26 +49,26 @@
             ]) wire:updated="initializeDragAndDrop">
                 <div class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Day/Professor Headers --}}
-                <div class="border-r border-gray-200 p-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
-                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
+                    <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full items-center justify-center p-1">
+                            <div class="w-full items-center justify-center p-0.5">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
                     </div>
                 @endforeach
-                <div class="border-r border-gray-200 p-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
-                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
+                    <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full items-center justify-center p-1">
+                            <div class="w-full items-center justify-center p-0.5">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
@@ -79,7 +79,7 @@
                 {{-- Schedule Body --}}
                 @foreach ($horas as $pos1 => $hora)
                     {{-- Hour Cell --}}
-                    <div class="border-r border-gray-200 text-center p-1 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
+                    <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Dias (Mon-Fri) --}}
                     @foreach ($dias as $dia)
@@ -102,7 +102,7 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div class="h-full p-1 text-center {{$cellgrupo}}"
+                                <div class="h-full p-0.5 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -129,7 +129,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-1 text-center">
+                                <div class="h-full p-0.5 text-center">
                                     <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -137,7 +137,7 @@
                             @else
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full p-1 text-center grupo-cell"
+                                    <div class="h-full p-0.5 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -151,7 +151,7 @@
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full p-1 text-center grupo-cell"
+                                    <div class="h-full p-0.5 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -168,7 +168,7 @@
                     @endforeach
 
                     {{-- Hour Cell (Weekend) --}}
-                    <div class="border-r border-gray-200 text-center p-1 flex items-center justify-center">
+                    <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center">
                         @if (isset($horas2[$pos1]) && $horas2[$pos1]->horas_id < 14)
                             <samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($horas2[$pos1]->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($horas2[$pos1]->horas_hasta)->format('H:i')}}</samp>
                         @else
@@ -198,7 +198,7 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div class="h-full p-1 text-center {{$cellgrupo}}"
+                                <div class="h-full p-0.5 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -223,7 +223,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-1 text-center">
+                                <div class="h-full p-0.5 text-center">
                                     <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -231,7 +231,7 @@
                             @else
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full p-1 text-center grupo-cell"
+                                    <div class="h-full p-0.5 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -245,7 +245,7 @@
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full p-1 text-center grupo-cell"
+                                    <div class="h-full p-0.5 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -294,9 +294,9 @@
             ]) wire:updated="initializeDragAndDrop">
                 <div class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Professor Headers --}}
-                <div class="border-r border-gray-200 p-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
-                    <div class="border p-2 sticky top-0 bg-gray-50 z-10 text-center">
+                    <div class="border p-0.5 sticky top-0 bg-gray-50 z-10 text-center">
                         <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                     </div>
                 @endforeach
@@ -304,7 +304,7 @@
                 {{-- Schedule Body --}}
                 @foreach ( $horas as $hora )
                     {{-- Hour Cell --}}
-                      <div class="border-r border-gray-200 text-center p-1 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
+                      <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Professor Slots for this Hour --}}
                     @foreach ($profesores as $profesor)
