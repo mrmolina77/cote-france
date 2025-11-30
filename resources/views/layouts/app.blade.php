@@ -32,7 +32,7 @@
             <!-- Mobile Header & Nav -->
             <x-layout.mobile-header />
             <!-- Page Content -->
-            <main>
+            <main class="flex-1 w-full overflow-auto">
                 {{ $slot }}
             </main>
 
