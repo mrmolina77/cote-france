@@ -38,6 +38,22 @@
                 </div>
             </div>
 
+            {{-- Barra de navegación por día --}}
+            <div class="flex items-center justify-center px-2 py-3 bg-white border-b">
+                <div class="flex gap-2 overflow-x-auto max-w-full" data-day-nav>
+                    @foreach ($dias as $dia)
+                        @php
+                            $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                        @endphp
+                        <button type="button"
+                            class="px-3 py-1 text-sm font-semibold border rounded-lg bg-white text-gray-700 whitespace-nowrap day-nav-button"
+                            data-day-target="{{ $currentDateString }}">
+                            {{$dia->dias_nombre}}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
             {{-- Contenedor del Grid con Scroll --}}
             <div class="space-y-2">
                 <div @class([
@@ -724,6 +740,9 @@
 
         const collapsedKey = (dayId, profesorId) => `${dayId}::${profesorId}`;
 
+        let dayPositions = [];
+        let activeDayId = null;
+
         const syncScrollLeft = (source, target) => {
             if (!source || !target) return;
             target.scrollLeft = source.scrollLeft;
@@ -744,6 +763,81 @@
                         fullName.classList.remove('hidden');
                     }
                 }
+            });
+        };
+
+        const setActiveDay = (dayId) => {
+            activeDayId = dayId;
+            document.querySelectorAll('[data-day-target]').forEach((button) => {
+                const isActive = button.dataset.dayTarget === dayId;
+                button.classList.toggle('bg-blue-600', isActive);
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('border-blue-600', isActive);
+                button.classList.toggle('bg-white', !isActive);
+                button.classList.toggle('text-gray-700', !isActive);
+            });
+        };
+
+        const updateDayPositions = () => {
+            const table = document.getElementById('horarios-table');
+            if (!table) return;
+
+            const daysList = parseDatasetArray(table.dataset.days);
+
+            dayPositions = daysList
+                .map((dayId) => {
+                    const headerGrid = table.querySelector(`.profesor-header-grid[data-day="${dayId}"]`);
+                    if (!headerGrid) return null;
+
+                    return {
+                        dayId,
+                        start: headerGrid.offsetLeft,
+                        width: headerGrid.offsetWidth,
+                    };
+                })
+                .filter(Boolean);
+        };
+
+        const scrollToDay = (dayId) => {
+            const horariosWrapper = getHorariosWrapper();
+            if (!horariosWrapper) return;
+
+            const dayPosition = dayPositions.find((day) => day.dayId === dayId);
+            if (!dayPosition) return;
+
+            horariosWrapper.scrollTo({
+                left: dayPosition.start,
+                behavior: 'smooth',
+            });
+
+            setActiveDay(dayId);
+        };
+
+        const trackActiveDayOnScroll = () => {
+            const horariosWrapper = getHorariosWrapper();
+            if (!horariosWrapper || dayPositions.length === 0) return;
+
+            const scrollPosition = horariosWrapper.scrollLeft + horariosWrapper.clientWidth / 3;
+
+            let currentDay = dayPositions[0].dayId;
+
+            dayPositions.forEach((day) => {
+                if (scrollPosition >= day.start && scrollPosition < day.start + day.width) {
+                    currentDay = day.dayId;
+                }
+            });
+
+            if (currentDay !== activeDayId) {
+                setActiveDay(currentDay);
+            }
+        };
+
+        const registerDayNavButtons = () => {
+            document.querySelectorAll('[data-day-target]').forEach((button) => {
+                if (button.dataset.navBound === 'true') return;
+                button.dataset.navBound = 'true';
+
+                button.addEventListener('click', () => scrollToDay(button.dataset.dayTarget));
             });
         };
 
@@ -809,6 +903,8 @@
             });
 
             refreshScrollbarWidth();
+            updateDayPositions();
+            trackActiveDayOnScroll();
         };
 
         const setupScrollbarSync = () => {
@@ -820,6 +916,7 @@
             horariosScrollbar.dataset.syncBound = 'true';
 
             horariosWrapper.addEventListener('scroll', () => syncScrollLeft(horariosWrapper, horariosScrollbar));
+            horariosWrapper.addEventListener('scroll', trackActiveDayOnScroll);
             horariosScrollbar.addEventListener('scroll', () => syncScrollLeft(horariosScrollbar, horariosWrapper));
 
             refreshScrollbarWidth();
@@ -901,17 +998,25 @@
         initializeDragAndDrop();
         updateGridColumns();
         registerProfessorHeaderToggles();
+        registerDayNavButtons();
         setupScrollbarSync();
         refreshScrollbarWidth();
-        window.addEventListener('resize', refreshScrollbarWidth);
+        window.addEventListener('resize', () => {
+            refreshScrollbarWidth();
+            updateDayPositions();
+            trackActiveDayOnScroll();
+        });
 
         // Volver a inicializar después de una actualización de Livewire
         document.addEventListener('livewire:update', () => {
             initializeDragAndDrop();
             updateGridColumns();
             registerProfessorHeaderToggles();
+            registerDayNavButtons();
             setupScrollbarSync();
             refreshScrollbarWidth();
+            updateDayPositions();
+            trackActiveDayOnScroll();
         });
     });
 
