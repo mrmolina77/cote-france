@@ -58,7 +58,7 @@
                     data-collapsed-width="2.5rem"
                     style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Day/Professor Headers --}}
-                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 left-0 bg-gray-50 z-20 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
                     <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
@@ -76,7 +76,7 @@
                         </div>
                     </div>
                 @endforeach
-                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 left-0 bg-gray-50 z-20 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
                     <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
@@ -98,7 +98,7 @@
                 {{-- Schedule Body --}}
                 @foreach ($horas as $pos1 => $hora)
                     {{-- Hour Cell --}}
-                    <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
+                    <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center sticky left-0 bg-white z-10"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Dias (Mon-Fri) --}}
                     @foreach ($dias as $dia)
@@ -187,7 +187,7 @@
                     @endforeach
 
                     {{-- Hour Cell (Weekend) --}}
-                    <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center">
+                    <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center sticky left-0 bg-white z-10">
                         @if (isset($horas2[$pos1]) && $horas2[$pos1]->horas_id < 14)
                             <samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($horas2[$pos1]->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($horas2[$pos1]->horas_hasta)->format('H:i')}}</samp>
                         @else
@@ -322,7 +322,7 @@
                     data-collapsed-width="2.5rem"
                     style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Professor Headers --}}
-                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 left-0 bg-gray-50 z-20 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
                     <div class="border p-0.5 sticky top-0 bg-gray-50 z-10 text-center">
                         <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
@@ -337,7 +337,7 @@
                 {{-- Schedule Body --}}
                 @foreach ( $horas as $hora )
                     {{-- Hour Cell --}}
-                      <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
+                      <div class="border-r border-gray-200 text-center p-0.5 flex items-center justify-center sticky left-0 bg-white z-10"><samp class="font-sans font-semibold text-sm leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Professor Slots for this Hour --}}
                     @foreach ($profesores as $profesor)
