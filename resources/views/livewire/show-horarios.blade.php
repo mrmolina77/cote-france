@@ -62,7 +62,7 @@
                 @foreach ( $dias as $dia )
                     <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
-                        <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
+                        <div class="grid profesor-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             <div class="w-full items-center justify-center p-0.5">
                                 <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
@@ -80,7 +80,7 @@
                 @foreach ( $dias2 as $dia )
                     <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
-                        <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
+                        <div class="grid profesor-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             <div class="w-full items-center justify-center p-0.5">
                                 <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
@@ -747,6 +747,12 @@
             }
 
             table.style.gridTemplateColumns = columns.join(' ');
+
+            const headerTemplate = profesoresList.map((id) => widthFor(id)).join(' ');
+
+            document.querySelectorAll('.profesor-header-grid').forEach((grid) => {
+                grid.style.gridTemplateColumns = headerTemplate;
+            });
         };
 
         const registerProfessorHeaderToggles = () => {
