@@ -47,7 +47,16 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
+                <div
+                    class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
+                    id="horarios-table"
+                    data-view="weekly"
+                    data-dias-count="{{ count($dias) }}"
+                    data-dias2-count="{{ count($dias2) }}"
+                    data-profesores='@json($profesores->pluck("profesores_id"))'
+                    data-default-width="6rem"
+                    data-collapsed-width="2.5rem"
+                    style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Day/Professor Headers --}}
                 <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
@@ -56,7 +65,12 @@
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             <div class="w-full items-center justify-center p-0.5">
-                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                                <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
+                                    <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">
+                                        <span class="profesor-name-full">{{$profesor->profesores_nombres}}</span>
+                                        <span class="profesor-name-initial hidden">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1)) }}</span>
+                                    </div>
+                                </button>
                             </div>
                             @endforeach
                         </div>
@@ -69,7 +83,12 @@
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             <div class="w-full items-center justify-center p-0.5">
-                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                                <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
+                                    <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">
+                                        <span class="profesor-name-full">{{$profesor->profesores_nombres}}</span>
+                                        <span class="profesor-name-initial hidden">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1)) }}</span>
+                                    </div>
+                                </button>
                             </div>
                             @endforeach
                         </div>
@@ -292,12 +311,26 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
+                <div
+                    class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
+                    id="horarios-table"
+                    data-view="daily"
+                    data-dias-count="1"
+                    data-dias2-count="0"
+                    data-profesores='@json($profesores->pluck("profesores_id"))'
+                    data-default-width="6rem"
+                    data-collapsed-width="2.5rem"
+                    style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Professor Headers --}}
                 <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
                     <div class="border p-0.5 sticky top-0 bg-gray-50 z-10 text-center">
-                        <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                        <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
+                            <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">
+                                <span class="profesor-name-full">{{$profesor->profesores_nombres}}</span>
+                                <span class="profesor-name-initial hidden">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1)) }}</span>
+                            </div>
+                        </button>
                     </div>
                 @endforeach
 
@@ -654,6 +687,89 @@
     // Escuchar el evento de Livewire para inicializar el arrastre y la caída
 
     document.addEventListener('DOMContentLoaded', function () {
+        const collapsedProfesores = new Set();
+
+        const syncHeaderState = (profesorId, isCollapsed) => {
+            document.querySelectorAll(`[data-profesor-id="${profesorId}"]`).forEach(header => {
+                header.classList.toggle('is-collapsed', isCollapsed);
+                const fullName = header.querySelector('.profesor-name-full');
+                const initialName = header.querySelector('.profesor-name-initial');
+
+                if (fullName && initialName) {
+                    if (isCollapsed) {
+                        fullName.classList.add('hidden');
+                        initialName.classList.remove('hidden');
+                    } else {
+                        initialName.classList.add('hidden');
+                        fullName.classList.remove('hidden');
+                    }
+                }
+            });
+        };
+
+        const updateGridColumns = () => {
+            const table = document.getElementById('horarios-table');
+            if (!table) return;
+
+            const profesoresData = table.dataset.profesores || '[]';
+            let profesoresList = [];
+
+            try {
+                const parsed = JSON.parse(profesoresData);
+                profesoresList = Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                profesoresList = [];
+            }
+
+            const defaultWidth = table.dataset.defaultWidth || '6rem';
+            const collapsedWidth = table.dataset.collapsedWidth || '2.5rem';
+            const view = table.dataset.view || 'weekly';
+            const diasCount = Number(table.dataset.diasCount || 0);
+            const dias2Count = Number(table.dataset.dias2Count || 0);
+            const widthFor = (id) => collapsedProfesores.has(String(id)) ? `minmax(${collapsedWidth}, 0.75fr)` : `minmax(${defaultWidth}, 1fr)`;
+
+            const columns = ['auto'];
+
+            if (view === 'weekly') {
+                for (let i = 0; i < diasCount; i += 1) {
+                    profesoresList.forEach((id) => columns.push(widthFor(id)));
+                }
+
+                columns.push('auto');
+
+                for (let i = 0; i < dias2Count; i += 1) {
+                    profesoresList.forEach((id) => columns.push(widthFor(id)));
+                }
+            } else {
+                profesoresList.forEach((id) => columns.push(widthFor(id)));
+            }
+
+            table.style.gridTemplateColumns = columns.join(' ');
+        };
+
+        const registerProfessorHeaderToggles = () => {
+            document.querySelectorAll('.profesor-header').forEach((header) => {
+                if (header.dataset.toggleBound === 'true') return;
+                header.dataset.toggleBound = 'true';
+
+                header.addEventListener('click', () => {
+                    const profesorId = header.dataset.profesorId;
+
+                    if (collapsedProfesores.has(profesorId)) {
+                        collapsedProfesores.delete(profesorId);
+                        syncHeaderState(profesorId, false);
+                    } else {
+                        collapsedProfesores.add(profesorId);
+                        syncHeaderState(profesorId, true);
+                    }
+
+                    updateGridColumns();
+                });
+            });
+
+            collapsedProfesores.forEach((profesorId) => syncHeaderState(profesorId, true));
+        };
+
         const initializeDragAndDrop = () => {
             let table = document.getElementById('horarios-table');
             let cells = table.querySelectorAll('.grupo-cell');
@@ -697,10 +813,14 @@
 
         // Inicializar al cargar la página
         initializeDragAndDrop();
+        updateGridColumns();
+        registerProfessorHeaderToggles();
 
         // Volver a inicializar después de una actualización de Livewire
         document.addEventListener('livewire:update', () => {
             initializeDragAndDrop();
+            updateGridColumns();
+            registerProfessorHeaderToggles();
         });
     });
 
