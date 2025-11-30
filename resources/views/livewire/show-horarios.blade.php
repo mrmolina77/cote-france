@@ -65,7 +65,7 @@
                     'scale-50 w-[200%]' => $porcentaje == '4',
                 ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div
-                    class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
+                    class="grid min-w-0 w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
                     id="horarios-table"
                     data-view="weekly"
                     data-dias-count="{{ count($dias) }}"
@@ -339,7 +339,7 @@
                     'scale-50 w-[200%]' => $porcentaje == '4',
                 ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div
-                        class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
+                        class="grid min-w-0 w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
                         id="horarios-table"
                         data-view="daily"
                         data-dias-count="1"
