@@ -295,9 +295,6 @@
                 @endforeach
                 </div>
             </div>
-            <div id="horarios-scrollbar" class="h-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded">
-                <div data-scroll-indicator class="h-2 bg-gray-200 rounded"></div>
-            </div>
             </div>
         @else
             {{-- Cabecera Fija --}}
@@ -441,9 +438,6 @@
                     @endforeach
                 @endforeach
                 </div>
-            </div>
-            <div id="horarios-scrollbar" class="h-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded">
-                <div data-scroll-indicator class="h-2 bg-gray-200 rounded"></div>
             </div>
             </div>
         @endif
