@@ -54,6 +54,8 @@
                     data-dias-count="{{ count($dias) }}"
                     data-dias2-count="{{ count($dias2) }}"
                     data-profesores='@json($profesores->pluck("profesores_id"))'
+                    data-days='@json($dias->map(fn($dia) => \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')))' 
+                    data-days2='@json($dias2->map(fn($dia) => \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')))' 
                     data-default-width="6rem"
                     data-collapsed-width="2.5rem"
                     style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
@@ -62,10 +64,13 @@
                 @foreach ( $dias as $dia )
                     <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
-                        <div class="grid profesor-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
+                        @php
+                            $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                        @endphp
+                        <div class="grid profesor-header-grid" data-day="{{ $currentDateString }}" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             <div class="w-full items-center justify-center p-0.5">
-                                <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
+                                <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}" data-day="{{ $currentDateString }}">
                                     <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">
                                         <span class="profesor-name-full">{{$profesor->profesores_nombres}}</span>
                                         <span class="profesor-name-initial hidden">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1)) }}</span>
@@ -80,10 +85,13 @@
                 @foreach ( $dias2 as $dia )
                     <div class="border-r border-gray-200 p-0.5 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
-                        <div class="grid profesor-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
+                        @php
+                            $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                        @endphp
+                        <div class="grid profesor-header-grid" data-day="{{ $currentDateString }}" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             <div class="w-full items-center justify-center p-0.5">
-                                <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
+                                <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}" data-day="{{ $currentDateString }}">
                                     <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">
                                         <span class="profesor-name-full">{{$profesor->profesores_nombres}}</span>
                                         <span class="profesor-name-initial hidden">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1)) }}</span>
@@ -318,6 +326,8 @@
                     data-dias-count="1"
                     data-dias2-count="0"
                     data-profesores='@json($profesores->pluck("profesores_id"))'
+                    data-days='@json([\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')])'
+                    data-days2='[]'
                     data-default-width="6rem"
                     data-collapsed-width="2.5rem"
                     style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
@@ -325,7 +335,7 @@
                 <div class="border-r border-gray-200 p-0.5 w-16 sticky top-0 left-0 bg-gray-50 z-20 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
                     <div class="border p-0.5 sticky top-0 bg-gray-50 z-10 text-center">
-                        <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}">
+                        <button type="button" class="w-full profesor-header" data-profesor-id="{{ $profesor->profesores_id }}" data-day="{{ \Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD') }}">
                             <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">
                                 <span class="profesor-name-full">{{$profesor->profesores_nombres}}</span>
                                 <span class="profesor-name-initial hidden">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1)) }}</span>
@@ -689,8 +699,19 @@
     document.addEventListener('DOMContentLoaded', function () {
         const collapsedProfesores = new Set();
 
-        const syncHeaderState = (profesorId, isCollapsed) => {
-            document.querySelectorAll(`[data-profesor-id="${profesorId}"]`).forEach(header => {
+        const parseDatasetArray = (value) => {
+            try {
+                const parsed = JSON.parse(value || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
+            }
+        };
+
+        const collapsedKey = (dayId, profesorId) => `${dayId}::${profesorId}`;
+
+        const syncHeaderState = (profesorId, dayId, isCollapsed) => {
+            document.querySelectorAll(`[data-profesor-id="${profesorId}"][data-day="${dayId}"]`).forEach(header => {
                 header.classList.toggle('is-collapsed', isCollapsed);
                 const fullName = header.querySelector('.profesor-name-full');
                 const initialName = header.querySelector('.profesor-name-initial');
@@ -724,33 +745,36 @@
             const defaultWidth = table.dataset.defaultWidth || '6rem';
             const collapsedWidth = table.dataset.collapsedWidth || '2.5rem';
             const view = table.dataset.view || 'weekly';
-            const diasCount = Number(table.dataset.diasCount || 0);
-            const dias2Count = Number(table.dataset.dias2Count || 0);
-            const widthFor = (id) => collapsedProfesores.has(String(id))
+            const daysList = parseDatasetArray(table.dataset.days);
+            const days2List = parseDatasetArray(table.dataset.days2);
+
+            const widthFor = (dayId, profesorId) => collapsedProfesores.has(collapsedKey(dayId, profesorId))
                 ? `minmax(${collapsedWidth}, ${collapsedWidth})`
                 : `minmax(${defaultWidth}, 1fr)`;
 
             const columns = ['auto'];
 
             if (view === 'weekly') {
-                for (let i = 0; i < diasCount; i += 1) {
-                    profesoresList.forEach((id) => columns.push(widthFor(id)));
-                }
+                daysList.forEach((dayId) => {
+                    profesoresList.forEach((id) => columns.push(widthFor(dayId, id)));
+                });
 
                 columns.push('auto');
 
-                for (let i = 0; i < dias2Count; i += 1) {
-                    profesoresList.forEach((id) => columns.push(widthFor(id)));
-                }
+                days2List.forEach((dayId) => {
+                    profesoresList.forEach((id) => columns.push(widthFor(dayId, id)));
+                });
             } else {
-                profesoresList.forEach((id) => columns.push(widthFor(id)));
+                daysList.forEach((dayId) => {
+                    profesoresList.forEach((id) => columns.push(widthFor(dayId, id)));
+                });
             }
 
             table.style.gridTemplateColumns = columns.join(' ');
 
-            const headerTemplate = profesoresList.map((id) => widthFor(id)).join(' ');
-
             document.querySelectorAll('.profesor-header-grid').forEach((grid) => {
+                const dayId = grid.dataset.day;
+                const headerTemplate = profesoresList.map((id) => widthFor(dayId, id)).join(' ');
                 grid.style.gridTemplateColumns = headerTemplate;
             });
         };
@@ -762,20 +786,28 @@
 
                 header.addEventListener('click', () => {
                     const profesorId = header.dataset.profesorId;
+                    const dayId = header.dataset.day;
 
-                    if (collapsedProfesores.has(profesorId)) {
-                        collapsedProfesores.delete(profesorId);
-                        syncHeaderState(profesorId, false);
+                    if (!dayId) return;
+
+                    const key = collapsedKey(dayId, profesorId);
+
+                    if (collapsedProfesores.has(key)) {
+                        collapsedProfesores.delete(key);
+                        syncHeaderState(profesorId, dayId, false);
                     } else {
-                        collapsedProfesores.add(profesorId);
-                        syncHeaderState(profesorId, true);
+                        collapsedProfesores.add(key);
+                        syncHeaderState(profesorId, dayId, true);
                     }
 
                     updateGridColumns();
                 });
             });
 
-            collapsedProfesores.forEach((profesorId) => syncHeaderState(profesorId, true));
+            collapsedProfesores.forEach((key) => {
+                const [dayId, profesorId] = key.split('::');
+                syncHeaderState(profesorId, dayId, true);
+            });
         };
 
         const initializeDragAndDrop = () => {
