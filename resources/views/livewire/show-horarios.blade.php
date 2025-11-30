@@ -39,15 +39,19 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
-            <div @class([
-                'overflow-x-auto origin-top-left',
-                'scale-100 w-full' => $porcentaje == '0',
-                'scale-95 w-[105.26%]' => $porcentaje == '1',
-                'scale-90 w-[111.11%]' => $porcentaje == '2',
-                'scale-75 w-[133.33%]' => $porcentaje == '3',
-                'scale-50 w-[200%]' => $porcentaje == '4',
-            ]) wire:updated="initializeDragAndDrop">
-                <div
+            <div class="space-y-2">
+                <div id="horarios-scrollbar" class="h-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded">
+                    <div data-scroll-indicator class="h-2 bg-gray-200 rounded"></div>
+                </div>
+                <div @class([
+                    'overflow-x-auto origin-top-left max-w-full',
+                    'scale-100 w-full' => $porcentaje == '0',
+                    'scale-95 w-[105.26%]' => $porcentaje == '1',
+                    'scale-90 w-[111.11%]' => $porcentaje == '2',
+                    'scale-75 w-[133.33%]' => $porcentaje == '3',
+                    'scale-50 w-[200%]' => $porcentaje == '4',
+                ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
+                    <div
                     class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
                     id="horarios-table"
                     data-view="weekly"
@@ -293,6 +297,7 @@
                     @endforeach
                 @endforeach
                 </div>
+                </div>
             </div>
         @else
             {{-- Cabecera Fija --}}
@@ -311,20 +316,24 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
-            <div @class([
-                'overflow-x-auto origin-top-left',
-                'scale-100 w-full' => $porcentaje == '0',
-                'scale-95 w-[105.26%]' => $porcentaje == '1',
-                'scale-90 w-[111.11%]' => $porcentaje == '2',
-                'scale-75 w-[133.33%]' => $porcentaje == '3',
-                'scale-50 w-[200%]' => $porcentaje == '4',
-            ]) wire:updated="initializeDragAndDrop">
-                <div
-                    class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
-                    id="horarios-table"
-                    data-view="daily"
-                    data-dias-count="1"
-                    data-dias2-count="0"
+            <div class="space-y-2">
+                <div id="horarios-scrollbar" class="h-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded">
+                    <div data-scroll-indicator class="h-2 bg-gray-200 rounded"></div>
+                </div>
+                <div @class([
+                    'overflow-x-auto origin-top-left max-w-full',
+                    'scale-100 w-full' => $porcentaje == '0',
+                    'scale-95 w-[105.26%]' => $porcentaje == '1',
+                    'scale-90 w-[111.11%]' => $porcentaje == '2',
+                    'scale-75 w-[133.33%]' => $porcentaje == '3',
+                    'scale-50 w-[200%]' => $porcentaje == '4',
+                ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
+                    <div
+                        class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden"
+                        id="horarios-table"
+                        data-view="daily"
+                        data-dias-count="1"
+                        data-dias2-count="0"
                     data-profesores='@json($profesores->pluck("profesores_id"))'
                     data-days='@json([\Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD')])'
                     data-days2='[]'
@@ -699,6 +708,13 @@
     document.addEventListener('DOMContentLoaded', function () {
         const collapsedProfesores = new Set();
 
+        const getHorariosWrapper = () => document.getElementById('horarios-wrapper');
+        const getHorariosScrollbar = () => document.getElementById('horarios-scrollbar');
+        const getScrollIndicator = () => {
+            const scrollbar = getHorariosScrollbar();
+            return scrollbar ? scrollbar.querySelector('[data-scroll-indicator]') : null;
+        };
+
         const parseDatasetArray = (value) => {
             try {
                 const parsed = JSON.parse(value || '[]');
@@ -709,6 +725,11 @@
         };
 
         const collapsedKey = (dayId, profesorId) => `${dayId}::${profesorId}`;
+
+        const syncScrollLeft = (source, target) => {
+            if (!source || !target) return;
+            target.scrollLeft = source.scrollLeft;
+        };
 
         const syncHeaderState = (profesorId, dayId, isCollapsed) => {
             document.querySelectorAll(`[data-profesor-id="${profesorId}"][data-day="${dayId}"]`).forEach(header => {
@@ -726,6 +747,14 @@
                     }
                 }
             });
+        };
+
+        const refreshScrollbarWidth = () => {
+            const scrollIndicator = getScrollIndicator();
+            if (!scrollIndicator) return;
+            const table = document.getElementById('horarios-table');
+            if (!table) return;
+            scrollIndicator.style.width = `${table.scrollWidth}px`;
         };
 
         const updateGridColumns = () => {
@@ -777,6 +806,22 @@
                 const headerTemplate = profesoresList.map((id) => widthFor(dayId, id)).join(' ');
                 grid.style.gridTemplateColumns = headerTemplate;
             });
+
+            refreshScrollbarWidth();
+        };
+
+        const setupScrollbarSync = () => {
+            const horariosWrapper = getHorariosWrapper();
+            const horariosScrollbar = getHorariosScrollbar();
+
+            if (!horariosWrapper || !horariosScrollbar || horariosScrollbar.dataset.syncBound === 'true') return;
+
+            horariosScrollbar.dataset.syncBound = 'true';
+
+            horariosWrapper.addEventListener('scroll', () => syncScrollLeft(horariosWrapper, horariosScrollbar));
+            horariosScrollbar.addEventListener('scroll', () => syncScrollLeft(horariosScrollbar, horariosWrapper));
+
+            refreshScrollbarWidth();
         };
 
         const registerProfessorHeaderToggles = () => {
@@ -855,12 +900,17 @@
         initializeDragAndDrop();
         updateGridColumns();
         registerProfessorHeaderToggles();
+        setupScrollbarSync();
+        refreshScrollbarWidth();
+        window.addEventListener('resize', refreshScrollbarWidth);
 
         // Volver a inicializar después de una actualización de Livewire
         document.addEventListener('livewire:update', () => {
             initializeDragAndDrop();
             updateGridColumns();
             registerProfessorHeaderToggles();
+            setupScrollbarSync();
+            refreshScrollbarWidth();
         });
     });
 
