@@ -726,7 +726,9 @@
             const view = table.dataset.view || 'weekly';
             const diasCount = Number(table.dataset.diasCount || 0);
             const dias2Count = Number(table.dataset.dias2Count || 0);
-            const widthFor = (id) => collapsedProfesores.has(String(id)) ? `minmax(${collapsedWidth}, 0.75fr)` : `minmax(${defaultWidth}, 1fr)`;
+            const widthFor = (id) => collapsedProfesores.has(String(id))
+                ? `minmax(${collapsedWidth}, ${collapsedWidth})`
+                : `minmax(${defaultWidth}, 1fr)`;
 
             const columns = ['auto'];
 
