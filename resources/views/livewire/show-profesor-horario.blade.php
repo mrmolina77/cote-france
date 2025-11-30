@@ -51,7 +51,7 @@
                     $columnWidth = 'minmax(7rem, 1fr)';
                     $gridTemplate = "6.5rem repeat(" . (count($dias) * count($profesores)) . ", {$columnWidth}) 6.5rem repeat(" . (count($dias2) * count($profesores)) . ", {$columnWidth})";
                 @endphp
-                <div class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: {{ $gridTemplate }};">
+                <div class="grid min-w-0 w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: {{ $gridTemplate }};">
                 {{-- Day/Professor Headers --}}
                 <div class="border-r border-gray-200 p-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
@@ -214,7 +214,7 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-0 border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
+                <div class="grid min-w-0 w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Professor Headers --}}
                 <div class="border-r border-gray-200 p-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
