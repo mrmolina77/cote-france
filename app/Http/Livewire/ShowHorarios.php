@@ -185,8 +185,8 @@ class ShowHorarios extends Component
         $profesores = Profesor::where('modalidad_id', $this->modalidad)
             ->where('profesores_activo', true)
             ->get();
-        $dias = Dia::take(5)->get();
-        $dias2 = Dia::offset(5)->limit(5)->get();
+        $dias = Dia::whereBetween('dias_id', [1, 5])->get();
+        $dias2 = Dia::where('dias_id', 6)->get();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
