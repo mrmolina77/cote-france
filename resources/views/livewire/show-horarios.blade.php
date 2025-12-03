@@ -6,7 +6,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full max-w-4xl grid-cols-5 gap-4 mx-auto">
+                <div class="grid h-full max-w-lg grid-cols-4 gap-4 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -16,18 +16,18 @@
                         </button>
                     </div>
                     <div class="flex items-center">
-                        <x-select id="semanal-select" class="w-full text-sm font-medium text-gray-900 py-2.5 px-5" wire:model="semanal">
-                            <option value="1">{{__('Weekly')}}</option>
-                            <option value="0">{{__('Daily')}}</option>
-                        </x-select>
-                    </div>
-                    <div class="flex items-center">
                         <x-select id="porcentaje-select" class="w-full text-sm font-medium text-gray-900 py-2.5 px-5" wire:model="porcentaje">
                             @forelse ($porcentajes as $key => $item)
                             <option value="{{$key}}">{{$item}}</option>
                             @empty
                             <option value="">{{__('No Content')}}</option>
                             @endforelse
+                        </x-select>
+                    </div>
+                    <div class="flex items-center">
+                        <x-select id="semanal-select" class="w-full text-sm font-medium text-gray-900" wire:model="semanal">
+                            <option value="1">{{__('Weekly')}}</option>
+                            <option value="0">{{__('Daily')}}</option>
                         </x-select>
                     </div>
                     <div class="flex items-center justify-center">
@@ -41,7 +41,7 @@
             {{-- Barra de navegación por día --}}
             <div class="flex items-center justify-center px-2 py-3 bg-white border-b">
                 <div class="flex gap-2 overflow-x-auto max-w-full" data-day-nav>
-                    @foreach ($dias_nav as $dia)
+                    @foreach ($dias as $dia)
                         @php
                             $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                         @endphp
@@ -73,7 +73,6 @@
                     data-profesores='@json($profesores->pluck("profesores_id"))'
                     data-days='@json($dias->map(fn($dia) => \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')))' 
                     data-days2='@json($dias2->map(fn($dia) => \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')))' 
-                    data-all-days='@json($dias_nav->map(fn($dia) => \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')))' 
                     data-default-width="6rem"
                     data-collapsed-width="2.5rem"
                     style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
@@ -758,11 +757,6 @@
             }
         };
 
-        const getAllDayIds = (table) => {
-            if (!table) return [];
-            return parseDatasetArray(table.dataset.allDays || table.dataset.days);
-        };
-
         const collapsedKey = (dayId, profesorId) => `${dayId}::${profesorId}`;
 
         let dayPositions = [];
@@ -807,7 +801,7 @@
             const table = document.getElementById('horarios-table');
             if (!table) return;
 
-            const daysList = getAllDayIds(table);
+            const daysList = parseDatasetArray(table.dataset.days);
 
             dayPositions = daysList
                 .map((dayId) => {
