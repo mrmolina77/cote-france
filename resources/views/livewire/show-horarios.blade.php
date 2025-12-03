@@ -455,9 +455,6 @@
                 @endforeach
                 </div>
             </div>
-            <div id="horarios-scrollbar" class="overflow-x-auto h-3 rounded bg-gray-200">
-                <div data-scroll-indicator class="h-3 bg-gray-400 rounded"></div>
-            </div>
             </div>
         @endif
     </div>
