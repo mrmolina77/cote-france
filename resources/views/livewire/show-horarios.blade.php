@@ -56,15 +56,14 @@
 
             {{-- Contenedor del Grid con Scroll --}}
             <div class="space-y-2 w-full h-full">
-                <div class="overflow-x-auto origin-top-left w-full min-w-full" id="horarios-wrapper" wire:updated="initializeDragAndDrop">
-                    <div @class([
-                        'min-w-full w-full',
-                        'scale-100' => $porcentaje == '0',
-                        'scale-95 w-[105.26%]' => $porcentaje == '1',
-                        'scale-90 w-[111.11%]' => $porcentaje == '2',
-                        'scale-75 w-[133.33%]' => $porcentaje == '3',
-                        'scale-50 w-[200%]' => $porcentaje == '4',
-                    ]) class="inline-block">
+                <div @class([
+                    'overflow-x-auto origin-top-left w-full min-w-full',
+                    'scale-100 w-full' => $porcentaje == '0',
+                    'scale-95 w-[105.26%]' => $porcentaje == '1',
+                    'scale-90 w-[111.11%]' => $porcentaje == '2',
+                    'scale-75 w-[133.33%]' => $porcentaje == '3',
+                    'scale-50 w-[200%]' => $porcentaje == '4',
+                ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div
                     class="grid min-w-full w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
                     id="horarios-table"
@@ -332,15 +331,14 @@
 
             {{-- Contenedor del Grid con Scroll --}}
             <div class="space-y-2 w-full">
-                <div class="overflow-x-auto origin-top-left w-full min-w-full" id="horarios-wrapper" wire:updated="initializeDragAndDrop">
-                    <div @class([
-                        'min-w-full w-full',
-                        'scale-100' => $porcentaje == '0',
-                        'scale-95 w-[105.26%]' => $porcentaje == '1',
-                        'scale-90 w-[111.11%]' => $porcentaje == '2',
-                        'scale-75 w-[133.33%]' => $porcentaje == '3',
-                        'scale-50 w-[200%]' => $porcentaje == '4',
-                    ]) class="inline-block">
+                <div @class([
+                    'overflow-x-auto origin-top-left w-full min-w-full',
+                    'scale-100 w-full' => $porcentaje == '0',
+                    'scale-95 w-[105.26%]' => $porcentaje == '1',
+                    'scale-90 w-[111.11%]' => $porcentaje == '2',
+                    'scale-75 w-[133.33%]' => $porcentaje == '3',
+                    'scale-50 w-[200%]' => $porcentaje == '4',
+                ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div
                         class="grid min-w-full w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
                         id="horarios-table"
