@@ -187,7 +187,6 @@ class ShowHorarios extends Component
             ->get();
         $dias = Dia::whereBetween('dias_id', [1, 5])->get();
         $dias2 = Dia::where('dias_id', 6)->get();
-        $dias_nav = Dia::whereBetween('dias_id', [1, 6])->get();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
@@ -199,7 +198,6 @@ class ShowHorarios extends Component
                                            ,'profesores'=>$profesores
                                            ,'dias'=>$dias
                                            ,'dias2'=>$dias2
-                                           ,'dias_nav'=>$dias_nav
                                            ,'fecha'=>$this->fecha
                                             ]);
     }
