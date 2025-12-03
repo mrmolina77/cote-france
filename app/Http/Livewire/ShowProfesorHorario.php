@@ -91,6 +91,9 @@ class ShowProfesorHorario extends Component
         // Get all horarios for the week
         $horarios = Horario::where('horarios_dia', '>=', $this->inicio)
             ->where('horarios_dia', '<=', $this->fin)
+            ->whereHas('profesor', function ($query) {
+                $query->where('profesores_activo', 1);
+            })
             ->orderBy('horarios_dia', 'asc')
             ->orderBy('horas_id', 'asc')
             ->orderBy('profesores_id', 'asc')
@@ -124,7 +127,9 @@ class ShowProfesorHorario extends Component
         $this->ocupados = array();
         $grupo_deta = $this->cargaDetalleGrupo();
         $grupos = Grupo::where('modalidad_id', $this->modalidad)->where('estado_id', 1)->get();
-        $profesores = Profesor::where('modalidad_id', $this->modalidad)->get();
+        $profesores = Profesor::where('modalidad_id', $this->modalidad)
+            ->where('profesores_activo', 1)
+            ->get();
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
 
@@ -361,6 +366,9 @@ class ShowProfesorHorario extends Component
 
         $horarios = Horario::where('horarios_dia', '>=', $this->inicio)
             ->where('horarios_dia', '<=', $this->fin)
+            ->whereHas('profesor', function ($query) {
+                $query->where('profesores_activo', 1);
+            })
             ->orderBy('horarios_dia', 'asc')
             ->orderBy('horas_id', 'asc')
             ->orderBy('profesores_id', 'asc')
@@ -439,6 +447,7 @@ class ShowProfesorHorario extends Component
                 ->where('horas_id', $hora);
         })
         ->where('modalidad_id', $modalidad_id)
+        ->where('profesores_activo', 1)
         ->where('profesores_id', $id_relacionado) // Only the logged-in professor
         ->pluck('profesores_id');
 
