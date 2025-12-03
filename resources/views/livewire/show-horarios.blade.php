@@ -845,13 +845,10 @@
 
         const refreshScrollbarWidth = () => {
             const scrollIndicator = getScrollIndicator();
-            const horariosWrapper = getHorariosWrapper();
-            if (!scrollIndicator || !horariosWrapper) return;
-
-            const totalScrollableWidth = horariosWrapper.scrollWidth;
-            if (totalScrollableWidth) {
-                scrollIndicator.style.width = `${totalScrollableWidth}px`;
-            }
+            if (!scrollIndicator) return;
+            const table = document.getElementById('horarios-table');
+            if (!table) return;
+            scrollIndicator.style.width = `${table.scrollWidth}px`;
         };
 
         const updateGridColumns = () => {
