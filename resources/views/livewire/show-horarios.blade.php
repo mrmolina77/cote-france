@@ -55,7 +55,7 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
-            <div class="space-y-2 w-full h-full">
+            <div class="space-y-2">
                 <div @class([
                     'overflow-x-auto origin-top-left max-w-full',
                     'scale-100 w-full' => $porcentaje == '0',
