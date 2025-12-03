@@ -719,7 +719,7 @@
     <script>
     // Escuchar el evento de Livewire para inicializar el arrastre y la caída
 
-    const initializeHorariosUI = () => {
+    document.addEventListener('DOMContentLoaded', function () {
         const collapsedProfesores = new Set();
 
         const getHorariosWrapper = () => document.getElementById('horarios-wrapper');
@@ -1018,14 +1018,8 @@
             updateDayPositions();
             trackActiveDayOnScroll();
         });
-    };
+    });
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeHorariosUI);
-    } else {
-        initializeHorariosUI();
-    }
-    
     </script>
     @endpush
 
