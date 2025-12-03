@@ -12,7 +12,7 @@ class Profesor extends Model
     use Notifiable;
 
     protected $fillable = ['profesores_nombres','profesores_apellidos','profesores_email','modalidad_id',
-                           'profesores_color','profesores_horas_semanales','profesores_fecha_ingreso'];
+                           'profesores_color','profesores_horas_semanales','profesores_fecha_ingreso','profesores_activo'];
 
     /**
     * The table associated with the model.
@@ -51,9 +51,13 @@ class Profesor extends Model
         return $this->profesores_email;
     }
 
-    public function bloqueos()
-    {
-        return $this->hasMany(BloqueosProfesores::class, 'profesor_id', 'profesores_id');
-    }
+   public function bloqueos()
+   {
+       return $this->hasMany(BloqueosProfesores::class, 'profesor_id', 'profesores_id');
+   }
+
+    protected $casts = [
+        'profesores_activo' => 'boolean',
+    ];
 
 }
