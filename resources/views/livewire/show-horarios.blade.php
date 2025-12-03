@@ -6,7 +6,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full w-full max-w-full grid-cols-5 gap-4">
+                <div class="grid h-full max-w-4xl grid-cols-5 gap-4 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -57,7 +57,7 @@
             {{-- Contenedor del Grid con Scroll --}}
             <div class="space-y-2 w-full h-full">
                 <div @class([
-                    'overflow-x-auto origin-top-left w-full min-w-full',
+                    'overflow-x-auto origin-top-left max-w-full',
                     'scale-100 w-full' => $porcentaje == '0',
                     'scale-95 w-[105.26%]' => $porcentaje == '1',
                     'scale-90 w-[111.11%]' => $porcentaje == '2',
@@ -65,7 +65,7 @@
                     'scale-50 w-[200%]' => $porcentaje == '4',
                 ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div
-                    class="grid min-w-full w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
+                    class="grid min-w-0 w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
                     id="horarios-table"
                     data-view="weekly"
                     data-dias-count="{{ count($dias) }}"
@@ -316,7 +316,7 @@
         @else
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full w-full max-w-full grid-cols-2 gap-4 p-2">
+                <div class="grid h-full max-w-lg grid-cols-2 gap-4 mx-auto p-2">
                     <div>
                         <input type="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" wire:model="ydiario">
                     </div>
@@ -330,9 +330,9 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
-            <div class="space-y-2 w-full">
+            <div class="space-y-2">
                 <div @class([
-                    'overflow-x-auto origin-top-left w-full min-w-full',
+                    'overflow-x-auto origin-top-left max-w-full',
                     'scale-100 w-full' => $porcentaje == '0',
                     'scale-95 w-[105.26%]' => $porcentaje == '1',
                     'scale-90 w-[111.11%]' => $porcentaje == '2',
@@ -340,7 +340,7 @@
                     'scale-50 w-[200%]' => $porcentaje == '4',
                 ]) id="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div
-                        class="grid min-w-full w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
+                        class="grid min-w-0 w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
                         id="horarios-table"
                         data-view="daily"
                         data-dias-count="1"
