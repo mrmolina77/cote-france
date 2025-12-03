@@ -56,7 +56,7 @@
 
             {{-- Contenedor del Grid con Scroll --}}
             <div class="space-y-2 w-full h-full">
-                <div class="overflow-x-auto origin-top-left w-full min-w-full" id="horarios-wrapper" wire:updated="initializeDragAndDrop">
+                <div class="overflow-x-auto origin-top-left w-full min-w-full" id="horarios-wrapper-weekly" data-role="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div @class([
                         'min-w-full w-full',
                         'scale-100' => $porcentaje == '0',
@@ -67,7 +67,8 @@
                     ]) class="inline-block">
                     <div
                     class="grid min-w-full w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
-                    id="horarios-table"
+                    id="horarios-table-weekly"
+                    data-role="horarios-table"
                     data-view="weekly"
                     data-dias-count="{{ count($dias) }}"
                     data-dias2-count="{{ count($dias2) }}"
@@ -332,7 +333,7 @@
 
             {{-- Contenedor del Grid con Scroll --}}
             <div class="space-y-2 w-full">
-                <div class="overflow-x-auto origin-top-left w-full min-w-full" id="horarios-wrapper" wire:updated="initializeDragAndDrop">
+                <div class="overflow-x-auto origin-top-left w-full min-w-full" id="horarios-wrapper-daily" data-role="horarios-wrapper" wire:updated="initializeDragAndDrop">
                     <div @class([
                         'min-w-full w-full',
                         'scale-100' => $porcentaje == '0',
@@ -343,7 +344,8 @@
                     ]) class="inline-block">
                     <div
                         class="grid min-w-full w-full h-full border-2 border-gray-200 rounded-lg overflow-hidden"
-                        id="horarios-table"
+                        id="horarios-table-daily"
+                        data-role="horarios-table"
                         data-view="daily"
                         data-dias-count="1"
                         data-dias2-count="0"
@@ -458,7 +460,7 @@
                 @endforeach
                 </div>
             </div>
-            <div id="horarios-scrollbar" class="overflow-x-auto h-3 rounded bg-gray-200">
+            <div id="horarios-scrollbar-weekly" data-role="horarios-scrollbar" class="overflow-x-auto h-3 rounded bg-gray-200">
                 <div data-scroll-indicator class="h-3 bg-gray-400 rounded"></div>
             </div>
             </div>
@@ -744,8 +746,9 @@
 
         const collapsedProfesores = new Set(loadCollapsedProfesores());
 
-        const getHorariosWrapper = () => document.getElementById('horarios-wrapper');
-        const getHorariosScrollbar = () => document.getElementById('horarios-scrollbar');
+        const getHorariosWrapper = () => document.querySelector('[data-role="horarios-wrapper"]');
+        const getHorariosScrollbar = () => document.querySelector('[data-role="horarios-scrollbar"]');
+        const getHorariosTable = () => document.querySelector('[data-role="horarios-table"]');
         const getScrollIndicator = () => {
             const scrollbar = getHorariosScrollbar();
             return scrollbar ? scrollbar.querySelector('[data-scroll-indicator]') : null;
@@ -806,7 +809,7 @@
         };
 
         const updateDayPositions = () => {
-            const table = document.getElementById('horarios-table');
+            const table = getHorariosTable();
             if (!table) return;
 
             const daysList = getAllDayIds(table);
@@ -880,7 +883,7 @@
         };
 
         const updateGridColumns = () => {
-            const table = document.getElementById('horarios-table');
+            const table = getHorariosTable();
             if (!table) return;
 
             const profesoresData = table.dataset.profesores || '[]';
@@ -984,7 +987,7 @@
         };
 
         const initializeDragAndDrop = () => {
-            let table = document.getElementById('horarios-table');
+            let table = getHorariosTable();
             let cells = table.querySelectorAll('.grupo-cell');
 
             cells.forEach(cell => {
