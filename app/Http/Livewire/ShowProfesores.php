@@ -7,6 +7,7 @@ use App\Models\Dia;
 use App\Models\Modalidad;
 use App\Models\Hora;
 use App\Models\Profesor;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -72,30 +73,24 @@ class ShowProfesores extends Component
     public function render()
     {
         if($this->readyToLoad){
-            $profesores = Profesor::query()
-                ->select(
-                    'profesores.profesores_id',
-                    'profesores.profesores_nombres',
-                    'profesores.profesores_apellidos',
-                    'profesores.profesores_email',
-                    'profesores.profesores_fecha_ingreso',
-                    'profesores.profesores_color',
-                    'profesores.profesores_activo',
-                    'modalidades.modalidad_nombre'
-                )
-                ->join('modalidades', 'profesores.modalidad_id', '=', 'modalidades.modalidad_id')
-                ->when($this->search, function ($query) {
-                    $search = trim($this->search);
-                    $query->where(function ($subQuery) use ($search) {
-                        $subQuery->where('profesores.profesores_nombres', 'like', "%{$search}%")
-                            ->orWhere('profesores.profesores_apellidos', 'like', "%{$search}%")
-                            ->orWhere('profesores.profesores_email', 'like', "%{$search}%");
-                    });
-                })
-                ->orderBy($this->resolveSortColumn(), $this->direction)
-                ->paginate($this->cant);
+            // $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
+            //                             ->paginate($this->cant);
+            $profesores = DB::table('profesores')
+            ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
+                    ,'profesores.profesores_email','profesores.profesores_id'
+                    ,'profesores.profesores_fecha_ingreso','profesores.profesores_color'
+                    ,'modalidades.modalidad_nombre')
+            ->join('modalidades','profesores.modalidad_id','=','modalidades.modalidad_id')
+            ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
+            ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
+            ->orWhere('profesores.profesores_email','like','%'.trim($this->search).'%')
+            ->paginate($this->cant);
+            // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
+            //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
+            //                        ->orderBy($this->sort,$this->direction)
+            //                        ->paginate($this->cant);
         } else {
-            $profesores = collect([]);
+            $profesores = array();
         }
 
         $modalidades = Modalidad::all();
@@ -209,44 +204,8 @@ class ShowProfesores extends Component
     }
 
     public function delete(Profesor $profesor){
-        try {
-            $profesor->delete();
-            $this->emit('alert','El profesor fue eliminado satifactoriamente');
-        } catch (\Throwable $th) {
-            try {
-                $profesor->profesores_activo = false;
-                $profesor->save();
-                $this->emit('alert','El profesor fue desactivado porque tiene información relacionada','Advertencias!', 'warning');
-            } catch (\Throwable $exception) {
-                $this->emit('alert','No se pudo procesar la solicitud para este profesor','Error!', 'error');
-            }
-        }
-    }
-
-    public function activar($id)
-    {
-        try {
-            $profesor = Profesor::findOrFail($id);
-            $profesor->profesores_activo = true;
-            $profesor->save();
-
-            $this->emit('alert','El profesor fue activado satifactoriamente');
-        } catch (\Throwable $th) {
-            $this->emit('alert','No se pudo activar el profesor','Error!', 'error');
-        }
-    }
-
-    public function inactivar($id)
-    {
-        try {
-            $profesor = Profesor::findOrFail($id);
-            $profesor->profesores_activo = false;
-            $profesor->save();
-
-            $this->emit('alert','El profesor fue desactivado satifactoriamente');
-        } catch (\Throwable $th) {
-            $this->emit('alert','No se pudo desactivar el profesor','Error!', 'error');
-        }
+        $profesor->delete();
+        $this->emit('alert','El profesor fue eliminado satifactoriamente');
     }
     // Métodos para añadir/quitar bloques en el formulario de EDICIÓN
     public function addRecurringBlockForUpdate()
@@ -315,19 +274,6 @@ class ShowProfesores extends Component
         } else {
             $this->horasDisponibles = Hora::where('tipo', 1)->orderBy('horas_desde')->get();
         }
-    }
-
-    protected function resolveSortColumn()
-    {
-        if ($this->sort === 'modalidad_id') {
-            return 'modalidades.modalidad_nombre';
-        }
-
-        if (strpos($this->sort, '.') !== false) {
-            return $this->sort;
-        }
-
-        return 'profesores.' . $this->sort;
     }
 
 }
