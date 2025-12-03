@@ -188,14 +188,6 @@ class ShowHorarios extends Component
         $dias = Dia::whereBetween('dias_id', [1, 5])->get();
         $dias2 = Dia::where('dias_id', 6)->get();
         $dias_nav = Dia::whereBetween('dias_id', [1, 6])->get();
-
-        $dias_nav = $dias_nav->filter(function ($dia) use ($array_horario) {
-            $fechaNav = Carbon::parse($this->fecha)
-                ->setISODate($this->year, $this->semana, $dia->dias_id)
-                ->toDateString();
-
-            return !empty($array_horario[$fechaNav] ?? []);
-        })->values();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
