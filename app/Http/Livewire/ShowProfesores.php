@@ -214,7 +214,7 @@ class ShowProfesores extends Component
             $profesor->profesores_activo = false;
             $profesor->save();
 
-            $this->emit('alert','El profesor no se pudo eliminar: '.$e->getMessage().'. Se ha desactivado.','Advertencia!','warning');
+            $this->emit('alert','El profesor no se pudo eliminar. Se ha desactivado.','Advertencia!','warning');
         }
     }
 
