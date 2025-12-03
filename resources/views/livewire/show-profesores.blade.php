@@ -108,7 +108,7 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('profesores_email')">
+                    wire:click="order('profesores_color')">
                     Color
                     @if ($sort == 'profesores_color')
                         @if ($direction == 'asc')
@@ -120,6 +120,9 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                     </th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
+                    Activo
+                </th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                     Acción
                     </th>
@@ -151,21 +154,31 @@
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <div class="w-16 h-8 rounded" style="background-color: {{$item->profesores_color}};"></div>
                     </td>
-                    <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->profesores_id }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteProfesor',{{$item->profesores_id}})"></i>
+                    <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        {{ $item->profesores_activo ? 'Sí' : 'No' }}
+                    </td>
+                    <td class="border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+                        <div class="flex space-x-4">
+                            <i class="fas fa-pen text-emerald-500 cursor-pointer" wire:click="edit({{ $item->profesores_id }})"></i>
+                            @if($item->profesores_activo)
+                                <i class="fas fa-ban text-yellow-500 cursor-pointer" wire:click="inactivar({{ $item->profesores_id }})"></i>
+                                <i class="fas fa-trash text-red-500 cursor-pointer" wire:click="$emit('deleteProfesor',{{$item->profesores_id}})"></i>
+                            @else
+                                <i class="fas fa-check text-green-500 cursor-pointer" wire:click="activar({{ $item->profesores_id }})"></i>
+                            @endif
+                        </div>
                     </td>
                 </tr>
                 @empty
                 @if ($readyToLoad)
                 <tr>
-                    <th colspan="5" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
+                    <th colspan="9" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                         No hay profesores cargados
                     </th>
                 </tr>
                 @else
                 <tr>
-                    <th colspan="5" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
+                    <th colspan="9" class="border-t-0 px-2 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-blueGray-700 ">
                         <div class="px-4 py-12">
                             <div class="rounded relative">
                               <div
@@ -400,7 +413,7 @@
             confirmButtonText: "{{__('Yes, delete it!')}}"
             }).then((result) => {
             if (result.isConfirmed) {
-                livewire.emitTo('show-prospectos','delete',itemId);
+                livewire.emitTo('show-profesores','delete',itemId);
             }
             });
         })

@@ -109,7 +109,9 @@ class ShowHorarios extends Component
                 return $item->horarios_dia . '_' . $item->horas_id . '_' . $item->profesores_id;
             });
 
-        $profesores = Profesor::where('modalidad_id',$this->modalidad)->get();
+        $profesores = Profesor::where('modalidad_id',$this->modalidad)
+            ->where('profesores_activo', 1)
+            ->get();
 
         // Iterate through all displayable slots
         $currentIterDay = Carbon::parse($this->inicio);
@@ -180,7 +182,9 @@ class ShowHorarios extends Component
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
         $grupos = Grupo::where('modalidad_id',$this->modalidad)->where('estado_id',1)->get();
-        $profesores = Profesor::where('modalidad_id',$this->modalidad)->get();
+        $profesores = Profesor::where('modalidad_id',$this->modalidad)
+            ->where('profesores_activo', 1)
+            ->get();
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
@@ -644,6 +648,7 @@ class ShowHorarios extends Component
         $todosExcluidos = array_unique(array_merge($profesoresConBloqueo, $profesoresOcupados));
 
         return Profesor::where('modalidad_id', $modalidad_id)
+            ->where('profesores_activo', 1)
             ->whereNotIn('profesores_id', $todosExcluidos)
             ->pluck('profesores_id');
     }
