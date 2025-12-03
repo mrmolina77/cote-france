@@ -720,26 +720,7 @@
     // Escuchar el evento de Livewire para inicializar el arrastre y la caída
 
     const initializeHorariosUI = () => {
-        const COLLAPSE_STORAGE_KEY = 'horariosCollapsedProfesores';
-
-        const loadCollapsedProfesores = () => {
-            try {
-                const saved = JSON.parse(localStorage.getItem(COLLAPSE_STORAGE_KEY) || '[]');
-                return Array.isArray(saved) ? saved : [];
-            } catch (error) {
-                return [];
-            }
-        };
-
-        const persistCollapsedProfesores = (values) => {
-            try {
-                localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify([...values]));
-            } catch (error) {
-                // Ignore persistence errors (e.g. storage disabled)
-            }
-        };
-
-        const collapsedProfesores = new Set(loadCollapsedProfesores());
+        const collapsedProfesores = new Set();
 
         const getHorariosWrapper = () => document.getElementById('horarios-wrapper');
         const getHorariosScrollbar = () => document.getElementById('horarios-scrollbar');
@@ -962,7 +943,6 @@
                         syncHeaderState(profesorId, dayId, true);
                     }
 
-                    persistCollapsedProfesores(collapsedProfesores);
                     updateGridColumns();
                 });
             });
@@ -971,8 +951,6 @@
                 const [dayId, profesorId] = key.split('::');
                 syncHeaderState(profesorId, dayId, true);
             });
-
-            persistCollapsedProfesores(collapsedProfesores);
         };
 
         const initializeDragAndDrop = () => {
