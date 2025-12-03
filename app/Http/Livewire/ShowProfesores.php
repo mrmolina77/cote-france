@@ -73,22 +73,22 @@ class ShowProfesores extends Component
     public function render()
     {
         if($this->readyToLoad){
-            // $clasespruebas = ClasePrueba::orderBy($this->sort,$this->direction)
-            //                             ->paginate($this->cant);
+            $search = trim($this->search);
             $profesores = DB::table('profesores')
             ->select('profesores.profesores_nombres','profesores.profesores_apellidos'
                     ,'profesores.profesores_email','profesores.profesores_id'
                     ,'profesores.profesores_fecha_ingreso','profesores.profesores_color'
-                    ,'modalidades.modalidad_nombre')
+                    ,'profesores.profesores_activo','modalidades.modalidad_nombre')
             ->join('modalidades','profesores.modalidad_id','=','modalidades.modalidad_id')
-            ->orWhere('profesores.profesores_nombres','like','%'.trim($this->search).'%')
-            ->orWhere('profesores.profesores_apellidos','like','%'.trim($this->search).'%')
-            ->orWhere('profesores.profesores_email','like','%'.trim($this->search).'%')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('profesores.profesores_nombres','like','%'.$search.'%')
+                             ->orWhere('profesores.profesores_apellidos','like','%'.$search.'%')
+                             ->orWhere('profesores.profesores_email','like','%'.$search.'%');
+                });
+            })
+            ->orderBy($this->resolveSortColumn(), $this->direction)
             ->paginate($this->cant);
-            // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
-            //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
-            //                        ->orderBy($this->sort,$this->direction)
-            //                        ->paginate($this->cant);
         } else {
             $profesores = array();
         }
@@ -106,6 +106,9 @@ class ShowProfesores extends Component
     }
 
     public function order($order){
+        if (!array_key_exists($order, $this->sortableColumns())) {
+            return;
+        }
         if ($this->sort== $order) {
             if ($this->direction == 'desc') {
                 $this->direction = 'asc';
@@ -204,8 +207,57 @@ class ShowProfesores extends Component
     }
 
     public function delete(Profesor $profesor){
-        $profesor->delete();
-        $this->emit('alert','El profesor fue eliminado satifactoriamente');
+        try {
+            $profesor->delete();
+            $this->emit('alert','El profesor fue eliminado satifactoriamente');
+        } catch (\Throwable $e) {
+            $profesor->profesores_activo = false;
+            $profesor->save();
+
+            $this->emit('alert','El profesor no se pudo eliminar: '.$e->getMessage().'. Se ha desactivado.','Advertencia!','warning');
+        }
+    }
+
+    public function activar($id)
+    {
+        $profesor = Profesor::find($id);
+        if ($profesor) {
+            $profesor->profesores_activo = true;
+            $profesor->save();
+            $this->emit('alert','El profesor fue activado satisfactoriamente');
+        } else {
+            $this->emit('alert','El profesor no fue encontrado.','Error!','error');
+        }
+    }
+
+    public function inactivar($id)
+    {
+        $profesor = Profesor::find($id);
+        if ($profesor) {
+            $profesor->profesores_activo = false;
+            $profesor->save();
+            $this->emit('alert','El profesor fue desactivado satisfactoriamente');
+        } else {
+            $this->emit('alert','El profesor no fue encontrado.','Error!','error');
+        }
+    }
+
+    protected function sortableColumns(): array
+    {
+        return [
+            'profesores_id' => 'profesores.profesores_id',
+            'profesores_nombres' => 'profesores.profesores_nombres',
+            'profesores_apellidos' => 'profesores.profesores_apellidos',
+            'profesores_fecha_ingreso' => 'profesores.profesores_fecha_ingreso',
+            'profesores_email' => 'profesores.profesores_email',
+            'profesores_color' => 'profesores.profesores_color',
+            'modalidad_id' => 'modalidades.modalidad_nombre',
+        ];
+    }
+
+    protected function resolveSortColumn(): string
+    {
+        return $this->sortableColumns()[$this->sort] ?? 'profesores.profesores_id';
     }
     // Métodos para añadir/quitar bloques en el formulario de EDICIÓN
     public function addRecurringBlockForUpdate()
