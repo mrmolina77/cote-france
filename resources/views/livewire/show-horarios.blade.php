@@ -1,20 +1,4 @@
 <div>
-    <style>
-        .collapsed-column {
-            overflow: hidden !important;
-        }
-
-        .collapsed-column * {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .professor-header {
-            display: block;
-            width: 100%;
-        }
-    </style>
     @section('content')
     <p>{{ __('Timetable') }}</p>
     @endsection
@@ -63,58 +47,29 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                @php
-                    $columnIndexCounter = 0;
-                    $professorsCount = count($profesores);
-                @endphp
-                <div
-                    class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden"
-                    id="horarios-table"
-                    data-dias="{{ count($dias) }}"
-                    data-dias2="{{ count($dias2) }}"
-                    data-profesores="{{ $professorsCount }}"
-                    data-base-width="minmax(6rem, 1fr)"
-                    data-hour-width="minmax(6rem, 6rem)"
-                    data-collapsed-width="minmax(2.5rem, 2.5rem)"
-                    style="display: grid; grid-template-columns: minmax(6rem, 6rem) repeat({{ count($dias) * $professorsCount }}, minmax(6rem, 1fr)) minmax(6rem, 6rem) repeat({{ count($dias2) * $professorsCount }}, minmax(6rem, 1fr));">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: minmax(6rem, 6rem) repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) minmax(6rem, 6rem) repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Day/Professor Headers --}}
-                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm" data-column-key="col-{{$columnIndexCounter}}">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
                     <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            @php
-                                $columnIndexCounter++;
-                                $columnKey = 'col-' . $columnIndexCounter;
-                            @endphp
                             <div class="w-full items-center justify-center p-1">
-                                <button type="button" class="professor-header" data-column-index="{{$columnIndexCounter}}" data-column-key="{{$columnKey}}" aria-pressed="false">
-                                    <div data-column-key="{{$columnKey}}" style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
-                                </button>
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
                     </div>
                 @endforeach
-                @php
-                    $columnIndexCounter++;
-                    $weekendHourKey = 'col-' . $columnIndexCounter;
-                @endphp
-                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm" data-column-key="{{$weekendHourKey}}">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
                     <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            @php
-                                $columnIndexCounter++;
-                                $columnKey = 'col-' . $columnIndexCounter;
-                            @endphp
                             <div class="w-full items-center justify-center p-1">
-                                <button type="button" class="professor-header" data-column-index="{{$columnIndexCounter}}" data-column-key="{{$columnKey}}" aria-pressed="false">
-                                    <div data-column-key="{{$columnKey}}" style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
-                                </button>
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
@@ -123,18 +78,13 @@
 
                 {{-- Schedule Body --}}
                 @foreach ($horas as $pos1 => $hora)
-                    @php
-                        $bodyColumnIndex = 0;
-                    @endphp
                     {{-- Hour Cell --}}
-                    <div class="border-r border-gray-200 text-center px-2 py-1 flex items-center justify-center" data-column-key="col-{{$bodyColumnIndex}}"><samp class="font-sans font-semibold text-xs leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
+                    <div class="border-r border-gray-200 text-center px-2 py-1 flex items-center justify-center"><samp class="font-sans font-semibold text-xs leading-tight">{{\Carbon\Carbon::parse($hora->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($hora->horas_hasta)->format('H:i')}}</samp></div>
 
                     {{-- Dias (Mon-Fri) --}}
                     @foreach ($dias as $dia)
                         @foreach ($profesores as $profesor)
                             @php
-                                $bodyColumnIndex++;
-                                $bodyColumnKey = 'col-' . $bodyColumnIndex;
                                 $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $isBlocked = isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$dia->dias_id][$hora->horas_id]);
                                 $horarioItem = $horarios[$currentDateString][$hora->horas_id][$profesor->profesores_id] ?? null;
@@ -152,7 +102,7 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div class="h-full p-1 text-center {{$cellgrupo}}" data-column-key="{{$bodyColumnKey}}"
+                                <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -179,7 +129,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-1 text-center" data-column-key="{{$bodyColumnKey}}">
+                                <div class="h-full p-1 text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -187,7 +137,7 @@
                             @else
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full p-1 text-center grupo-cell" data-column-key="{{$bodyColumnKey}}"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -201,7 +151,7 @@
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full p-1 text-center grupo-cell" data-column-key="{{$bodyColumnKey}}"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -218,11 +168,7 @@
                     @endforeach
 
                     {{-- Hour Cell (Weekend) --}}
-                    @php
-                        $bodyColumnIndex++;
-                        $bodyColumnKey = 'col-' . $bodyColumnIndex;
-                    @endphp
-                    <div class="border-r border-gray-200 text-center px-2 py-1 flex items-center justify-center" data-column-key="{{$bodyColumnKey}}">
+                    <div class="border-r border-gray-200 text-center px-2 py-1 flex items-center justify-center">
                         @if (isset($horas2[$pos1]) && $horas2[$pos1]->horas_id < 14)
                             <samp class="font-sans font-semibold text-xs leading-tight">{{\Carbon\Carbon::parse($horas2[$pos1]->horas_desde)->format('H:i')}}<br>{{\Carbon\Carbon::parse($horas2[$pos1]->horas_hasta)->format('H:i')}}</samp>
                         @else
@@ -234,8 +180,6 @@
                     @foreach ($dias2 as $dia)
                         @foreach ($profesores as $profesor)
                              @php
-                                $bodyColumnIndex++;
-                                $bodyColumnKey = 'col-' . $bodyColumnIndex;
                                 $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $currentHourId = $horas2[$pos1]->horas_id ?? null;
                                 $isBlocked = $currentHourId ? (isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$dia->dias_id][$currentHourId])) : false;
@@ -254,7 +198,7 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div class="h-full p-1 text-center {{$cellgrupo}}" data-column-key="{{$bodyColumnKey}}"
+                                <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -279,7 +223,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-1 text-center" data-column-key="{{$bodyColumnKey}}">
+                                <div class="h-full p-1 text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -287,7 +231,7 @@
                             @else
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full p-1 text-center grupo-cell" data-column-key="{{$bodyColumnKey}}"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -301,7 +245,7 @@
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full p-1 text-center grupo-cell" data-column-key="{{$bodyColumnKey}}"
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -710,15 +654,9 @@
     // Escuchar el evento de Livewire para inicializar el arrastre y la caída
 
     document.addEventListener('DOMContentLoaded', function () {
-        const collapsedColumns = new Set();
-
-        const getTable = () => document.getElementById('horarios-table');
-
         const initializeDragAndDrop = () => {
-            const table = getTable();
-            if (!table) return;
-
-            const cells = table.querySelectorAll('.grupo-cell');
+            let table = document.getElementById('horarios-table');
+            let cells = table.querySelectorAll('.grupo-cell');
 
             cells.forEach(cell => {
                 cell.setAttribute('draggable', true);
@@ -741,15 +679,15 @@
 
             table.addEventListener('drop', function (e) {
                 e.preventDefault();
-                const data = JSON.parse(e.dataTransfer.getData('text'));
-                const targetCell = e.target.closest('.grupo-cell');
+                let data = JSON.parse(e.dataTransfer.getData('text'));
+                let targetCell = e.target.closest('.grupo-cell');
 
                 if (targetCell) {
-                    const targetId = targetCell.dataset.id;
-                    const targetDia = targetCell.dataset.dia;
-                    const targetHora = targetCell.dataset.hora;
-                    const targetProfesor = targetCell.dataset.profesor;
-                    const targetEspacio = targetCell.dataset.espacio;
+                    let targetId = targetCell.dataset.id;
+                    let targetDia = targetCell.dataset.dia;
+                    let targetHora = targetCell.dataset.hora;
+                    let targetProfesor = targetCell.dataset.profesor;
+                    let targetEspacio = targetCell.dataset.espacio;
                     // Llama a Livewire directamente
                     @this.updateGrupoHorario(targetId, targetDia, targetHora, data.grupo, targetProfesor, data.espacio, data.id);
 
@@ -757,98 +695,12 @@
             });
         };
 
-        const buildColumnWidths = (table) => {
-            const diasCount = Number(table.dataset.dias || 0);
-            const dias2Count = Number(table.dataset.dias2 || 0);
-            const profesoresCount = Number(table.dataset.profesores || 0);
-            const baseWidth = table.dataset.baseWidth || 'minmax(6rem, 1fr)';
-            const hourWidth = table.dataset.hourWidth || baseWidth;
-            const collapsedWidth = table.dataset.collapsedWidth || 'minmax(2.5rem, 2.5rem)';
-            const totalColumns = 1 + (diasCount * profesoresCount) + 1 + (dias2Count * profesoresCount);
-            const widths = Array(totalColumns).fill(baseWidth);
-
-            widths[0] = hourWidth;
-            const weekendHourIndex = 1 + (diasCount * profesoresCount);
-            if (weekendHourIndex < widths.length) {
-                widths[weekendHourIndex] = hourWidth;
-            }
-
-            collapsedColumns.forEach((index) => {
-                if (index < widths.length) {
-                    widths[index] = collapsedWidth;
-                }
-            });
-
-            return widths;
-        };
-
-        const applyCollapsedClasses = (table) => {
-            collapsedColumns.forEach((columnIndex) => {
-                const header = table.querySelector(`.professor-header[data-column-index="${columnIndex}"]`);
-                const columnKey = header ? header.dataset.columnKey : null;
-                if (!columnKey) return;
-
-                document.querySelectorAll(`[data-column-key="${columnKey}"]`).forEach((el) => {
-                    el.classList.add('collapsed-column');
-                });
-
-                header.setAttribute('aria-pressed', 'true');
-            });
-        };
-
-        const setupColumnToggle = () => {
-            const table = getTable();
-            if (!table || !table.dataset.dias) return;
-
-            let columnWidths = buildColumnWidths(table);
-
-            const applyGridTemplate = () => {
-                columnWidths = buildColumnWidths(table);
-                table.style.gridTemplateColumns = columnWidths.join(' ');
-            };
-
-            applyGridTemplate();
-            applyCollapsedClasses(table);
-
-            table.querySelectorAll('.professor-header').forEach((button) => {
-                if (button.dataset.toggleBound === 'true') {
-                    return;
-                }
-
-                button.dataset.toggleBound = 'true';
-
-                button.addEventListener('click', () => {
-                    const columnIndex = Number(button.dataset.columnIndex);
-                    const columnKey = button.dataset.columnKey;
-                    const isCollapsed = collapsedColumns.has(columnIndex);
-
-                    if (isCollapsed) {
-                        collapsedColumns.delete(columnIndex);
-                        button.setAttribute('aria-pressed', 'false');
-                    } else {
-                        collapsedColumns.add(columnIndex);
-                        button.setAttribute('aria-pressed', 'true');
-                    }
-
-                    applyGridTemplate();
-                    document.querySelectorAll(`[data-column-key="${columnKey}"]`).forEach((el) => {
-                        el.classList.toggle('collapsed-column', !isCollapsed);
-                    });
-                });
-            });
-        };
-
-        const reinitializeUI = () => {
-            initializeDragAndDrop();
-            setupColumnToggle();
-        };
-
         // Inicializar al cargar la página
-        reinitializeUI();
+        initializeDragAndDrop();
 
         // Volver a inicializar después de una actualización de Livewire
         document.addEventListener('livewire:update', () => {
-            reinitializeUI();
+            initializeDragAndDrop();
         });
     });
 
