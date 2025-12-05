@@ -73,9 +73,13 @@
                 {{-- Day/Professor Headers --}}
                 <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
-                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
+                    @php
+                        $firstProfessorId = $profesores->first()->profesores_id ?? null;
+                        $startColumnIndex = $firstProfessorId ? ($columnMapping[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$firstProfessorId] ?? null) : null;
+                    @endphp
+                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
-                        <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
+                        <div class="grid day-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             @php
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
@@ -90,9 +94,13 @@
                 @endforeach
                 <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
-                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
+                    @php
+                        $firstProfessorId = $profesores->first()->profesores_id ?? null;
+                        $startColumnIndex = $firstProfessorId ? ($columnMapping[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$firstProfessorId] ?? null) : null;
+                    @endphp
+                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
-                        <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
+                        <div class="grid day-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
                             @php
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
@@ -778,6 +786,18 @@
             const updateTemplateColumns = () => {
                 const updatedColumns = baseColumns.map((size, index) => collapsedColumns.has(index) ? '2rem' : size);
                 table.style.gridTemplateColumns = updatedColumns.join(' ');
+
+                document.querySelectorAll('.day-header-group').forEach(group => {
+                    const start = Number(group.dataset.startIndex);
+                    const span = Number(group.dataset.span);
+                    const innerGrid = group.querySelector('.day-header-grid');
+                    if (!innerGrid || Number.isNaN(start) || Number.isNaN(span)) return;
+
+                    const slice = updatedColumns.slice(start, start + span);
+                    if (slice.length) {
+                        innerGrid.style.gridTemplateColumns = slice.join(' ');
+                    }
+                });
             };
 
             headers.forEach(header => {
