@@ -1,25 +1,4 @@
 <div>
-    @push('styles')
-        <style>
-            .colapsado-columna {
-                min-width: 2.75rem !important;
-                width: 2.75rem !important;
-                max-width: 2.75rem !important;
-                padding-left: 0.25rem !important;
-                padding-right: 0.25rem !important;
-            }
-
-            .colapsado-celda {
-                padding: 0.25rem !important;
-            }
-
-            .colapsado-texto {
-                font-size: 0.75rem !important;
-                padding-top: 0.25rem !important;
-                padding-bottom: 0.25rem !important;
-            }
-        </style>
-    @endpush
     @section('content')
     <p>{{ __('Timetable') }}</p>
     @endsection
@@ -59,26 +38,6 @@
                 </div>
             </div>
 
-            @php
-                $weeklyTemplateColumns = ['minmax(6rem, 6rem)'];
-                foreach ($dias as $dia) {
-                    $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
-                    foreach ($profesores as $profesor) {
-                        $isCollapsed = $collapsedColumns[$currentDateString][$profesor->profesores_id] ?? false;
-                        $weeklyTemplateColumns[] = $isCollapsed ? 'minmax(2.75rem, 2.75rem)' : 'minmax(6rem, 1fr)';
-                    }
-                }
-                $weeklyTemplateColumns[] = 'minmax(6rem, 6rem)';
-                foreach ($dias2 as $dia) {
-                    $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
-                    foreach ($profesores as $profesor) {
-                        $isCollapsed = $collapsedColumns[$currentDateString][$profesor->profesores_id] ?? false;
-                        $weeklyTemplateColumns[] = $isCollapsed ? 'minmax(2.75rem, 2.75rem)' : 'minmax(6rem, 1fr)';
-                    }
-                }
-                $weeklyTemplateString = implode(' ', $weeklyTemplateColumns);
-            @endphp
-
             {{-- Contenedor del Grid con Scroll --}}
             <div @class([
                 'overflow-x-auto origin-top-left',
@@ -88,7 +47,7 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: {{ $weeklyTemplateString }};">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: minmax(6rem, 6rem) repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) minmax(6rem, 6rem) repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Day/Professor Headers --}}
                 <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
@@ -96,13 +55,8 @@
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            @php
-                                $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
-                                $isColumnCollapsed = $collapsedColumns[$currentDateString][$profesor->profesores_id] ?? false;
-                                $professorLabel = $isColumnCollapsed ? mb_substr($profesor->profesores_nombres, 0, 1) : $profesor->profesores_nombres;
-                            @endphp
-                            <div @class(['w-full items-center justify-center p-1 cursor-pointer transition-all duration-200','colapsado-columna' => $isColumnCollapsed]) wire:click="toggleProfessorColumn('{{$currentDateString}}',{{$profesor->profesores_id}})">
-                                <div style="background-color:{{$profesor->profesores_color}}" @class(['overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1','colapsado-texto' => $isColumnCollapsed])>{{$professorLabel}}</div>
+                            <div class="w-full items-center justify-center p-1">
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
@@ -114,13 +68,8 @@
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            @php
-                                $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
-                                $isColumnCollapsed = $collapsedColumns[$currentDateString][$profesor->profesores_id] ?? false;
-                                $professorLabel = $isColumnCollapsed ? mb_substr($profesor->profesores_nombres, 0, 1) : $profesor->profesores_nombres;
-                            @endphp
-                            <div @class(['w-full items-center justify-center p-1 cursor-pointer transition-all duration-200','colapsado-columna' => $isColumnCollapsed]) wire:click="toggleProfessorColumn('{{$currentDateString}}',{{$profesor->profesores_id}})">
-                                <div style="background-color:{{$profesor->profesores_color}}" @class(['overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1','colapsado-texto' => $isColumnCollapsed])>{{$professorLabel}}</div>
+                            <div class="w-full items-center justify-center p-1">
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
@@ -139,7 +88,6 @@
                                 $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $isBlocked = isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$dia->dias_id][$hora->horas_id]);
                                 $horarioItem = $horarios[$currentDateString][$hora->horas_id][$profesor->profesores_id] ?? null;
-                                $isColumnCollapsed = $collapsedColumns[$currentDateString][$profesor->profesores_id] ?? false;
                             @endphp
 
                             @if ($horarioItem)
@@ -154,7 +102,7 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div @class(['h-full text-center '.$cellgrupo,'p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -162,22 +110,16 @@
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
-                                        @if ($isColumnCollapsed)
-                                            <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase colapsado-texto">
-                                                {{ mb_substr($nombreDelHorario, 0, 1) }}
-                                            </div>
-                                        @else
-                                            <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
-                                                @if ($horarioItem['modalidad'] == '2')
-                                                    <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
-                                                @elseif ($nombreDelHorario === "BLOQUEADO")
-                                                    <span class="text-red-500 font-bold">&nbsp;</span>
-                                                @else
-                                                    {{$nombreDelHorario}}
-                                                @endif
-                                            </div>
-                                        @endif
-                                        @if(!$isColumnCollapsed && strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
+                                        <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
+                                            @if ($horarioItem['modalidad'] == '2')
+                                                <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
+                                            @elseif ($nombreDelHorario === "BLOQUEADO")
+                                                <span class="text-red-500 font-bold">&nbsp;</span>
+                                            @else
+                                                {{$nombreDelHorario}}
+                                            @endif
+                                        </div>
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-2 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
@@ -187,15 +129,15 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div @class(['h-full text-center','p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])>
+                                <div class="h-full p-1 text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                        <span class="text-xs font-semibold">{{ $isColumnCollapsed ? __('B') : __('Blocked') }}</span>
+                                        <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
                                 </div>
                             @else
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
-                                    <div @class(['h-full text-center grupo-cell','p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -203,13 +145,13 @@
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            <div @class(['overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase','colapsado-texto' => $isColumnCollapsed])>
-                                                {{$isColumnCollapsed ? mb_substr($grupoDetalle['grupo_nombre'],0,1) : $grupoDetalle['grupo_nombre']}}
+                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
+                                                {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
                                 @else
-                                    <div @class(['h-full text-center grupo-cell','p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -217,7 +159,7 @@
                                         data-grupo="0"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            <i class="fas fa-plus text-emerald-500 cursor-pointer text-xs" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
+                                            <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                         </div>
                                     </div>
                                 @endif
@@ -237,12 +179,11 @@
                     {{-- Dias2 (Sat/Sun) --}}
                     @foreach ($dias2 as $dia)
                         @foreach ($profesores as $profesor)
-                            @php
+                             @php
                                 $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $currentHourId = $horas2[$pos1]->horas_id ?? null;
                                 $isBlocked = $currentHourId ? (isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$dia->dias_id][$currentHourId])) : false;
                                 $horarioItem = ($currentHourId && isset($horarios[$currentDateString][$currentHourId][$profesor->profesores_id])) ? $horarios[$currentDateString][$currentHourId][$profesor->profesores_id] : null;
-                                $isColumnCollapsed = $collapsedColumns[$currentDateString][$profesor->profesores_id] ?? false;
                             @endphp
 
                             @if ($horarioItem)
@@ -257,7 +198,7 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
-                                <div @class(['h-full text-center '.$cellgrupo,'p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -265,20 +206,14 @@
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
-                                        @if ($isColumnCollapsed)
-                                            <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase colapsado-texto">
-                                                {{ mb_substr($nombreDelHorario, 0, 1) }}
-                                            </div>
-                                        @else
-                                            <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
-                                                @if ($nombreDelHorario === "BLOQUEADO")
-                                                    <span class="text-red-500 font-bold">&nbsp;</span>
-                                                @else
-                                                    {{$nombreDelHorario}}
-                                                @endif
-                                            </div>
-                                        @endif
-                                        @if(!$isColumnCollapsed && strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
+                                        <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
+                                            @if ($nombreDelHorario === "BLOQUEADO")
+                                                <span class="text-red-500 font-bold">&nbsp;</span>
+                                            @else
+                                                {{$nombreDelHorario}}
+                                            @endif
+                                        </div>
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-2 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
@@ -288,15 +223,15 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div @class(['h-full text-center','p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])>
+                                <div class="h-full p-1 text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                        <span class="text-xs font-semibold">{{ $isColumnCollapsed ? __('B') : __('Blocked') }}</span>
+                                        <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
                                 </div>
                             @else
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
-                                    <div @class(['h-full text-center grupo-cell','p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -304,13 +239,13 @@
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                            <div @class(['overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase','colapsado-texto' => $isColumnCollapsed])>
-                                                {{$isColumnCollapsed ? mb_substr($grupoDetalle['grupo_nombre'],0,1) : $grupoDetalle['grupo_nombre']}}
+                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
+                                                {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
                                 @else
-                                    <div @class(['h-full text-center grupo-cell','p-1' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                    <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -319,7 +254,7 @@
                                         data-profesor="{{ $profesor->profesores_id }}">
                                         @if ($currentHourId && $currentHourId < 14)
                                             <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                                <i class="fas fa-plus text-emerald-500 cursor-pointer text-xs" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$currentHourId}},{{$profesor->profesores_id}})"></i>
+                                                <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$currentHourId}},{{$profesor->profesores_id}})"></i>
                                             </div>
                                         @else
                                             <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
@@ -348,16 +283,6 @@
                 </div>
             </div>
 
-            @php
-                $currentDailyDateString = \Carbon\Carbon::parse($fecha)->isoFormat('YYYY-MM-DD');
-                $dailyTemplateColumns = ['auto'];
-                foreach ($profesores as $profesor) {
-                    $isCollapsed = $collapsedColumns[$currentDailyDateString][$profesor->profesores_id] ?? false;
-                    $dailyTemplateColumns[] = $isCollapsed ? 'minmax(2.75rem, 2.75rem)' : 'minmax(6rem, 1fr)';
-                }
-                $dailyTemplateString = implode(' ', $dailyTemplateColumns);
-            @endphp
-
             {{-- Contenedor del Grid con Scroll --}}
             <div @class([
                 'overflow-x-auto origin-top-left',
@@ -367,16 +292,12 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: {{ $dailyTemplateString }};">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Professor Headers --}}
                   <div class="border-r border-gray-200 px-2 py-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
-                    @php
-                        $isColumnCollapsed = $collapsedColumns[$currentDailyDateString][$profesor->profesores_id] ?? false;
-                        $professorLabel = $isColumnCollapsed ? mb_substr($profesor->profesores_nombres,0,1) : $profesor->profesores_nombres;
-                    @endphp
-                    <div @class(['border p-2 sticky top-0 bg-gray-50 z-10 text-center cursor-pointer','colapsado-columna' => $isColumnCollapsed]) wire:click="toggleProfessorColumn('{{$currentDailyDateString}}',{{$profesor->profesores_id}})">
-                        <div style="background-color:{{$profesor->profesores_color}}" @class(['overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-white rounded-md py-1','colapsado-texto' => $isColumnCollapsed])>{{$professorLabel}}</div>
+                    <div class="border p-2 sticky top-0 bg-gray-50 z-10 text-center">
+                        <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
                     </div>
                 @endforeach
 
@@ -392,7 +313,6 @@
                             $currentDayOfWeek = \Carbon\Carbon::parse($fecha)->dayOfWeekIso;
                             $isBlockedDaily = isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDailyDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$currentDayOfWeek][$hora->horas_id]);
                             $horarioItem = $horarios[$currentDailyDateString][$hora->horas_id][$profesor->profesores_id] ?? null;
-                            $isColumnCollapsed = $collapsedColumns[$currentDailyDateString][$profesor->profesores_id] ?? false;
                         @endphp
 
                         @if ($horarioItem)
@@ -407,7 +327,7 @@
                                     $cellgrupo = "";
                                 }
                             @endphp
-                            <div @class(['h-full border text-center '.$cellgrupo,'p-0' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                            <div class="h-full border p-0 text-center {{$cellgrupo}}"
                                 data-id="{{ $horarioItem['id'] }}"
                                 data-dia="{{ $currentDailyDateString }}"
                                 data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -415,22 +335,16 @@
                                 data-grupo="{{ $horarioItem['grupo_id'] }}"
                                 data-profesor="{{ $profesor->profesores_id }}">
                                 <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
-                                    @if ($isColumnCollapsed)
-                                        <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase colapsado-texto">
-                                            {{ mb_substr($nombreDelHorario,0,1) }}
-                                        </div>
-                                    @else
-                                        <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
-                                            @if ($horarioItem['modalidad'] == '2')
-                                                <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
-                                            @elseif ($nombreDelHorario === "BLOQUEADO")
-                                                <span class="text-red-500 font-bold">&nbsp;</span>
-                                            @else
-                                                {{$nombreDelHorario}}
-                                            @endif
-                                        </div>
-                                    @endif
-                                    @if(!$isColumnCollapsed && strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
+                                    <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
+                                        @if ($horarioItem['modalidad'] == '2')
+                                            <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
+                                        @elseif ($nombreDelHorario === "BLOQUEADO")
+                                            <span class="text-red-500 font-bold">&nbsp;</span>
+                                        @else
+                                            {{$nombreDelHorario}}
+                                        @endif
+                                    </div>
+                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-trash text-red-500 m-2 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
@@ -440,15 +354,15 @@
                                 </div>
                             </div>
                         @elseif ($isBlockedDaily)
-                            <div @class(['h-full border text-center','p-0' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])>
+                            <div class="h-full border p-0 text-center">
                                 <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600" wire:key="blocked-daily-{{ $currentDailyDateString }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                    <span class="text-xs font-semibold">{{ $isColumnCollapsed ? __('B') : __('Blocked') }}</span>
+                                    <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                 </div>
                             </div>
                         @else
                             @php $grupoDetalle = $grupo_deta[$currentDayOfWeek][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                             @if($grupoDetalle)
-                                <div @class(['h-full border text-center grupo-cell','p-0' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                <div class="h-full border p-0 text-center grupo-cell"
                                     data-id="0"
                                     data-dia="{{$currentDailyDateString}}"
                                     data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -456,13 +370,13 @@
                                     data-grupo="{{$grupoDetalle['grupo_id']}}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                          <div @class(['overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase','colapsado-texto' => $isColumnCollapsed])>
-                                            {{$isColumnCollapsed ? mb_substr($grupoDetalle['grupo_nombre'],0,1) : $grupoDetalle['grupo_nombre']}}
+                                          <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
+                                            {{$grupoDetalle['grupo_nombre']}}
                                         </div>
                                     </div>
                                 </div>
                             @else
-                                <div @class(['h-full border text-center grupo-cell','p-0' => !$isColumnCollapsed,'colapsado-columna colapsado-celda' => $isColumnCollapsed])
+                                <div class="h-full border p-0 text-center grupo-cell"
                                     data-id="0"
                                     data-dia="{{$currentDailyDateString}}"
                                     data-espacio="0"
@@ -470,7 +384,7 @@
                                     data-grupo="0"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                        <i class="fas fa-plus text-emerald-500 cursor-pointer text-xs" wire:click="edit('{{$currentDailyDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
+                                        <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDailyDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                     </div>
                                 </div>
                             @endif
