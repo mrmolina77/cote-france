@@ -39,6 +39,28 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
+            @php
+                $columnMapping = [];
+                $columnIndex = 1; // Inicia después de la columna de horas inicial
+
+                foreach ($dias as $dia) {
+                    $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                    foreach ($profesores as $profesor) {
+                        $columnMapping[$currentDateString][$profesor->profesores_id] = $columnIndex;
+                        $columnIndex++;
+                    }
+                }
+
+                $columnIndex++; // Columna de horas para dias2
+
+                foreach ($dias2 as $dia) {
+                    $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                    foreach ($profesores as $profesor) {
+                        $columnMapping[$currentDateString][$profesor->profesores_id] = $columnIndex;
+                        $columnIndex++;
+                    }
+                }
+            @endphp
             <div @class([
                 'overflow-x-auto origin-top-left',
                 'scale-100 w-full' => $porcentaje == '0',
@@ -55,8 +77,12 @@
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full items-center justify-center p-1">
-                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                            @php
+                                $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                                $columnKey = $dateString . '-' . $profesor->profesores_id;
+                            @endphp
+                            <div class="w-full items-center justify-center p-1 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
@@ -68,8 +94,12 @@
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full items-center justify-center p-1">
-                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                            @php
+                                $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
+                                $columnKey = $dateString . '-' . $profesor->profesores_id;
+                            @endphp
+                            <div class="w-full items-center justify-center p-1 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
@@ -102,13 +132,19 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
+                                @php
+                                    $columnKey = $currentDateString . '-' . $profesor->profesores_id;
+                                    $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
+                                @endphp
                                 <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
                                     data-hora="{{ $hora->horas_id }}"
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
-                                    data-profesor="{{ $profesor->profesores_id }}">
+                                    data-profesor="{{ $profesor->profesores_id }}"
+                                    data-column-key="{{ $columnKey }}"
+                                    data-column-index="{{ $columnIndex }}">
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
@@ -137,13 +173,19 @@
                             @else
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
+                                    @php
+                                        $columnKey = $currentDateString . '-' . $profesor->profesores_id;
+                                        $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
+                                    @endphp
                                     <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
                                         data-hora="{{$hora->horas_id}}"
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
-                                        data-profesor="{{ $profesor->profesores_id }}">
+                                        data-profesor="{{ $profesor->profesores_id }}"
+                                        data-column-key="{{ $columnKey }}"
+                                        data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
@@ -151,13 +193,19 @@
                                         </div>
                                     </div>
                                 @else
+                                    @php
+                                        $columnKey = $currentDateString . '-' . $profesor->profesores_id;
+                                        $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
+                                    @endphp
                                     <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
                                         data-hora="{{$hora->horas_id}}"
                                         data-grupo="0"
-                                        data-profesor="{{ $profesor->profesores_id }}">
+                                        data-profesor="{{ $profesor->profesores_id }}"
+                                        data-column-key="{{ $columnKey }}"
+                                        data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
                                         </div>
@@ -198,13 +246,19 @@
                                         $cellgrupo = "";
                                     }
                                 @endphp
+                                @php
+                                    $columnKey = $currentDateString . '-' . $profesor->profesores_id;
+                                    $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
+                                @endphp
                                 <div class="h-full p-1 text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
                                     data-hora="{{ $currentHourId }}"
                                     data-grupo="{{ $horarioItem['grupo_id'] }}"
-                                    data-profesor="{{ $profesor->profesores_id }}">
+                                    data-profesor="{{ $profesor->profesores_id }}"
+                                    data-column-key="{{ $columnKey }}"
+                                    data-column-index="{{ $columnIndex }}">
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($nombreDelHorario === "BLOQUEADO")
@@ -231,13 +285,19 @@
                             @else
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
+                                    @php
+                                        $columnKey = $currentDateString . '-' . $profesor->profesores_id;
+                                        $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
+                                    @endphp
                                     <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
                                         data-hora="{{$currentHourId}}"
                                         data-grupo="{{$grupoDetalle['grupo_id']}}"
-                                        data-profesor="{{ $profesor->profesores_id }}">
+                                        data-profesor="{{ $profesor->profesores_id }}"
+                                        data-column-key="{{ $columnKey }}"
+                                        data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
@@ -245,13 +305,19 @@
                                         </div>
                                     </div>
                                 @else
+                                    @php
+                                        $columnKey = $currentDateString . '-' . $profesor->profesores_id;
+                                        $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
+                                    @endphp
                                     <div class="h-full p-1 text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
                                         data-hora="{{$currentHourId}}"
                                         data-grupo="0"
-                                        data-profesor="{{ $profesor->profesores_id }}">
+                                        data-profesor="{{ $profesor->profesores_id }}"
+                                        data-column-key="{{ $columnKey }}"
+                                        data-column-index="{{ $columnIndex }}">
                                         @if ($currentHourId && $currentHourId < 14)
                                             <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                                 <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$currentHourId}},{{$profesor->profesores_id}})"></i>
@@ -656,6 +722,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         const initializeDragAndDrop = () => {
             let table = document.getElementById('horarios-table');
+            if (!table) return;
+
             let cells = table.querySelectorAll('.grupo-cell');
 
             cells.forEach(cell => {
@@ -695,12 +763,65 @@
             });
         };
 
+        const initializeColumnCollapse = () => {
+            const table = document.getElementById('horarios-table');
+            if (!table) return;
+
+            const headers = table.querySelectorAll('.collapsible-header');
+            if (!headers.length) return;
+
+            const baseColumns = getComputedStyle(table).gridTemplateColumns.split(' ');
+            const collapsedColumns = new Set();
+
+            const updateTemplateColumns = () => {
+                const updatedColumns = baseColumns.map((size, index) => collapsedColumns.has(index) ? '2rem' : size);
+                table.style.gridTemplateColumns = updatedColumns.join(' ');
+            };
+
+            headers.forEach(header => {
+                if (header.dataset.collapseBound === '1') return;
+                header.dataset.collapseBound = '1';
+
+                header.addEventListener('click', () => {
+                    const columnIndex = Number(header.dataset.columnIndex);
+                    const columnKey = header.dataset.columnKey;
+                    if (Number.isNaN(columnIndex) || !columnKey) return;
+
+                    const shouldCollapse = !collapsedColumns.has(columnIndex);
+                    if (shouldCollapse) {
+                        collapsedColumns.add(columnIndex);
+                        header.classList.add('is-collapsed');
+                    } else {
+                        collapsedColumns.delete(columnIndex);
+                        header.classList.remove('is-collapsed');
+                    }
+
+                    const label = header.querySelector('.collapsible-label');
+                    if (label) {
+                        if (shouldCollapse) {
+                            label.textContent = label.dataset.initial || label.textContent.charAt(0);
+                        } else {
+                            label.textContent = label.dataset.fullText || label.textContent;
+                        }
+                    }
+
+                    document.querySelectorAll(`[data-column-key="${columnKey}"]`).forEach(cell => {
+                        cell.classList.toggle('column-collapsed', shouldCollapse);
+                    });
+
+                    updateTemplateColumns();
+                });
+            });
+        };
+
         // Inicializar al cargar la página
         initializeDragAndDrop();
+        initializeColumnCollapse();
 
         // Volver a inicializar después de una actualización de Livewire
         document.addEventListener('livewire:update', () => {
             initializeDragAndDrop();
+            initializeColumnCollapse();
         });
     });
 
