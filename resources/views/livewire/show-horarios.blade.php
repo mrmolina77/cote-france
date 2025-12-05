@@ -6,7 +6,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full max-w-lg grid-cols-4 gap-2 mx-auto">
+                <div class="grid h-full max-w-lg grid-cols-4 gap-1 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -69,15 +69,15 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: minmax(6rem, 6rem) repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) minmax(6rem, 6rem) repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: minmax(5rem, 5rem) repeat({{ count($dias) * count($profesores) }}, minmax(5rem, 1fr)) minmax(5rem, 5rem) repeat({{ count($dias2) * count($profesores) }}, minmax(5rem, 1fr));">
                 {{-- Day/Professor Headers --}}
-                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 px-1 py-1 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
                     @php
                         $firstProfessorId = $profesores->first()->profesores_id ?? null;
                         $startColumnIndex = $firstProfessorId ? ($columnMapping[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$firstProfessorId] ?? null) : null;
                     @endphp
-                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
+                    <div class="border-r border-gray-200 p-1 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid day-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
@@ -85,20 +85,20 @@
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $columnKey = $dateString . '-' . $profesor->profesores_id;
                             @endphp
-                            <div class="w-full items-center justify-center p-1 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                            <div class="w-full items-center justify-center p-0.5 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
                         </div>
                     </div>
                 @endforeach
-                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 px-1 py-1 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
                     @php
                         $firstProfessorId = $profesores->first()->profesores_id ?? null;
                         $startColumnIndex = $firstProfessorId ? ($columnMapping[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$firstProfessorId] ?? null) : null;
                     @endphp
-                    <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
+                    <div class="border-r border-gray-200 p-1 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid day-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
@@ -106,7 +106,7 @@
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $columnKey = $dateString . '-' . $profesor->profesores_id;
                             @endphp
-                            <div class="w-full items-center justify-center p-1 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                            <div class="w-full items-center justify-center p-0.5 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
