@@ -366,7 +366,7 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(3.84rem, 1fr));">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(3rem, 1fr));">
                 {{-- Professor Headers --}}
                   <div class="border-r border-gray-200 px-1 py-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
