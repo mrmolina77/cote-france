@@ -47,9 +47,9 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: minmax(6rem, 6rem) repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) minmax(6rem, 6rem) repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
                 {{-- Day/Professor Headers --}}
-                <div class="border-r border-gray-200 px-2 py-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
                     <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
@@ -62,7 +62,7 @@
                         </div>
                     </div>
                 @endforeach
-                <div class="border-r border-gray-200 px-2 py-1 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
+                <div class="border-r border-gray-200 px-2 py-1 w-24 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $dias2 as $dia )
                     <div class="border-r border-gray-200 p-2 sticky top-0 bg-gray-50 z-10" style="grid-column: span {{ count($profesores) }};">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
