@@ -770,7 +770,9 @@
             const headers = table.querySelectorAll('.collapsible-header');
             if (!headers.length) return;
 
-            const baseColumns = getComputedStyle(table).gridTemplateColumns.split(' ');
+            const gridTemplateValue = getComputedStyle(table).gridTemplateColumns;
+            const baseColumns = gridTemplateValue.match(/(?:\([^()]*\)|\S)+/g) || [];
+            if (!baseColumns.length) return;
             const collapsedColumns = new Set();
 
             const updateTemplateColumns = () => {
