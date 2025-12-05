@@ -39,6 +39,22 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
+            @php
+                $columnIndex = 1;
+                $columnIndexByDay = [];
+                foreach ($dias as $dia) {
+                    foreach ($profesores as $profesor) {
+                        $columnIndexByDay[$dia->dias_id][$profesor->profesores_id] = $columnIndex++;
+                    }
+                }
+                $columnIndex++; // Salta la columna intermedia de horas para la segunda sección
+                $columnIndexByWeekend = [];
+                foreach ($dias2 as $dia) {
+                    foreach ($profesores as $profesor) {
+                        $columnIndexByWeekend[$dia->dias_id][$profesor->profesores_id] = $columnIndex++;
+                    }
+                }
+            @endphp
             <div @class([
                 'overflow-x-auto origin-top-left',
                 'scale-100 w-full' => $porcentaje == '0',
@@ -47,7 +63,16 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(8rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(8rem, 1fr));">
+                <div
+                    class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden"
+                    id="horarios-table"
+                    data-layout="weekly"
+                    data-dias="{{ count($dias) }}"
+                    data-dias2="{{ count($dias2) }}"
+                    data-profesores="{{ count($profesores) }}"
+                    data-default-size="minmax(8rem, 1fr)"
+                    data-collapsed-size="3rem"
+                    style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(8rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(8rem, 1fr));">
                 {{-- Day/Professor Headers --}}
                 <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
@@ -55,8 +80,18 @@
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full items-center justify-center p-1">
-                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                            <div
+                                class="w-full items-center justify-center p-1 profesor-header cursor-pointer"
+                                data-col-index="{{ $columnIndexByDay[$dia->dias_id][$profesor->profesores_id] ?? '' }}"
+                                data-full-name="{{$profesor->profesores_nombres}}"
+                                data-initial="{{ \Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1) }}"
+                            >
+                                <div
+                                    style="background-color:{{$profesor->profesores_color}}"
+                                    class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1"
+                                >
+                                    <span class="profesor-name">{{$profesor->profesores_nombres}}</span>
+                                </div>
                             </div>
                             @endforeach
                         </div>
@@ -68,8 +103,18 @@
                         <div class="text-center font-sans font-semibold text-base">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
-                            <div class="w-full items-center justify-center p-1">
-                                <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                            <div
+                                class="w-full items-center justify-center p-1 profesor-header cursor-pointer"
+                                data-col-index="{{ $columnIndexByWeekend[$dia->dias_id][$profesor->profesores_id] ?? '' }}"
+                                data-full-name="{{$profesor->profesores_nombres}}"
+                                data-initial="{{ \Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1) }}"
+                            >
+                                <div
+                                    style="background-color:{{$profesor->profesores_color}}"
+                                    class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-center text-white rounded-md py-1"
+                                >
+                                    <span class="profesor-name">{{$profesor->profesores_nombres}}</span>
+                                </div>
                             </div>
                             @endforeach
                         </div>
@@ -91,8 +136,8 @@
                             @endphp
 
                             @if ($horarioItem)
-                                <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                <div class="h-full p-1 text-center" data-col-index="{{ $columnIndexByDay[$dia->dias_id][$profesor->profesores_id] ?? '' }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md profesor-column">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -109,16 +154,16 @@
                             @else
                                 @php $grupoDetalle = $grupo_deta[$dia->dias_id][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full p-1 text-center">
-                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="h-full p-1 text-center" data-col-index="{{ $columnIndexByDay[$dia->dias_id][$profesor->profesores_id] ?? '' }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md profesor-column" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full p-1 text-center">
-                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                    <div class="h-full p-1 text-center" data-col-index="{{ $columnIndexByDay[$dia->dias_id][$profesor->profesores_id] ?? '' }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md profesor-column" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             {{-- Celda vacía sin acciones --}}
                                         </div>
                                     </div>
@@ -147,8 +192,8 @@
                             @endphp
 
                             @if ($horarioItem)
-                                <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                <div class="h-full p-1 text-center" data-col-index="{{ $columnIndexByWeekend[$dia->dias_id][$profesor->profesores_id] ?? '' }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md profesor-column">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             {{$horarioItem['nombre']}}
                                         </div>
@@ -161,21 +206,21 @@
                             @else
                                 @php $grupoDetalle = ($currentHourId && isset($grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id])) ? $grupo_deta[$dia->dias_id][$currentHourId][$profesor->profesores_id] : null; @endphp
                                 @if($grupoDetalle)
-                                    <div class="h-full p-1 text-center">
-                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                    <div class="h-full p-1 text-center" data-col-index="{{ $columnIndexByWeekend[$dia->dias_id][$profesor->profesores_id] ?? '' }}">
+                                        <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md profesor-column" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                                 {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
                                 @else
-                                    <div class="h-full p-1 text-center">
+                                    <div class="h-full p-1 text-center" data-col-index="{{ $columnIndexByWeekend[$dia->dias_id][$profesor->profesores_id] ?? '' }}">
                                         @if ($currentHourId)
-                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md profesor-column" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                                 {{-- Celda vacía sin acciones --}}
                                             </div>
                                         @else
-                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md"></div>
+                                            <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md profesor-column"></div>
                                         @endif
                                     </div>
                                 @endif
@@ -202,6 +247,15 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
+            @php
+                $dailyColumnIndex = 1;
+                $dailyColumnIndexMap = [];
+                foreach ($profesores as $profesor) {
+                    $dailyColumnIndexMap[$profesor->profesores_id] = $dailyColumnIndex++;
+                }
+                // Reiniciar el índice para reutilizarlo en el marcado
+                $dailyColumnIndex = 1;
+            @endphp
             <div @class([
                 'overflow-x-auto origin-top-left',
                 'scale-100 w-full' => $porcentaje == '0',
@@ -210,12 +264,26 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(8rem, 1fr));">
+                <div
+                    class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden"
+                    id="horarios-table"
+                    data-layout="daily"
+                    data-profesores="{{ count($profesores) }}"
+                    data-default-size="minmax(8rem, 1fr)"
+                    data-collapsed-size="3rem"
+                    style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(8rem, 1fr));">
                 {{-- Professor Headers --}}
                 <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
-                    <div class="border p-2 sticky top-0 bg-gray-50 z-10 text-center">
-                        <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">{{$profesor->profesores_nombres}}</div>
+                    <div
+                        class="border p-2 sticky top-0 bg-gray-50 z-10 text-center profesor-header cursor-pointer"
+                        data-col-index="{{ $dailyColumnIndexMap[$profesor->profesores_id] }}"
+                        data-full-name="{{$profesor->profesores_nombres}}"
+                        data-initial="{{ \Illuminate\Support\Str::substr($profesor->profesores_nombres, 0, 1) }}"
+                    >
+                        <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-sm text-white rounded-md py-1">
+                            <span class="profesor-name">{{$profesor->profesores_nombres}}</span>
+                        </div>
                     </div>
                 @endforeach
 
@@ -234,8 +302,8 @@
                         @endphp
 
                         @if ($horarioItem)
-                            <div class="h-full border p-0 text-center">
-                                <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                            <div class="h-full border p-0 text-center" data-col-index="{{ $dailyColumnIndexMap[$profesor->profesores_id] ?? '' }}">
+                                <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} profesor-column">
                                     <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -252,16 +320,16 @@
                         @else
                             @php $grupoDetalle = $grupo_deta[$currentDayOfWeek][$hora->horas_id][$profesor->profesores_id] ?? null; @endphp
                             @if($grupoDetalle)
-                                <div class="h-full border p-0 text-center">
-                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                <div class="h-full border p-0 text-center" data-col-index="{{ $dailyColumnIndexMap[$profesor->profesores_id] ?? '' }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase profesor-column" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
                                             {{$grupoDetalle['grupo_nombre']}}
                                         </div>
                                     </div>
                                 </div>
                             @else
-                                <div class="h-full border p-0 text-center">
-                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                <div class="h-full border p-0 text-center" data-col-index="{{ $dailyColumnIndexMap[$profesor->profesores_id] ?? '' }}">
+                                    <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md profesor-column" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         {{-- Celda vacía sin acciones --}}
                                     </div>
                                 </div>
@@ -442,5 +510,93 @@
             </x-forms.red-button>
         </x-slot>
     </x-dialog-modal>
+
+    @push('js')
+    <style>
+        .col-collapsed {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+        }
+
+        .col-collapsed .profesor-name {
+            white-space: nowrap;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        document.addEventListener('livewire:load', () => {
+            const setupColumnCollapsing = () => {
+                const table = document.getElementById('horarios-table');
+                if (!table) return;
+
+                const layout = table.dataset.layout || 'weekly';
+                const profesoresCount = Number(table.dataset.profesores || 0);
+                const defaultSize = table.dataset.defaultSize || 'minmax(8rem, 1fr)';
+                const collapsedSize = table.dataset.collapsedSize || '3rem';
+
+                let columnSizes = ['auto'];
+
+                if (layout === 'weekly') {
+                    const diasCount = Number(table.dataset.dias || 0);
+                    const dias2Count = Number(table.dataset.dias2 || 0);
+
+                    const firstBlock = diasCount * profesoresCount;
+                    for (let i = 0; i < firstBlock; i++) {
+                        columnSizes.push(defaultSize);
+                    }
+
+                    columnSizes.push('auto');
+
+                    const secondBlock = dias2Count * profesoresCount;
+                    for (let i = 0; i < secondBlock; i++) {
+                        columnSizes.push(defaultSize);
+                    }
+                } else {
+                    for (let i = 0; i < profesoresCount; i++) {
+                        columnSizes.push(defaultSize);
+                    }
+                }
+
+                const applyTemplate = () => {
+                    table.style.gridTemplateColumns = columnSizes.join(' ');
+                };
+
+                const toggleColumn = (colIndex, header) => {
+                    if (!Number.isFinite(colIndex) || colIndex <= 0 || colIndex >= columnSizes.length) return;
+
+                    const isCollapsed = header.classList.toggle('is-collapsed');
+                    columnSizes[colIndex] = isCollapsed ? collapsedSize : defaultSize;
+
+                    const nameLabel = header.querySelector('.profesor-name');
+                    if (nameLabel) {
+                        nameLabel.textContent = isCollapsed ? header.dataset.initial : header.dataset.fullName;
+                    }
+
+                    table.querySelectorAll(`[data-col-index="${colIndex}"]`).forEach(cell => {
+                        cell.classList.toggle('col-collapsed', isCollapsed);
+                    });
+
+                    applyTemplate();
+                };
+
+                const headers = table.querySelectorAll('.profesor-header');
+                headers.forEach(header => {
+                    if (header.dataset.collapseBound === 'true') return;
+                    header.dataset.collapseBound = 'true';
+                    header.addEventListener('click', () => {
+                        const colIndex = Number(header.dataset.colIndex);
+                        toggleColumn(colIndex, header);
+                    });
+                });
+
+                applyTemplate();
+            };
+
+            setupColumnCollapsing();
+
+            document.addEventListener('livewire:update', setupColumnCollapsing);
+        });
+    </script>
+    @endpush
 
 </div>
