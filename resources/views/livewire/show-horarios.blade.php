@@ -77,7 +77,7 @@
                         $firstProfessorId = $profesores->first()->profesores_id ?? null;
                         $startColumnIndex = $firstProfessorId ? ($columnMapping[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$firstProfessorId] ?? null) : null;
                     @endphp
-                    <div class="border-r border-gray-200 p-0.25 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
+                    <div class="border-r border-gray-200 p-[0.1rem] sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid day-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
@@ -85,7 +85,7 @@
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $columnKey = $dateString . '-' . $profesor->profesores_id;
                             @endphp
-                            <div class="w-full items-center justify-center p-0.25 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                            <div class="w-full items-center justify-center p-[0.1rem] collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
@@ -98,7 +98,7 @@
                         $firstProfessorId = $profesores->first()->profesores_id ?? null;
                         $startColumnIndex = $firstProfessorId ? ($columnMapping[\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD')][$firstProfessorId] ?? null) : null;
                     @endphp
-                    <div class="border-r border-gray-200 p-0.25 sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
+                    <div class="border-r border-gray-200 p-[0.1rem] sticky top-0 bg-gray-50 z-10 day-header-group" style="grid-column: span {{ count($profesores) }};" data-start-index="{{ $startColumnIndex }}" data-span="{{ count($profesores) }}">
                         <div class="text-center font-sans font-semibold text-sm">{{$dia->dias_nombre}} {{\Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('DD')}}</div>
                         <div class="grid day-header-grid" style="grid-template-columns: repeat({{ count($profesores) }}, 1fr);">
                             @foreach ($profesores as $profesor)
@@ -106,7 +106,7 @@
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $columnKey = $dateString . '-' . $profesor->profesores_id;
                             @endphp
-                            <div class="w-full items-center justify-center p-0.25 collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                            <div class="w-full items-center justify-center p-[0.1rem] collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
@@ -144,7 +144,7 @@
                                     $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                     $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                 @endphp
-                                <div class="h-full p-0.25 text-center {{$cellgrupo}}"
+                                <div class="h-full p-[0.1rem] text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -173,7 +173,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-0.25 text-center">
+                                <div class="h-full p-[0.1rem] text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -185,7 +185,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-0.25 text-center grupo-cell"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -205,7 +205,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-0.25 text-center grupo-cell"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -258,7 +258,7 @@
                                     $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                     $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                 @endphp
-                                <div class="h-full p-0.25 text-center {{$cellgrupo}}"
+                                <div class="h-full p-[0.1rem] text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -285,7 +285,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-0.25 text-center">
+                                <div class="h-full p-[0.1rem] text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -297,7 +297,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-0.25 text-center grupo-cell"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -317,7 +317,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-0.25 text-center grupo-cell"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
