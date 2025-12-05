@@ -45,6 +45,7 @@ class ShowHorarios extends Component
     public $asistencias = [];
     public $observaciones = [];
     public $evaluaciones = [];
+    public $collapsedColumns = [];
 
     public function boot()
     {
@@ -227,6 +228,12 @@ class ShowHorarios extends Component
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
+    }
+
+    public function toggleProfessorColumn($date, $professorId)
+    {
+        $currentState = $this->collapsedColumns[$date][$professorId] ?? false;
+        $this->collapsedColumns[$date][$professorId] = !$currentState;
     }
 
     public function save(){
