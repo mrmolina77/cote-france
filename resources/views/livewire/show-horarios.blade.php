@@ -164,11 +164,13 @@
                                     <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
-                                                <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
+                                                <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
+                                                    <x-group-name :name="$nombreDelHorario" />
+                                                </a>
                                             @elseif ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
                                             @else
-                                                {{$nombreDelHorario}}
+                                                <x-group-name :name="$nombreDelHorario" />
                                             @endif
                                         </div>
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
@@ -279,7 +281,7 @@
                                             @if ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
                                             @else
-                                                {{$nombreDelHorario}}
+                                                <x-group-name :name="$nombreDelHorario" />
                                             @endif
                                         </div>
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
@@ -416,11 +418,13 @@
                                 <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
                                     <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
-                                            <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$nombreDelHorario}}</a>
+                                            <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
+                                                <x-group-name :name="$nombreDelHorario" />
+                                            </a>
                                         @elseif ($nombreDelHorario === "BLOQUEADO")
                                             <span class="text-red-500 font-bold">&nbsp;</span>
                                         @else
-                                            {{$nombreDelHorario}}
+                                            <x-group-name :name="$nombreDelHorario" />
                                         @endif
                                     </div>
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
