@@ -203,9 +203,7 @@
                                         data-column-key="{{ $columnKey }}"
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
-                                                {{$grupoDetalle['grupo_nombre']}}
-                                            </div>
+                                            <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
                                         </div>
                                     </div>
                                 @else
@@ -316,9 +314,7 @@
                                         data-column-key="{{ $columnKey }}"
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                            <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
-                                                {{$grupoDetalle['grupo_nombre']}}
-                                            </div>
+                                            <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
                                         </div>
                                     </div>
                                 @else
@@ -453,9 +449,7 @@
                                     data-grupo="{{$grupoDetalle['grupo_id']}}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                          <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
-                                            {{$grupoDetalle['grupo_nombre']}}
-                                        </div>
+                                        <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
                                     </div>
                                 </div>
                             @else
