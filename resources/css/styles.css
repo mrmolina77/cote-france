@@ -38,3 +38,23 @@ body {
     background-color: #FFFAE6;
     border: 2px solid #FFD700;
 }
+
+.collapsible-header {
+    cursor: pointer;
+}
+
+.collapsible-label {
+    transition: color 0.2s ease;
+}
+
+.column-collapsed {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+}
+
+.column-collapsed .collapsible-label,
+.collapsible-header.is-collapsed .collapsible-label {
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+}

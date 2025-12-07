@@ -12,7 +12,11 @@ class Profesor extends Model
     use Notifiable;
 
     protected $fillable = ['profesores_nombres','profesores_apellidos','profesores_email','modalidad_id',
-                           'profesores_color','profesores_horas_semanales','profesores_fecha_ingreso'];
+                           'profesores_color','profesores_horas_semanales','profesores_fecha_ingreso','profesores_activo'];
+
+    protected $casts = [
+        'profesores_activo' => 'boolean',
+    ];
 
     /**
     * The table associated with the model.
