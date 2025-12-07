@@ -47,7 +47,7 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(6rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(6rem, 1fr));">
+                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($dias) * count($profesores) }}, minmax(8rem, 1fr)) auto repeat({{ count($dias2) * count($profesores) }}, minmax(8rem, 1fr));">
                 {{-- Day/Professor Headers --}}
                 <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $dias as $dia )
@@ -111,11 +111,8 @@
                                 @if($grupoDetalle)
                                     <div class="h-full p-1 text-center">
                                         <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            @php
-                                                $nombreCorto = \Illuminate\Support\Str::of($grupoDetalle['grupo_nombre'])->trim()->explode(' ')->first();
-                                            @endphp
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
-                                                {{$nombreCorto}}
+                                                {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
@@ -166,11 +163,8 @@
                                 @if($grupoDetalle)
                                     <div class="h-full p-1 text-center">
                                         <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                            @php
-                                                $nombreCorto = \Illuminate\Support\Str::of($grupoDetalle['grupo_nombre'])->trim()->explode(' ')->first();
-                                            @endphp
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
-                                                {{$nombreCorto}}
+                                                {{$grupoDetalle['grupo_nombre']}}
                                             </div>
                                         </div>
                                     </div>
@@ -216,7 +210,7 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(6rem, 1fr));">
+                <div class="grid min-w-max border-2 border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(8rem, 1fr));">
                 {{-- Professor Headers --}}
                 <div class="border-r border-gray-200 p-2 w-20 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-base">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
@@ -260,11 +254,8 @@
                             @if($grupoDetalle)
                                 <div class="h-full border p-0 text-center">
                                     <div class="w-full min-h-16 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                        @php
-                                            $nombreCorto = \Illuminate\Support\Str::of($grupoDetalle['grupo_nombre'])->trim()->explode(' ')->first();
-                                        @endphp
                                         <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-serif font-extrabold text-sm uppercase">
-                                                {{$nombreCorto}}
+                                            {{$grupoDetalle['grupo_nombre']}}
                                         </div>
                                     </div>
                                 </div>
