@@ -1,9 +1,4 @@
 <div>
-    <style>
-        .day-separator-left {
-            border-left: 3px solid #9ca3af;
-        }
-    </style>
     @section('content')
     <p>{{ __('Timetable') }}</p>
     @endsection
@@ -90,8 +85,7 @@
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $columnKey = $dateString . '-' . $profesor->profesores_id;
                             @endphp
-                            @php $addSeparator = $loop->first; @endphp
-                            <div class="w-full items-center justify-center p-[0.1rem] collapsible-header {{ $addSeparator ? 'day-separator-left' : '' }}" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                            <div class="w-full items-center justify-center p-[0.1rem] collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
@@ -112,8 +106,7 @@
                                 $dateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $columnKey = $dateString . '-' . $profesor->profesores_id;
                             @endphp
-                            @php $addSeparator = $loop->first; @endphp
-                            <div class="w-full items-center justify-center p-[0.1rem] collapsible-header {{ $addSeparator ? 'day-separator-left' : '' }}" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
+                            <div class="w-full items-center justify-center p-[0.1rem] collapsible-header" data-column-index="{{ $columnMapping[$dateString][$profesor->profesores_id] ?? '' }}" data-column-key="{{ $columnKey }}">
                                 <div style="background-color:{{$profesor->profesores_color}}" class="overflow-hidden text-ellipsis whitespace-nowrap font-sans font-semibold text-xs text-center text-white rounded-md py-1 collapsible-label" data-initial="{{ strtoupper(mb_substr($profesor->profesores_nombres,0,1,'UTF-8')) }}" data-full-text="{{$profesor->profesores_nombres}}">{{$profesor->profesores_nombres}}</div>
                             </div>
                             @endforeach
@@ -133,7 +126,6 @@
                                 $currentDateString = \Carbon\Carbon::parse($fecha)->setISODate($year, $semana, $dia->dias_id)->isoFormat('YYYY-MM-DD');
                                 $isBlocked = isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$dia->dias_id][$hora->horas_id]);
                                 $horarioItem = $horarios[$currentDateString][$hora->horas_id][$profesor->profesores_id] ?? null;
-                                $isDayBoundary = $loop->first;
                             @endphp
 
                             @if ($horarioItem)
@@ -152,7 +144,7 @@
                                     $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                     $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                 @endphp
-                                <div class="h-full p-[0.1rem] text-center {{$cellgrupo}} {{ $isDayBoundary ? 'day-separator-left' : '' }}"
+                                <div class="h-full p-[0.1rem] text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -181,7 +173,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-[0.1rem] text-center {{ $isDayBoundary ? 'day-separator-left' : '' }}">
+                                <div class="h-full p-[0.1rem] text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -193,7 +185,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-[0.1rem] text-center grupo-cell {{ $isDayBoundary ? 'day-separator-left' : '' }}"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -213,7 +205,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-[0.1rem] text-center grupo-cell {{ $isDayBoundary ? 'day-separator-left' : '' }}"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
@@ -248,7 +240,6 @@
                                 $currentHourId = $horas2[$pos1]->horas_id ?? null;
                                 $isBlocked = $currentHourId ? (isset($bloqueosProfesores[$profesor->profesores_id]['full_days'][$currentDateString]) || isset($bloqueosProfesores[$profesor->profesores_id]['recurring'][$dia->dias_id][$currentHourId])) : false;
                                 $horarioItem = ($currentHourId && isset($horarios[$currentDateString][$currentHourId][$profesor->profesores_id])) ? $horarios[$currentDateString][$currentHourId][$profesor->profesores_id] : null;
-                                $isDayBoundary = $loop->first;
                             @endphp
 
                             @if ($horarioItem)
@@ -267,7 +258,7 @@
                                     $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                     $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                 @endphp
-                                <div class="h-full p-[0.1rem] text-center {{$cellgrupo}} {{ $isDayBoundary ? 'day-separator-left' : '' }}"
+                                <div class="h-full p-[0.1rem] text-center {{$cellgrupo}}"
                                     data-id="{{ $horarioItem['id'] }}"
                                     data-dia="{{ $currentDateString }}"
                                     data-espacio="{{ $horarioItem['espacios_id'] }}"
@@ -294,7 +285,7 @@
                                     </div>
                                 </div>
                             @elseif ($isBlocked)
-                                <div class="h-full p-[0.1rem] text-center {{ $isDayBoundary ? 'day-separator-left' : '' }}">
+                                <div class="h-full p-[0.1rem] text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-gray-300 text-gray-600 rounded-md" wire:key="blocked-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                         <span class="text-xs font-semibold">{{ __('Blocked') }}</span>
                                     </div>
@@ -306,7 +297,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-[0.1rem] text-center grupo-cell {{ $isDayBoundary ? 'day-separator-left' : '' }}"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="{{$grupoDetalle['espacios_id']}}"
@@ -326,7 +317,7 @@
                                         $columnKey = $currentDateString . '-' . $profesor->profesores_id;
                                         $columnIndex = $columnMapping[$currentDateString][$profesor->profesores_id] ?? null;
                                     @endphp
-                                    <div class="h-full p-[0.1rem] text-center grupo-cell {{ $isDayBoundary ? 'day-separator-left' : '' }}"
+                                    <div class="h-full p-[0.1rem] text-center grupo-cell"
                                         data-id="0"
                                         data-dia="{{$currentDateString}}"
                                         data-espacio="0"
