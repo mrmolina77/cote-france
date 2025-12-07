@@ -203,8 +203,11 @@
                                         data-column-key="{{ $columnKey }}"
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                            @php
+                                                $nombreCorto = \Illuminate\Support\Str::of($grupoDetalle['grupo_nombre'])->trim()->explode(' ')->first();
+                                            @endphp
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
-                                                {{$grupoDetalle['grupo_nombre']}}
+                                                {{$nombreCorto}}
                                             </div>
                                         </div>
                                     </div>
@@ -316,8 +319,11 @@
                                         data-column-key="{{ $columnKey }}"
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
+                                            @php
+                                                $nombreCorto = \Illuminate\Support\Str::of($grupoDetalle['grupo_nombre'])->trim()->explode(' ')->first();
+                                            @endphp
                                             <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
-                                                {{$grupoDetalle['grupo_nombre']}}
+                                                {{$nombreCorto}}
                                             </div>
                                         </div>
                                     </div>
@@ -375,7 +381,7 @@
                 'scale-75 w-[133.33%]' => $porcentaje == '3',
                 'scale-50 w-[200%]' => $porcentaje == '4',
             ]) wire:updated="initializeDragAndDrop">
-                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(3rem, 1fr));">
+                <div class="grid min-w-max border border-gray-200 rounded-lg overflow-hidden" id="horarios-table" style="display: grid; grid-template-columns: auto repeat({{ count($profesores) }}, minmax(2.5rem, 1fr));">
                 {{-- Professor Headers --}}
                   <div class="border-r border-gray-200 px-1 py-0.5 w-16 sticky top-0 bg-gray-50 z-10 flex items-center justify-center font-sans font-semibold text-sm">{{ __('Hours') }}</div>
                 @foreach ( $profesores as $profesor )
@@ -453,8 +459,11 @@
                                     data-grupo="{{$grupoDetalle['grupo_id']}}"
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
+                                          @php
+                                              $nombreCorto = \Illuminate\Support\Str::of($grupoDetalle['grupo_nombre'])->trim()->explode(' ')->first();
+                                          @endphp
                                           <div class="overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans font-extrabold text-xs uppercase">
-                                            {{$grupoDetalle['grupo_nombre']}}
+                                            {{$nombreCorto}}
                                         </div>
                                     </div>
                                 </div>
