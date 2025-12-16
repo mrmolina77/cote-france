@@ -804,7 +804,19 @@
                     let targetProfesor = targetCell.dataset.profesor;
                     let targetEspacio = targetCell.dataset.espacio;
                     // Llama a Livewire directamente
-                    @this.updateGrupoHorario(targetId, targetDia, targetHora, data.grupo, targetProfesor, data.espacio, data.id);
+                    @this.updateGrupoHorario(
+                        targetId,
+                        targetDia,
+                        targetHora,
+                        data.grupo,
+                        targetProfesor,
+                        data.espacio,
+                        data.id,
+                        data.dia,
+                        data.hora,
+                        data.profesor,
+                        data.espacio
+                    );
 
                 }
             });
