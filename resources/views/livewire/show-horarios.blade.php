@@ -206,6 +206,11 @@
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                            <div class="flex items-center justify-center">
+                                                <button type="button" class="text-red-500" wire:click="$emit('confirmDeactivateGrupo', {{ $grupoDetalle['grupo_id'] }}, '{{ $currentDateString }}', {{ $hora->horas_id }})">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 @else
@@ -317,6 +322,11 @@
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                            <div class="flex items-center justify-center">
+                                                <button type="button" class="text-red-500" wire:click="$emit('confirmDeactivateGrupo', {{ $grupoDetalle['grupo_id'] }}, '{{ $currentDateString }}', {{ $currentHourId }})">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 @else
@@ -454,6 +464,11 @@
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                        <div class="flex items-center justify-center">
+                                            <button type="button" class="text-red-500" wire:click="$emit('confirmDeactivateGrupo', {{ $grupoDetalle['grupo_id'] }}, '{{ $currentDailyDateString }}', {{ $hora->horas_id }})">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             @else
@@ -714,6 +729,23 @@
             }
             });
         })
+
+        livewire.on('confirmDeactivateGrupo', (grupoId, fecha, horaId) => {
+            Swal.fire({
+                title: "{{ __('¿Está seguro de desactivar el grupo?') }}",
+                text: "{{ __('Esta acción ocultará el grupo para la fecha y hora seleccionadas.') }}",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                cancelButtonText: "{{__('Cancel')}}",
+                confirmButtonText: "{{ __('Sí, desactivar') }}"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    livewire.emitTo('show-horarios','deactivateGrupo', grupoId, fecha, horaId);
+                }
+            });
+        });
         // Este es el listener importante para el scroll
         document.addEventListener('livewire:load', function () {
             Livewire.on('scrollToBottom', () => {

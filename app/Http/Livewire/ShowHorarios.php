@@ -8,6 +8,7 @@ use App\Models\Diario;
 use App\Models\Espacio;
 use App\Models\Evaluacion;
 use App\Models\Grupo;
+use App\Models\GrupoInactivo;
 use App\Models\Hora;
 use App\Models\Horario;
 use App\Models\Nivel;
@@ -282,6 +283,30 @@ class ShowHorarios extends Component
         $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
     }
 
+    public function deactivateGrupo(int $grupoId, string $fecha, int $horaId): void
+    {
+        $fechaFormateada = Carbon::parse($fecha)->toDateString();
+
+        $grupoInactivo = GrupoInactivo::where('grupo_id', $grupoId)
+            ->where('fecha', $fechaFormateada)
+            ->where('horas_id', $horaId)
+            ->first();
+
+        if ($grupoInactivo) {
+            $this->emit('alert', 'El grupo ya está desactivado para esta fecha y hora', 'Advertencias!', 'warning');
+            return;
+        }
+
+        GrupoInactivo::create([
+            'grupo_id' => $grupoId,
+            'fecha' => $fechaFormateada,
+            'horas_id' => $horaId,
+        ]);
+
+        $this->emit('alert', 'El grupo fue desactivado para la fecha y hora seleccionada');
+        $this->emitTo('show-horarios', 'render');
+    }
+
     public function editPlan($id)
     {
         $horarioBase = Horario::findOrFail($id);
@@ -476,6 +501,10 @@ class ShowHorarios extends Component
             $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->grupo_id][$horario->profesores_id] = $horario->horarios_id;
         }
 
+        $gruposInactivos = GrupoInactivo::whereBetween('fecha', [$this->inicio, $this->fin])
+            ->get()
+            ->groupBy('grupo_id');
+
        if($modalidad == 2){
            $detalles = DB::table('grupos_detalles')
                                ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
@@ -503,6 +532,13 @@ class ShowHorarios extends Component
         foreach ($detalles as $item) {
             // Fecha exacta del día de la semana del detalle
             $evaluar = Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
+
+            if ($gruposInactivos->has($item->grupo_id) && $gruposInactivos[$item->grupo_id]
+                ->where('fecha', $evaluar)
+                ->where('horas_id', $item->horas_id)
+                ->isNotEmpty()) {
+                continue;
+            }
 
             // Profesores disponibles para ese día
             $profesores = $this->obtenerProfesores($evaluar,$item->horas_id, $modalidad)->values(); // asegura índices consecutivos
