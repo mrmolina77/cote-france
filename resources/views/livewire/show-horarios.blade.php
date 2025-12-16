@@ -40,7 +40,18 @@
                             class="w-full py-2 px-3 text-sm font-semibold rounded-lg border focus:outline-none focus:ring-4 transition-colors duration-150 {{ $semana_activa ? 'text-green-800 bg-green-100 border-green-200 focus:ring-green-200' : 'text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-gray-100' }}"
                             wire:click="toggleSemanaActiva"
                         >
-                            {{ $semana_activa ? 'Semana activa' : 'Activar semana' }}
+                            <span class="flex items-center justify-center gap-2">
+                                @if ($semana_activa)
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.854-9.646a.5.5 0 00-.708-.708L9 11.793 6.854 9.646a.5.5 0 10-.708.708l2.5 2.5a.5.5 0 00.708 0l4.5-4.5z" clip-rule="evenodd" />
+                                    </svg>
+                                @else
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                @endif
+                                <span>Semana</span>
+                            </span>
                         </button>
                     </div>
                     <div class="flex items-center justify-center">
