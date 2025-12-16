@@ -577,6 +577,8 @@ class ShowHorarios extends Component
 
     public function updateGrupoHorario($horarios_id, $horarios_dia, $horas_id, $grupo_id, $profesores_id, $espacios_id, $anterior_id)
     {
+        $fechaDestino = Carbon::parse($horarios_dia)->toDateString();
+
         // --- INICIO: Validación de datos relacionados ---
         // Si se está moviendo un horario existente (no creando uno nuevo desde un grupo base)
         if ($anterior_id != '0') {
@@ -605,53 +607,66 @@ class ShowHorarios extends Component
                 $this->emitTo('show-horarios','render'); // Re-render to reflect current state
                 return;
             }
+
+            $existeAsignacionMismoDia = Horario::whereDate('horarios_dia', $fechaDestino)
+                ->where('grupo_id', $grupo_id)
+                ->when($horarios_id != '0', fn ($q) => $q->where('horarios_id', '!=', $horarios_id))
+                ->when($anterior_id != '0', fn ($q) => $q->where('horarios_id', '!=', $anterior_id))
+                ->exists();
+
+            if ($existeAsignacionMismoDia) {
+                $this->emit('alert', 'El grupo ya está asignado en otro horario para este día.', 'Advertencias!', 'warning');
+                $this->emitTo('show-horarios','render');
+                return;
+            }
             $id_espacios = (int)($espacios_id ?? 0);
             // dd($id_espacios);
-            if ($anterior_id != '0') {
-                $horario = Horario::find($anterior_id);
-                if (!is_null($horario) && is_object($horario)) {
-                    $this->registrarGrupoInactivoPorCambioHorario($horario, $horarios_dia, (int) $horas_id);
-                    $horario->delete();
-                    unset($horario);
+            DB::transaction(function () use ($anterior_id, $horarios_dia, $horas_id, $grupo_id, $id_espacios, $profesores_id, $horarios_id) {
+                if ($anterior_id != '0') {
+                    $horarioAnterior = Horario::find($anterior_id);
+                    if ($horarioAnterior) {
+                        $this->registrarGrupoInactivoPorCambioHorario($horarioAnterior, $horarios_dia, (int) $horas_id);
+                        $horarioAnterior->delete();
+                    }
                 }
-            }
-            if ($horarios_id != '0') {
-                $horario = Horario::find($horarios_id);
-                                  ;
-                if ($horario) {
-                    $horario->update([
-                        'horarios_dia' => $horarios_dia,
-                        'horas_id' => $horas_id,
-                        'grupo_id' => $grupo_id,
-                        'espacios_id' => $id_espacios,
-                        'profesores_id' => $profesores_id,
-                    ]);
+
+                if ($horarios_id != '0') {
+                    $horario = Horario::find($horarios_id);
+                    if ($horario) {
+                        $horario->update([
+                            'horarios_dia' => $horarios_dia,
+                            'horas_id' => $horas_id,
+                            'grupo_id' => $grupo_id,
+                            'espacios_id' => $id_espacios,
+                            'profesores_id' => $profesores_id,
+                        ]);
+                    } else {
+                        Horario::create([
+                            'horarios_dia' => $horarios_dia,
+                            'horas_id' => $horas_id,
+                            'grupo_id' => $grupo_id,
+                            'espacios_id' => $id_espacios,
+                            'profesores_id' => $profesores_id,
+                        ]);
+                    }
                 } else {
-                    $horario = Horario::create([
-                        'horarios_dia' => $horarios_dia,
-                        'horas_id' => $horas_id,
-                        'grupo_id' => $grupo_id,
-                        'espacios_id' => $id_espacios,
-                        'profesores_id' => $profesores_id,
-                    ]);
+                    $cantidad = Horario::where('horarios_dia',$horarios_dia)
+                                      ->where('espacios_id',$id_espacios)
+                                      ->where('horas_id',$horas_id)
+                                      ->where('grupo_id',$grupo_id)
+                                      ->where('profesores_id',$profesores_id)->count();
+
+                    if ($cantidad == 0) {
+                        Horario::create([
+                            'horarios_dia' => $horarios_dia,
+                            'horas_id' => $horas_id,
+                            'grupo_id' => $grupo_id,
+                            'espacios_id' => $id_espacios,
+                            'profesores_id' => $profesores_id,
+                        ]);
+                    }
                 }
-            } else {
-                $cantidad = Horario::where('horarios_dia',$horarios_dia)
-                                  ->where('espacios_id',$espacios_id)
-                                  ->where('horas_id',$horas_id)
-                                  ->where('grupo_id',$grupo_id)
-                                  ->where('profesores_id',$profesores_id)->count();
-                                  ;
-                if ($cantidad == 0) {
-                    $horario = Horario::create([
-                        'horarios_dia' => $horarios_dia,
-                        'horas_id' => $horas_id,
-                        'grupo_id' => $grupo_id,
-                        'espacios_id' => $id_espacios,
-                        'profesores_id' => $profesores_id,
-                    ]);
-                }
-            }
+            });
             $this->emitTo('show-horarios','render');
             $this->emit('alert', 'El horario fue agregado satisfactoriamente');
         }
