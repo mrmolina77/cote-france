@@ -575,7 +575,19 @@ class ShowHorarios extends Component
         return $grupo_deta;
     }
 
-    public function updateGrupoHorario($horarios_id, $horarios_dia, $horas_id, $grupo_id, $profesores_id, $espacios_id, $anterior_id)
+    public function updateGrupoHorario(
+        $horarios_id,
+        $horarios_dia,
+        $horas_id,
+        $grupo_id,
+        $profesores_id,
+        $espacios_id,
+        $anterior_id,
+        $anterior_dia = null,
+        $anterior_hora = null,
+        $anterior_profesor = null,
+        $anterior_espacio = null
+    )
     {
         $fechaDestino = Carbon::parse($horarios_dia)->toDateString();
 
@@ -620,14 +632,32 @@ class ShowHorarios extends Component
                 return;
             }
             $id_espacios = (int)($espacios_id ?? 0);
+            $fechaAnterior = $anterior_dia ? Carbon::parse($anterior_dia)->toDateString() : null;
+            $horaAnterior = $anterior_hora ? (int) $anterior_hora : null;
             // dd($id_espacios);
-            DB::transaction(function () use ($anterior_id, $horarios_dia, $horas_id, $grupo_id, $id_espacios, $profesores_id, $horarios_id) {
+            DB::transaction(function () use (
+                $anterior_id,
+                $horarios_dia,
+                $horas_id,
+                $grupo_id,
+                $id_espacios,
+                $profesores_id,
+                $horarios_id,
+                $fechaAnterior,
+                $horaAnterior
+            ) {
                 if ($anterior_id != '0') {
                     $horarioAnterior = Horario::find($anterior_id);
                     if ($horarioAnterior) {
                         $this->registrarGrupoInactivoPorCambioHorario($horarioAnterior, $horarios_dia, (int) $horas_id);
                         $horarioAnterior->delete();
                     }
+                } elseif ($fechaAnterior && $horaAnterior && ($fechaAnterior !== Carbon::parse($horarios_dia)->toDateString() || $horaAnterior !== (int) $horas_id)) {
+                    GrupoInactivo::firstOrCreate([
+                        'grupo_id' => $grupo_id,
+                        'fecha' => $fechaAnterior,
+                        'horas_id' => $horaAnterior,
+                    ]);
                 }
 
                 if ($horarios_id != '0') {
