@@ -41,7 +41,7 @@ class ShowHorarios extends Component
     public $espacios;
     // $asistencias;
     // public $estudiantes;
-    protected $listeners = ['render','delete','scrollToBottom'];
+    protected $listeners = ['render','delete','scrollToBottom','deactivateGrupo'];
     public $estudiantes = [];
     public $asistencias = [];
     public $observaciones = [];
