@@ -7,6 +7,7 @@ use App\Models\Dia;
 use App\Models\Diario;
 use App\Models\Espacio;
 use App\Models\Evaluacion;
+use App\Models\ActiveWeek;
 use App\Models\Grupo;
 use App\Models\GrupoInactivo;
 use App\Models\Hora;
@@ -39,6 +40,7 @@ class ShowHorarios extends Component
     public $diarios_profesor = '';
     public $diarios_espacio = '';
     public $espacios;
+    public $semana_activa = false;
     // $asistencias;
     // public $estudiantes;
     protected $listeners = ['render','delete','scrollToBottom','deactivateGrupo'];
@@ -90,6 +92,12 @@ class ShowHorarios extends Component
 
     public function render()
     {
+        $activeWeek = ActiveWeek::where('start_date', $this->inicio)->first();
+        if ($activeWeek && $activeWeek->end_date !== $this->fin) {
+            $activeWeek->update(['end_date' => $this->fin]);
+        }
+        $this->semana_activa = (bool) ($activeWeek?->is_active);
+
         $espacios = Espacio::all();
         $horas_semana = Hora::where('tipo',1)->orderBy('horas_id', 'asc')->get(); // Assuming 'tipo' 1 for Mon-Fri
         $horas_fds = Hora::where('tipo',2)->orderBy('horas_id', 'asc')->get();
@@ -228,6 +236,28 @@ class ShowHorarios extends Component
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
+    }
+
+    public function toggleSemanaActiva(): void
+    {
+        $activeWeek = ActiveWeek::firstOrCreate(
+            ['start_date' => $this->inicio],
+            [
+                'end_date' => $this->fin,
+                'is_active' => true,
+            ]
+        );
+
+        if (!$activeWeek->wasRecentlyCreated) {
+            $activeWeek->is_active = !$activeWeek->is_active;
+            $activeWeek->end_date = $this->fin;
+            $activeWeek->save();
+        }
+
+        $this->semana_activa = $activeWeek->is_active;
+
+        $message = $this->semana_activa ? 'La semana ha sido activada' : 'La semana ha sido desactivada';
+        $this->emit('alert', $message);
     }
 
     public function save(){
