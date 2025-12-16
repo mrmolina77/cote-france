@@ -7,6 +7,7 @@ use App\Models\Dia;
 use App\Models\Diario;
 use App\Models\Espacio;
 use App\Models\Evaluacion;
+use App\Models\ActiveWeek;
 use App\Models\Grupo;
 use App\Models\Hora;
 use App\Models\Horario;
@@ -42,6 +43,7 @@ class ShowProfesorHorario extends Component
     public $observaciones = [];
     public $evaluaciones = [];
     protected $listeners = ['render', 'delete', 'scrollToBottom'];
+    public $semana_activa = false;
 
     public function boot()
     {
@@ -88,45 +90,55 @@ class ShowProfesorHorario extends Component
         $horas = Hora::where('tipo', 1)->orderBy('horas_id', 'asc')->get();
         $horas2 = Hora::where('tipo', 2)->orderBy('horas_id', 'asc')->get();
 
-        // Get all horarios for the week
-        $horarios = Horario::where('horarios_dia', '>=', $this->inicio)
-            ->where('horarios_dia', '<=', $this->fin)
-            ->orderBy('horarios_dia', 'asc')
-            ->orderBy('horas_id', 'asc')
-            ->orderBy('profesores_id', 'asc')
-            ->get();
+        $activeWeek = ActiveWeek::where('start_date', $this->inicio)
+            ->where('is_active', true)
+            ->first();
+        $this->semana_activa = (bool) $activeWeek;
 
-        // Get only the logged-in professor's horarios
-        $profesor_horarios = $horarios->where('profesores_id', $id_relacionado);
+        $array_horario = [];
+        $grupo_deta = [];
+        $grupos = collect();
+        $profesores = collect();
+        $profesor_horarios = collect();
 
-        $array_horario = array();
-        foreach ($horarios as $horario) {
-            if ($horario->grupo->modalidad_id == 1) {
-                $color = 'bg-red-100';
-            } else {
-                $color = 'bg-green-100';
+        if ($this->semana_activa) {
+            $horarios = Horario::where('horarios_dia', '>=', $this->inicio)
+                ->where('horarios_dia', '<=', $this->fin)
+                ->orderBy('horarios_dia', 'asc')
+                ->orderBy('horas_id', 'asc')
+                ->orderBy('profesores_id', 'asc')
+                ->get();
+
+            $profesor_horarios = $horarios->where('profesores_id', $id_relacionado);
+
+            foreach ($horarios as $horario) {
+                if ($horario->grupo->modalidad_id == 1) {
+                    $color = 'bg-red-100';
+                } else {
+                    $color = 'bg-green-100';
+                }
+
+                $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->profesores_id] = [
+                    'nombre' => $horario->grupo->grupo_nombre,
+                    'color' => $horario->profesor->profesores_color,
+                    'espacios_id' => $horario->espacios_id,
+                    'grupo_id' => $horario->grupo_id,
+                    'espacio' => $horario->espacio->espacios_nombre,
+                    'enlace' => $horario->espacio->espacios_enlace,
+                    'modalidad' => $horario->espacio->modalidad_id,
+                    'bgcolor' => $color,
+                    'id' => $horario->horarios_id,
+                    'editable' => $horario->profesores_id == $id_relacionado // Add editable flag
+                ];
             }
 
-            $array_horario[$horario->horarios_dia][$horario->horas_id][$horario->profesores_id] = [
-                'nombre' => $horario->grupo->grupo_nombre,
-                'color' => $horario->profesor->profesores_color,
-                'espacios_id' => $horario->espacios_id,
-                'grupo_id' => $horario->grupo_id,
-                'espacio' => $horario->espacio->espacios_nombre,
-                'enlace' => $horario->espacio->espacios_enlace,
-                'modalidad' => $horario->espacio->modalidad_id,
-                'bgcolor' => $color,
-                'id' => $horario->horarios_id,
-                'editable' => $horario->profesores_id == $id_relacionado // Add editable flag
-            ];
+            $this->ocupados = array();
+            $grupo_deta = $this->cargaDetalleGrupo();
+            $grupos = Grupo::where('modalidad_id', $this->modalidad)->where('estado_id', 1)->get();
+            $profesores = Profesor::where('modalidad_id', $this->modalidad)
+                ->where('profesores_activo', 1)
+                ->get();
         }
-
-        $this->ocupados = array();
-        $grupo_deta = $this->cargaDetalleGrupo();
-        $grupos = Grupo::where('modalidad_id', $this->modalidad)->where('estado_id', 1)->get();
-        $profesores = Profesor::where('modalidad_id', $this->modalidad)
-            ->where('profesores_activo', 1)
-            ->get();
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
 

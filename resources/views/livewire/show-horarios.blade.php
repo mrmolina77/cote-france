@@ -11,7 +11,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full max-w-lg grid-cols-4 gap-1 mx-auto">
+                <div class="grid h-full max-w-2xl grid-cols-5 gap-2 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -34,6 +34,14 @@
                             <option value="1">{{__('Weekly')}}</option>
                             <option value="0">{{__('Daily')}}</option>
                         </x-select>
+                    </div>
+                    <div class="flex items-center">
+                        <button
+                            class="w-full py-2 px-3 text-sm font-semibold rounded-lg border focus:outline-none focus:ring-4 transition-colors duration-150 {{ $semana_activa ? 'text-green-800 bg-green-100 border-green-200 focus:ring-green-200' : 'text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-gray-100' }}"
+                            wire:click="toggleSemanaActiva"
+                        >
+                            {{ $semana_activa ? 'Semana activa' : 'Activar semana' }}
+                        </button>
                     </div>
                     <div class="flex items-center justify-center">
                         <button class="w-full py-2 px-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" wire:click="siguiente">

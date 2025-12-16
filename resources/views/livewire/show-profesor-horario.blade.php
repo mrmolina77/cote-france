@@ -6,7 +6,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full max-w-lg grid-cols-4 gap-4 mx-auto">
+                <div class="grid h-full max-w-2xl grid-cols-5 gap-4 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -30,6 +30,11 @@
                             <option value="0">{{__('Daily')}}</option>
                         </x-select>
                     </div>
+                    <div class="flex items-center">
+                        <span class="w-full text-center py-2.5 px-5 text-sm font-semibold rounded-lg border {{ $semana_activa ? 'text-green-800 bg-green-100 border-green-200' : 'text-yellow-800 bg-yellow-100 border-yellow-200' }}">
+                            {{ $semana_activa ? 'Semana activa' : 'Semana inactiva' }}
+                        </span>
+                    </div>
                     <div class="flex items-center justify-center">
                         <button class="w-full py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" wire:click="siguiente">
                             Siguiente
@@ -39,6 +44,7 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
+            @if($semana_activa)
             <div @class([
                 'overflow-x-auto origin-top-left',
                 'scale-100 w-full' => $porcentaje == '0',
@@ -181,6 +187,11 @@
                 @endforeach
                 </div>
             </div>
+            @else
+            <div class="p-4 mt-4 text-center text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg">
+                Esta semana no está activa.  Espere que sea activida.
+            </div>
+            @endif
         @else
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
@@ -198,6 +209,7 @@
             </div>
 
             {{-- Contenedor del Grid con Scroll --}}
+            @if($semana_activa)
             <div @class([
                 'overflow-x-auto origin-top-left',
                 'scale-100 w-full' => $porcentaje == '0',
@@ -265,6 +277,11 @@
                 @endforeach
                 </div>
             </div>
+            @else
+            <div class="p-4 mt-4 text-center text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg">
+                Esta semana no está activa.  Espere que sea activida.
+            </div>
+            @endif
         @endif
     </div>
 
