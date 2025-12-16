@@ -610,6 +610,7 @@ class ShowHorarios extends Component
             if ($anterior_id != '0') {
                 $horario = Horario::find($anterior_id);
                 if (!is_null($horario) && is_object($horario)) {
+                    $this->registrarGrupoInactivoPorCambioHorario($horario, $horarios_dia, (int) $horas_id);
                     $horario->delete();
                     unset($horario);
                 }
@@ -654,6 +655,25 @@ class ShowHorarios extends Component
             $this->emitTo('show-horarios','render');
             $this->emit('alert', 'El horario fue agregado satisfactoriamente');
         }
+    }
+
+    private function registrarGrupoInactivoPorCambioHorario(Horario $horarioOriginal, string $nuevoDia, int $nuevaHoraId): void
+    {
+        $fechaOriginal = Carbon::parse($horarioOriginal->horarios_dia)->toDateString();
+        $nuevaFecha = Carbon::parse($nuevoDia)->toDateString();
+
+        $esMismaFecha = $fechaOriginal === $nuevaFecha;
+        $esMismaHora = (int) $horarioOriginal->horas_id === $nuevaHoraId;
+
+        if ($esMismaFecha && $esMismaHora) {
+            return;
+        }
+
+        GrupoInactivo::firstOrCreate([
+            'grupo_id' => $horarioOriginal->grupo_id,
+            'fecha' => $fechaOriginal,
+            'horas_id' => $horarioOriginal->horas_id,
+        ]);
     }
 
     public function obtenerProfesores($fecha,$hora,$modalidad_id)
