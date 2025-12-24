@@ -11,7 +11,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full max-w-lg grid-cols-4 gap-1 mx-auto">
+                <div class="grid h-full max-w-2xl grid-cols-5 gap-2 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -34,6 +34,25 @@
                             <option value="1">{{__('Weekly')}}</option>
                             <option value="0">{{__('Daily')}}</option>
                         </x-select>
+                    </div>
+                    <div class="flex items-center">
+                        <button
+                            class="w-full py-2 px-3 text-sm font-semibold rounded-lg border focus:outline-none focus:ring-4 transition-colors duration-150 {{ $semana_activa ? 'text-green-800 bg-green-100 border-green-200 focus:ring-green-200' : 'text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-gray-100' }}"
+                            wire:click="toggleSemanaActiva"
+                        >
+                            <span class="flex items-center justify-center gap-2">
+                                @if ($semana_activa)
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.854-9.646a.5.5 0 00-.708-.708L9 11.793 6.854 9.646a.5.5 0 10-.708.708l2.5 2.5a.5.5 0 00.708 0l4.5-4.5z" clip-rule="evenodd" />
+                                    </svg>
+                                @else
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                @endif
+                                <span>Semana</span>
+                            </span>
+                        </button>
                     </div>
                     <div class="flex items-center justify-center">
                         <button class="w-full py-2 px-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" wire:click="siguiente">
@@ -206,6 +225,11 @@
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                             <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                            <div class="flex items-center justify-center">
+                                                <button type="button" class="text-red-500" wire:click="$emit('confirmDeactivateGrupo', {{ $grupoDetalle['grupo_id'] }}, '{{ $currentDateString }}', {{ $hora->horas_id }})">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 @else
@@ -317,6 +341,11 @@
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
                                             <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                            <div class="flex items-center justify-center">
+                                                <button type="button" class="text-red-500" wire:click="$emit('confirmDeactivateGrupo', {{ $grupoDetalle['grupo_id'] }}, '{{ $currentDateString }}', {{ $currentHourId }})">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 @else
@@ -454,6 +483,11 @@
                                     data-profesor="{{ $profesor->profesores_id }}">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
                                         <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                        <div class="flex items-center justify-center">
+                                            <button type="button" class="text-red-500" wire:click="$emit('confirmDeactivateGrupo', {{ $grupoDetalle['grupo_id'] }}, '{{ $currentDailyDateString }}', {{ $hora->horas_id }})">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             @else
@@ -714,6 +748,23 @@
             }
             });
         })
+
+        livewire.on('confirmDeactivateGrupo', (grupoId, fecha, horaId) => {
+            Swal.fire({
+                title: "{{ __('¿Está seguro de desactivar el grupo?') }}",
+                text: "{{ __('Esta acción ocultará el grupo para la fecha y hora seleccionadas.') }}",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                cancelButtonText: "{{__('Cancel')}}",
+                confirmButtonText: "{{ __('Sí, desactivar') }}"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    livewire.emitTo('show-horarios','deactivateGrupo', grupoId, fecha, horaId);
+                }
+            });
+        });
         // Este es el listener importante para el scroll
         document.addEventListener('livewire:load', function () {
             Livewire.on('scrollToBottom', () => {
@@ -772,7 +823,19 @@
                     let targetProfesor = targetCell.dataset.profesor;
                     let targetEspacio = targetCell.dataset.espacio;
                     // Llama a Livewire directamente
-                    @this.updateGrupoHorario(targetId, targetDia, targetHora, data.grupo, targetProfesor, data.espacio, data.id);
+                    @this.updateGrupoHorario(
+                        targetId,
+                        targetDia,
+                        targetHora,
+                        data.grupo,
+                        targetProfesor,
+                        data.espacio,
+                        data.id,
+                        data.dia,
+                        data.hora,
+                        data.profesor,
+                        data.espacio
+                    );
 
                 }
             });
