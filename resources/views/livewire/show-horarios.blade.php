@@ -192,6 +192,18 @@
                                                 <x-group-name :name="$nombreDelHorario" />
                                             @endif
                                         </div>
+                                        @php
+                                            $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $limiteActualizacion = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde)->addHour();
+                                            $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                        @endphp
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
+                                                </span>
+                                            </div>
+                                        @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
@@ -308,6 +320,21 @@
                                                 <x-group-name :name="$nombreDelHorario" />
                                             @endif
                                         </div>
+                                        @php
+                                            $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $horaInicio = $horas2[$pos1]->horas_desde ?? null;
+                                            $limiteActualizacion = $horaInicio
+                                                ? \Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio)->addHour()
+                                                : null;
+                                            $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
+                                        @endphp
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
+                                                </span>
+                                            </div>
+                                        @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
@@ -456,6 +483,18 @@
                                             <x-group-name :name="$nombreDelHorario" />
                                         @endif
                                     </div>
+                                    @php
+                                        $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                        $limiteActualizacion = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde)->addHour();
+                                        $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                    @endphp
+                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
+                                        <div class="flex items-center justify-center">
+                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                                                {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
+                                            </span>
+                                        </div>
+                                    @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
