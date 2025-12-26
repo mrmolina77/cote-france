@@ -59,6 +59,7 @@ class NotifyProfesoresDiariosPendientes extends Command
 
             $profesor->notify(new DiariosPendientesProfesor($detalleClases));
             $notificados++;
+            usleep(125000);
         }
 
         $this->info("Notificaciones enviadas: {$notificados}");
