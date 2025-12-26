@@ -117,6 +117,18 @@
                                                 {{$horarioItem['nombre']}}
                                             @endif
                                         </div>
+                                        @php
+                                            $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $limiteActualizacion = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde)->addHour();
+                                            $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                        @endphp
+                                        @if($mostrarEstado)
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
+                                                </span>
+                                            </div>
+                                        @endif
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-book text-blue-500 m-2 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
@@ -167,6 +179,21 @@
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             {{$horarioItem['nombre']}}
                                         </div>
+                                        @php
+                                            $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $horaInicio = $horas2[$pos1]->horas_desde ?? null;
+                                            $limiteActualizacion = $horaInicio
+                                                ? \Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio)->addHour()
+                                                : null;
+                                            $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
+                                        @endphp
+                                        @if($mostrarEstado)
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
+                                                </span>
+                                            </div>
+                                        @endif
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-book text-blue-500 m-2 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
@@ -262,6 +289,18 @@
                                             {{$horarioItem['nombre']}}
                                         @endif
                                     </div>
+                                    @php
+                                        $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                        $limiteActualizacion = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde)->addHour();
+                                        $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                    @endphp
+                                    @if($mostrarEstado)
+                                        <div class="flex items-center justify-center">
+                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                                                {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
+                                            </span>
+                                        </div>
+                                    @endif
                                     <div class="flex items-center justify-center">
                                         <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
                                         <div><i class="fas fa-book text-blue-500 m-2 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>

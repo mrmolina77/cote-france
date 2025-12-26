@@ -104,6 +104,7 @@ class ShowProfesorHorario extends Component
         if ($this->semana_activa) {
             $horarios = Horario::where('horarios_dia', '>=', $this->inicio)
                 ->where('horarios_dia', '<=', $this->fin)
+                ->with(['grupo.modalidad', 'profesor', 'espacio', 'diario'])
                 ->orderBy('horarios_dia', 'asc')
                 ->orderBy('horas_id', 'asc')
                 ->orderBy('profesores_id', 'asc')
@@ -128,6 +129,7 @@ class ShowProfesorHorario extends Component
                     'modalidad' => $horario->espacio->modalidad_id,
                     'bgcolor' => $color,
                     'id' => $horario->horarios_id,
+                    'diario_actualizado' => $horario->diario?->updated_at,
                     'editable' => $horario->profesores_id == $id_relacionado // Add editable flag
                 ];
             }
