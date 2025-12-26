@@ -180,7 +180,7 @@
                                     data-profesor="{{ $profesor->profesores_id }}"
                                     data-column-key="{{ $columnKey }}"
                                     data-column-index="{{ $columnIndex }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div style="{{$estilosDisplay}}" class="relative w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
@@ -198,11 +198,15 @@
                                             $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
                                         @endphp
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
-                                            <div class="flex items-center justify-center">
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
-                                                </span>
-                                            </div>
+                                            @if($diarioActualizado)
+                                                <div class="flex items-center justify-center">
+                                                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                        Actualizado
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            @endif
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
@@ -312,7 +316,7 @@
                                     data-profesor="{{ $profesor->profesores_id }}"
                                     data-column-key="{{ $columnKey }}"
                                     data-column-index="{{ $columnIndex }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div style="{{$estilosDisplay}}" class="relative w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
@@ -329,11 +333,15 @@
                                             $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                         @endphp
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
-                                            <div class="flex items-center justify-center">
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
-                                                </span>
-                                            </div>
+                                            @if($diarioActualizado)
+                                                <div class="flex items-center justify-center">
+                                                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                        Actualizado
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            @endif
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
@@ -471,7 +479,7 @@
                                 data-hora="{{ $hora->horas_id }}"
                                 data-grupo="{{ $horarioItem['grupo_id'] }}"
                                 data-profesor="{{ $profesor->profesores_id }}">
-                                <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                <div style="{{$estilosDisplay}}" class="relative w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
                                     <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
@@ -489,11 +497,15 @@
                                         $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
                                     @endphp
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
-                                        <div class="flex items-center justify-center">
-                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                                {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
-                                            </span>
-                                        </div>
+                                        @if($diarioActualizado)
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.6rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                    Actualizado
+                                                </span>
+                                            </div>
+                                        @else
+                                            <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                        @endif
                                     @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">
