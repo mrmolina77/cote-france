@@ -109,7 +109,7 @@
 
                             @if ($horarioItem)
                                 <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div class="relative w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -123,11 +123,15 @@
                                             $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
                                         @endphp
                                         @if($mostrarEstado)
-                                            <div class="flex items-center justify-center">
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
-                                                </span>
-                                            </div>
+                                            @if($diarioActualizado)
+                                                <div class="flex items-center justify-center">
+                                                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                        Actualizado
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            @endif
                                         @endif
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
@@ -175,7 +179,7 @@
 
                             @if ($horarioItem)
                                 <div class="h-full p-1 text-center">
-                                    <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div class="relative w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             {{$horarioItem['nombre']}}
                                         </div>
@@ -188,11 +192,15 @@
                                             $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                         @endphp
                                         @if($mostrarEstado)
-                                            <div class="flex items-center justify-center">
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                                    {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
-                                                </span>
-                                            </div>
+                                            @if($diarioActualizado)
+                                                <div class="flex items-center justify-center">
+                                                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                        Actualizado
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            @endif
                                         @endif
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
@@ -281,7 +289,7 @@
 
                         @if ($horarioItem)
                             <div class="h-full border p-0 text-center">
-                                <div class="w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                <div class="relative w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
                                     <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -295,11 +303,15 @@
                                         $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
                                     @endphp
                                     @if($mostrarEstado)
-                                        <div class="flex items-center justify-center">
-                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full {{ $diarioActualizado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                                {{ $diarioActualizado ? 'Actualizado' : 'Pendiente' }}
-                                            </span>
-                                        </div>
+                                        @if($diarioActualizado)
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                    Actualizado
+                                                </span>
+                                            </div>
+                                        @else
+                                            <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                        @endif
                                     @endif
                                     <div class="flex items-center justify-center">
                                         <div><i class="fas fa-calendar-check text-green-500 m-2 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
