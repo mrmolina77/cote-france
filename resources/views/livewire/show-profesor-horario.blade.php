@@ -109,7 +109,7 @@
 
                             @if ($horarioItem)
                                 <div class="h-full p-1 text-center">
-                                    <div class="relative w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div class="relative w-full min-h-16 grid grid-cols-1 pb-4 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">{{$horarioItem['nombre']}}</a>
@@ -124,11 +124,7 @@
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
-                                                <div class="flex items-center justify-center">
-                                                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
-                                                        Actualizado
-                                                    </span>
-                                                </div>
+                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
                                                 <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
@@ -179,7 +175,7 @@
 
                             @if ($horarioItem)
                                 <div class="h-full p-1 text-center">
-                                    <div class="relative w-full min-h-16 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div class="relative w-full min-h-16 grid grid-cols-1 pb-4 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-serif text-sm font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             {{$horarioItem['nombre']}}
                                         </div>
@@ -193,11 +189,7 @@
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
-                                                <div class="flex items-center justify-center">
-                                                    <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
-                                                        Actualizado
-                                                    </span>
-                                                </div>
+                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
                                                 <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
