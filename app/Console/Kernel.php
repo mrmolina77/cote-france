@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Console\Commands\NotifyProfesoresDiariosPendientes;
 use App\Console\Commands\NotifyProspecto;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -10,6 +11,7 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         NotifyProspecto::class,
+        NotifyProfesoresDiariosPendientes::class,
       ];
 
     /**
@@ -22,6 +24,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('prostecto:notify')->dailyAt('22:33');
+        $schedule->command('profesores:diarios-pendientes')->dailyAt('08:00');
     }
 
     /**
