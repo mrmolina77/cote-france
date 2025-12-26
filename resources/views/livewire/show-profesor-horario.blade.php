@@ -124,9 +124,9 @@
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
                                         <div class="flex items-center justify-center">
@@ -189,9 +189,9 @@
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
                                         <div class="flex items-center justify-center">
@@ -296,13 +296,9 @@
                                     @endphp
                                     @if($mostrarEstado)
                                         @if($diarioActualizado)
-                                            <div class="flex items-center justify-center">
-                                                <span class="inline-flex items-center justify-center px-2 py-0.5 text-[0.65rem] font-semibold rounded-full bg-emerald-100 text-emerald-800">
-                                                    Actualizado
-                                                </span>
-                                            </div>
+                                            <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                         @else
-                                            <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                         @endif
                                     @endif
                                     <div class="flex items-center justify-center">

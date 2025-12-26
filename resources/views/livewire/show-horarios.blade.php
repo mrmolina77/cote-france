@@ -199,9 +199,9 @@
                                         @endphp
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
                                             @if($diarioActualizado)
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
@@ -330,9 +330,9 @@
                                         @endphp
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
                                             @if($diarioActualizado)
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
-                                                <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
@@ -490,9 +490,9 @@
                                     @endphp
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
                                         @if($diarioActualizado)
-                                            <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                            <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                         @else
-                                            <span class="absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                         @endif
                                     @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
