@@ -44,6 +44,7 @@ class ShowProfesorHorario extends Component
     public $evaluaciones = [];
     protected $listeners = ['render', 'delete', 'scrollToBottom'];
     public $semana_activa = false;
+    public $solo_profesor = false;
 
     public function boot()
     {
@@ -104,10 +105,15 @@ class ShowProfesorHorario extends Component
         if ($this->semana_activa) {
             $horarios = Horario::where('horarios_dia', '>=', $this->inicio)
                 ->where('horarios_dia', '<=', $this->fin)
+                ->with(['grupo.modalidad', 'profesor', 'espacio', 'diario'])
                 ->orderBy('horarios_dia', 'asc')
                 ->orderBy('horas_id', 'asc')
                 ->orderBy('profesores_id', 'asc')
                 ->get();
+
+            if ($this->solo_profesor) {
+                $horarios = $horarios->where('profesores_id', $id_relacionado);
+            }
 
             $profesor_horarios = $horarios->where('profesores_id', $id_relacionado);
 
@@ -128,6 +134,7 @@ class ShowProfesorHorario extends Component
                     'modalidad' => $horario->espacio->modalidad_id,
                     'bgcolor' => $color,
                     'id' => $horario->horarios_id,
+                    'diario_actualizado' => $horario->diario?->updated_at,
                     'editable' => $horario->profesores_id == $id_relacionado // Add editable flag
                 ];
             }
@@ -135,9 +142,14 @@ class ShowProfesorHorario extends Component
             $this->ocupados = array();
             $grupo_deta = $this->cargaDetalleGrupo();
             $grupos = Grupo::where('modalidad_id', $this->modalidad)->where('estado_id', 1)->get();
-            $profesores = Profesor::where('modalidad_id', $this->modalidad)
-                ->where('profesores_activo', 1)
-                ->get();
+            $profesoresQuery = Profesor::where('modalidad_id', $this->modalidad)
+                ->where('profesores_activo', 1);
+
+            if ($this->solo_profesor) {
+                $profesoresQuery->where('profesores_id', $id_relacionado);
+            }
+
+            $profesores = $profesoresQuery->get();
         }
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
@@ -176,6 +188,11 @@ class ShowProfesorHorario extends Component
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
+    }
+
+    public function toggleSoloProfesor()
+    {
+        $this->solo_profesor = ! $this->solo_profesor;
     }
 
     public function delete(Horario $horario)

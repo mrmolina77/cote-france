@@ -180,7 +180,7 @@
                                     data-profesor="{{ $profesor->profesores_id }}"
                                     data-column-key="{{ $columnKey }}"
                                     data-column-index="{{ $columnIndex }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div style="{{$estilosDisplay}}" class="relative w-full min-h-14 grid grid-cols-1 pb-4 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
@@ -192,6 +192,18 @@
                                                 <x-group-name :name="$nombreDelHorario" />
                                             @endif
                                         </div>
+                                        @php
+                                            $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $limiteActualizacion = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde)->addHour();
+                                            $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                        @endphp
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
+                                            @if($diarioActualizado)
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                            @else
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            @endif
+                                        @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
@@ -300,7 +312,7 @@
                                     data-profesor="{{ $profesor->profesores_id }}"
                                     data-column-key="{{ $columnKey }}"
                                     data-column-index="{{ $columnIndex }}">
-                                    <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}} rounded-md">
+                                    <div style="{{$estilosDisplay}}" class="relative w-full min-h-14 grid grid-cols-1 pb-4 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($nombreDelHorario === "BLOQUEADO")
                                                 <span class="text-red-500 font-bold">&nbsp;</span>
@@ -308,6 +320,21 @@
                                                 <x-group-name :name="$nombreDelHorario" />
                                             @endif
                                         </div>
+                                        @php
+                                            $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $horaInicio = $horas2[$pos1]->horas_desde ?? null;
+                                            $limiteActualizacion = $horaInicio
+                                                ? \Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio)->addHour()
+                                                : null;
+                                            $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
+                                        @endphp
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
+                                            @if($diarioActualizado)
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                            @else
+                                                <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                            @endif
+                                        @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
@@ -444,7 +471,7 @@
                                 data-hora="{{ $hora->horas_id }}"
                                 data-grupo="{{ $horarioItem['grupo_id'] }}"
                                 data-profesor="{{ $profesor->profesores_id }}">
-                                <div style="{{$estilosDisplay}}" class="w-full min-h-14 grid grid-cols-1 {{$horarioItem['bgcolor']}}">
+                                <div style="{{$estilosDisplay}}" class="relative w-full min-h-14 grid grid-cols-1 pb-4 {{$horarioItem['bgcolor']}}">
                                     <div style="{{ $estilosParaDiv }}" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
@@ -456,6 +483,18 @@
                                             <x-group-name :name="$nombreDelHorario" />
                                         @endif
                                     </div>
+                                    @php
+                                        $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                        $limiteActualizacion = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde)->addHour();
+                                        $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                    @endphp
+                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
+                                        @if($diarioActualizado)
+                                            <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
+                                        @else
+                                            <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
+                                        @endif
+                                    @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>

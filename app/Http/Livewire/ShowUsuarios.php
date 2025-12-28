@@ -119,13 +119,16 @@ class ShowUsuarios extends Component
         // $this->user->password = Hash::make($this->user->password);
         // $this->user->save();
         // $this->validate();
-        $this->user->forceFill([
+        $data = [
             'name' => $this->name,
             'email' => $this->email,
             'roles_id' => $this->rolesid,
             'relacionados_id' => $this->relacionados_id,
-            'password' => Hash::make($this->password),
-        ])->save();
+        ];
+        if (filled($this->password)) {
+            $data['password'] = Hash::make($this->password);
+        }
+        $this->user->forceFill($data)->save();
         unset($this->user);
         $this->reset(['open_edit']);
         $this->emit('alert','El usuario fue modificado satifactoriamente');
