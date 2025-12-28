@@ -109,7 +109,7 @@ class ShowHorarios extends Component
         // 2. Fetch existing Horario records for the week
         $horariosCollection = Horario::where('horarios_dia','>=', $this->inicio)
             ->where('horarios_dia','<=', $this->fin)
-            ->with(['grupo.modalidad', 'profesor', 'espacio']) // Eager load relations
+            ->with(['grupo.modalidad', 'profesor', 'espacio', 'diario']) // Eager load relations
             ->orderBy('horarios_dia', 'asc')
             ->orderBy('horas_id', 'asc')
             ->orderBy('profesores_id', 'asc')
@@ -178,6 +178,7 @@ class ShowHorarios extends Component
                             'modalidad' => $horario->espacio ? $horario->espacio->modalidad_id : null,
                             'bgcolor' => $bgColor,
                             'id' => $horario->horarios_id,
+                            'diario_actualizado' => $horario->diario?->updated_at,
                             'is_blocked' => false,
                             'is_assigned' => true,
                         ];
