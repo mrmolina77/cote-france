@@ -342,11 +342,10 @@ class ShowHorarios extends Component
     {
         $horarioBase = Horario::findOrFail($id);
 
-        // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
+        // Buscamos otros horarios del mismo grupo, en cualquier día y hora, anteriores o iguales a hoy
         $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
-        ->where('horas_id', $horarioBase->horas_id)
-        ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
-        ->pluck('horarios_id');
+            ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
+            ->pluck('horarios_id');
 
         // Traemos las evaluaciones con sus relaciones
         $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio']) // Carga las relaciones necesarias
