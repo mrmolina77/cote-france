@@ -5,12 +5,12 @@
     <div class="max-w-5xl mx-auto mt-10 px-4">
         <div class="bg-white shadow-sm rounded-lg border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-lg font-semibold text-gray-800">Inasistencias en las últimas 3 clases</h2>
-                <p class="text-sm text-gray-500">Basado en los últimos horarios actualizados.</p>
+                <h2 class="text-lg font-semibold text-gray-800">Alumnos con 3 o más inasistencias</h2>
+                <p class="text-sm text-gray-500">Resumen de alumnos con ausencias acumuladas.</p>
             </div>
             <div class="px-6 py-4">
                 @if ($inasistentes->isEmpty())
-                    <p class="text-sm text-gray-500">No hay inasistencias registradas en los últimos horarios.</p>
+                    <p class="text-sm text-gray-500">No hay alumnos con 3 o más inasistencias registradas.</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -18,6 +18,7 @@
                                 <tr>
                                     <th scope="col" class="px-4 py-2 text-left font-medium text-gray-600">Alumno</th>
                                     <th scope="col" class="px-4 py-2 text-left font-medium text-gray-600">Grupo</th>
+                                    <th scope="col" class="px-4 py-2 text-left font-medium text-gray-600">Inasistencias</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
@@ -28,6 +29,9 @@
                                         </td>
                                         <td class="px-4 py-2 text-gray-700">
                                             {{ $inasistente->grupo_nombre }}
+                                        </td>
+                                        <td class="px-4 py-2 text-gray-700">
+                                            {{ $inasistente->total_inasistencias }}
                                         </td>
                                     </tr>
                                 @endforeach
