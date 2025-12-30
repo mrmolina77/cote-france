@@ -204,6 +204,9 @@
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && ($horarioItem['diario_anterior_pendiente'] ?? false))
+                                            <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
+                                        @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
@@ -334,6 +337,9 @@
                                             @else
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
+                                        @endif
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && ($horarioItem['diario_anterior_pendiente'] ?? false))
+                                            <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
@@ -494,6 +500,9 @@
                                         @else
                                             <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                         @endif
+                                    @endif
+                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && ($horarioItem['diario_anterior_pendiente'] ?? false))
+                                        <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                     @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">

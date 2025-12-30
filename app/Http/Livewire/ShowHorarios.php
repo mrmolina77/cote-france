@@ -117,6 +117,33 @@ class ShowHorarios extends Component
             ->keyBy(function ($item) { // Key by composite key for easy lookup
                 return $item->horarios_dia . '_' . $item->horas_id . '_' . $item->profesores_id;
             });
+        $pendientesAnteriores = [];
+        $horariosSemana = $horariosCollection->values();
+
+        if ($horariosSemana->isNotEmpty()) {
+            $grupoIds = $horariosSemana->pluck('grupo_id')->unique()->values();
+            $horariosPreviosPorGrupo = Horario::whereIn('grupo_id', $grupoIds)
+                ->whereDate('horarios_dia', '<', $this->inicio)
+                ->with('diario')
+                ->orderBy('horarios_dia', 'desc')
+                ->orderBy('horas_id', 'desc')
+                ->get()
+                ->groupBy('grupo_id')
+                ->map->first();
+
+            $horariosPorGrupo = $horariosSemana->groupBy('grupo_id');
+            foreach ($horariosPorGrupo as $grupoId => $horariosGrupo) {
+                $ordenados = $horariosGrupo->sortBy(function ($horario) {
+                    return $horario->horarios_dia . '-' . $horario->horas_id . '-' . $horario->horarios_id;
+                });
+                $previo = $horariosPreviosPorGrupo->get($grupoId);
+
+                foreach ($ordenados as $horario) {
+                    $pendientesAnteriores[$horario->horarios_id] = $previo && ! $previo->diario?->updated_at;
+                    $previo = $horario;
+                }
+            }
+        }
 
         $profesores = Profesor::where('modalidad_id',$this->modalidad)
             ->where('profesores_activo', 1)
@@ -179,6 +206,7 @@ class ShowHorarios extends Component
                             'bgcolor' => $bgColor,
                             'id' => $horario->horarios_id,
                             'diario_actualizado' => $horario->diario?->updated_at,
+                            'diario_anterior_pendiente' => $pendientesAnteriores[$horario->horarios_id] ?? false,
                             'is_blocked' => false,
                             'is_assigned' => true,
                         ];
