@@ -26,8 +26,8 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('prostecto:notify')->dailyAt('22:33');
-        $schedule->command('profesores:diarios-pendientes')->dailyAt('08:00');
-        $schedule->command('prospectos:inasistencias-notify')->dailyAt('09:00');
+        $schedule->command('profesores:diarios-pendientes')->dailyAt('06:00');
+        $schedule->command('prospectos:inasistencias-notify')->dailyAt('07:00');
     }
 
     /**
