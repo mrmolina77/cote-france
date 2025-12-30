@@ -144,6 +144,14 @@
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
+                                        @php
+                                            $horaInicio = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde);
+                                            $mostrarPendienteAnterior = ($horarioItem['diario_anterior_pendiente'] ?? false)
+                                                && \Carbon\Carbon::now()->lessThan($horaInicio);
+                                        @endphp
+                                        @if ($mostrarPendienteAnterior)
+                                            <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
+                                        @endif
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
@@ -209,6 +217,17 @@
                                             @else
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
+                                        @endif
+                                        @php
+                                            $horaInicioCarbon = $horaInicio
+                                                ? \Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio)
+                                                : null;
+                                            $mostrarPendienteAnterior = ($horarioItem['diario_anterior_pendiente'] ?? false)
+                                                && $horaInicioCarbon
+                                                && \Carbon\Carbon::now()->lessThan($horaInicioCarbon);
+                                        @endphp
+                                        @if ($mostrarPendienteAnterior)
+                                            <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
@@ -318,6 +337,9 @@
                                         @else
                                             <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                         @endif
+                                    @endif
+                                    @if ($horarioItem['diario_anterior_pendiente'] ?? false)
+                                        <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                     @endif
                                     <div class="flex items-center justify-center">
                                         <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
