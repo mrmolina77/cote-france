@@ -55,7 +55,7 @@ class ShowHorarios extends Component
         $this->fecha = Carbon::now();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         // $this->fecha = new Carbon('last monday');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -224,7 +224,7 @@ class ShowHorarios extends Component
     public function anterior(){
         $this->fecha = $this->fecha->subWeek();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -233,7 +233,7 @@ class ShowHorarios extends Component
     public function siguiente(){
         $this->fecha = $this->fecha->addWeek();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
