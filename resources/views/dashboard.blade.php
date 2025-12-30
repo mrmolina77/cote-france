@@ -2,6 +2,46 @@
     @section('content')
     <p>{{ __('Dashboard') }}</p>
     @endsection
+    <div class="max-w-5xl mx-auto mt-10 px-4">
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-800">Alumnos con 3 o más inasistencias</h2>
+                <p class="text-sm text-gray-500">Resumen de alumnos con ausencias acumuladas.</p>
+            </div>
+            <div class="px-6 py-4">
+                @if ($inasistentes->isEmpty())
+                    <p class="text-sm text-gray-500">No hay alumnos con 3 o más inasistencias registradas.</p>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2 text-left font-medium text-gray-600">Alumno</th>
+                                    <th scope="col" class="px-4 py-2 text-left font-medium text-gray-600">Grupo</th>
+                                    <th scope="col" class="px-4 py-2 text-left font-medium text-gray-600">Inasistencias</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                @foreach ($inasistentes as $inasistente)
+                                    <tr>
+                                        <td class="px-4 py-2 text-gray-700">
+                                            {{ $inasistente->prospectos_nombres }} {{ $inasistente->prospectos_apellidos }}
+                                        </td>
+                                        <td class="px-4 py-2 text-gray-700">
+                                            {{ $inasistente->grupo_nombre }}
+                                        </td>
+                                        <td class="px-4 py-2 text-gray-700">
+                                            {{ $inasistente->total_inasistencias }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
     <div class="flex mt-20 justify-center items-center">
         <img src="{{asset("images/cote_logo.png")}}" alt="" srcset="">
     </div>

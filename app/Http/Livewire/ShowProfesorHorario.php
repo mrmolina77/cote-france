@@ -51,7 +51,7 @@ class ShowProfesorHorario extends Component
         $this->semanal = true;
         $this->fecha = Carbon::now();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -116,6 +116,32 @@ class ShowProfesorHorario extends Component
             }
 
             $profesor_horarios = $horarios->where('profesores_id', $id_relacionado);
+            $pendientesAnteriores = [];
+
+            if ($horarios->isNotEmpty()) {
+                $grupoIds = $horarios->pluck('grupo_id')->unique()->values();
+                $horariosPreviosPorGrupo = Horario::whereIn('grupo_id', $grupoIds)
+                    ->whereDate('horarios_dia', '<', $this->inicio)
+                    ->with('diario')
+                    ->orderBy('horarios_dia', 'desc')
+                    ->orderBy('horas_id', 'desc')
+                    ->get()
+                    ->groupBy('grupo_id')
+                    ->map->first();
+
+                $horariosPorGrupo = $horarios->groupBy('grupo_id');
+                foreach ($horariosPorGrupo as $grupoId => $horariosGrupo) {
+                    $ordenados = $horariosGrupo->sortBy(function ($horario) {
+                        return $horario->horarios_dia . '-' . $horario->horas_id . '-' . $horario->horarios_id;
+                    });
+                    $previo = $horariosPreviosPorGrupo->get($grupoId);
+
+                    foreach ($ordenados as $horario) {
+                        $pendientesAnteriores[$horario->horarios_id] = $previo && ! $previo->diario?->updated_at;
+                        $previo = $horario;
+                    }
+                }
+            }
 
             foreach ($horarios as $horario) {
                 if ($horario->grupo->modalidad_id == 1) {
@@ -135,6 +161,7 @@ class ShowProfesorHorario extends Component
                     'bgcolor' => $color,
                     'id' => $horario->horarios_id,
                     'diario_actualizado' => $horario->diario?->updated_at,
+                    'diario_anterior_pendiente' => $pendientesAnteriores[$horario->horarios_id] ?? false,
                     'editable' => $horario->profesores_id == $id_relacionado // Add editable flag
                 ];
             }
@@ -174,7 +201,7 @@ class ShowProfesorHorario extends Component
     {
         $this->fecha = $this->fecha->subWeek();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -184,7 +211,7 @@ class ShowProfesorHorario extends Component
     {
         $this->fecha = $this->fecha->addWeek();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();

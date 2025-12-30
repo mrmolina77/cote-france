@@ -204,6 +204,14 @@
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
                                         @endif
+                                        @php
+                                            $horaInicio = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde);
+                                            $mostrarPendienteAnterior = ($horarioItem['diario_anterior_pendiente'] ?? false)
+                                                && \Carbon\Carbon::now()->lessThan($horaInicio);
+                                        @endphp
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarPendienteAnterior)
+                                            <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
+                                        @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
@@ -334,6 +342,14 @@
                                             @else
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                             @endif
+                                        @endif
+                                        @php
+                                            $mostrarPendienteAnterior = ($horarioItem['diario_anterior_pendiente'] ?? false)
+                                                && $horaInicio
+                                                && \Carbon\Carbon::now()->lessThan(\Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio));
+                                        @endphp
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarPendienteAnterior)
+                                            <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
@@ -494,6 +510,14 @@
                                         @else
                                             <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pendiente"></span>
                                         @endif
+                                    @endif
+                                    @php
+                                        $horaInicio = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde);
+                                        $mostrarPendienteAnterior = ($horarioItem['diario_anterior_pendiente'] ?? false)
+                                            && \Carbon\Carbon::now()->lessThan($horaInicio);
+                                    @endphp
+                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarPendienteAnterior)
+                                        <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                     @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">
