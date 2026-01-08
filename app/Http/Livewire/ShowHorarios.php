@@ -55,7 +55,7 @@ class ShowHorarios extends Component
         $this->fecha = Carbon::now();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         // $this->fecha = new Carbon('last monday');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -117,6 +117,33 @@ class ShowHorarios extends Component
             ->keyBy(function ($item) { // Key by composite key for easy lookup
                 return $item->horarios_dia . '_' . $item->horas_id . '_' . $item->profesores_id;
             });
+        $pendientesAnteriores = [];
+        $horariosSemana = $horariosCollection->values();
+
+        if ($horariosSemana->isNotEmpty()) {
+            $grupoIds = $horariosSemana->pluck('grupo_id')->unique()->values();
+            $horariosPreviosPorGrupo = Horario::whereIn('grupo_id', $grupoIds)
+                ->whereDate('horarios_dia', '<', $this->inicio)
+                ->with('diario')
+                ->orderBy('horarios_dia', 'desc')
+                ->orderBy('horas_id', 'desc')
+                ->get()
+                ->groupBy('grupo_id')
+                ->map->first();
+
+            $horariosPorGrupo = $horariosSemana->groupBy('grupo_id');
+            foreach ($horariosPorGrupo as $grupoId => $horariosGrupo) {
+                $ordenados = $horariosGrupo->sortBy(function ($horario) {
+                    return $horario->horarios_dia . '-' . $horario->horas_id . '-' . $horario->horarios_id;
+                });
+                $previo = $horariosPreviosPorGrupo->get($grupoId);
+
+                foreach ($ordenados as $horario) {
+                    $pendientesAnteriores[$horario->horarios_id] = $previo && ! $previo->diario?->updated_at;
+                    $previo = $horario;
+                }
+            }
+        }
 
         $profesores = Profesor::where('modalidad_id',$this->modalidad)
             ->where('profesores_activo', 1)
@@ -179,6 +206,7 @@ class ShowHorarios extends Component
                             'bgcolor' => $bgColor,
                             'id' => $horario->horarios_id,
                             'diario_actualizado' => $horario->diario?->updated_at,
+                            'diario_anterior_pendiente' => $pendientesAnteriores[$horario->horarios_id] ?? false,
                             'is_blocked' => false,
                             'is_assigned' => true,
                         ];
@@ -224,7 +252,7 @@ class ShowHorarios extends Component
     public function anterior(){
         $this->fecha = $this->fecha->subWeek();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -233,7 +261,7 @@ class ShowHorarios extends Component
     public function siguiente(){
         $this->fecha = $this->fecha->addWeek();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
-        $this->year = $this->fecha->isoFormat('Y');
+        $this->year = $this->fecha->isoWeekYear;
         $this->semana = $this->fecha->weekOfYear;
         $this->inicio = $this->fecha->startOfWeek()->toDateString();
         $this->fin = $this->fecha->endOfWeek()->toDateString();
@@ -342,11 +370,10 @@ class ShowHorarios extends Component
     {
         $horarioBase = Horario::findOrFail($id);
 
-        // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
+        // Buscamos otros horarios del mismo grupo, en cualquier día y hora, anteriores o iguales a hoy
         $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
-        ->where('horas_id', $horarioBase->horas_id)
-        ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
-        ->pluck('horarios_id');
+            ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
+            ->pluck('horarios_id');
 
         // Traemos las evaluaciones con sus relaciones
         $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio']) // Carga las relaciones necesarias

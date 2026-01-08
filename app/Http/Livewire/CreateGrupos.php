@@ -163,9 +163,9 @@ class CreateGrupos extends Component
                 }
                 $existe_en_db = $queryDB->exists();
 
-                if ($existe_en_db) {
+                /* if ($existe_en_db) {
                     $this->addError('diasid', "Ya existe en otro grupo.") ;
-                } else {
+                } else { */
                     $dia = Dia::find($validatedData['diasid']);
                     $hora = Hora::find($validatedData['horasid']);
                     $espacio_actual_id = $validatedData['espacios_id'];
@@ -184,7 +184,7 @@ class CreateGrupos extends Component
                                         'espacio'=>$espacio_nombre,
                                     ];
                     $this->reset(['diasid','horasid','espacios_id']);
-                }
+                /* } */
             }
         }
     }

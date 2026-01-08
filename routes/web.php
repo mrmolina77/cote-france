@@ -12,6 +12,7 @@ use App\Http\Livewire\ShowTareas;
 use App\Http\Livewire\ShowUsuarios;
 use App\Http\Livewire\ShowEspacios;
 use App\Http\Livewire\ShowProfesorHorario;
+use App\Models\Evaluacion;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,7 +37,31 @@ Route::middleware([
     'verified'
 ])->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        $inasistentes = Evaluacion::query()
+            ->where('evaluaciones.asistio', false)
+            ->join('prospectos', 'evaluaciones.prospectos_id', '=', 'prospectos.prospectos_id')
+            ->join('horarios', 'evaluaciones.horarios_id', '=', 'horarios.horarios_id')
+            ->join('grupos', 'horarios.grupo_id', '=', 'grupos.grupo_id')
+            ->select(
+                'prospectos.prospectos_id',
+                'prospectos.prospectos_nombres',
+                'prospectos.prospectos_apellidos',
+                'grupos.grupo_nombre'
+            )
+            ->selectRaw('COUNT(*) as total_inasistencias')
+            ->groupBy(
+                'prospectos.prospectos_id',
+                'prospectos.prospectos_nombres',
+                'prospectos.prospectos_apellidos',
+                'grupos.grupo_nombre'
+            )
+            ->having('total_inasistencias', '>=', 3)
+            ->orderByDesc('total_inasistencias')
+            ->get();
+
+        return view('dashboard', [
+            'inasistentes' => $inasistentes,
+        ]);
     })->name('dashboard');
 });
 Route::middleware([
@@ -101,4 +126,3 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->get('/espacios', ShowEspacios::class )->name('espacios');
-
