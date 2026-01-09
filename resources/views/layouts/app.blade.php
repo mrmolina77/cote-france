@@ -46,7 +46,10 @@
                 Swal.fire({
                     title: titulo,
                     text: message,
-                    icon: icono
+                    icon: icono,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
                 });
             })
         </script>

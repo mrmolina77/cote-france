@@ -48,7 +48,10 @@
                 Swal.fire({
                     title: "Agregado!",
                     text: message,
-                    icon: "success"
+                    icon: "success",
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
                 });
             })
         </script>
