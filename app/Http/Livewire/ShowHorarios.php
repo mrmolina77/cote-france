@@ -647,8 +647,6 @@ class ShowHorarios extends Component
         $anterior_espacio = null
     )
     {
-        $fechaDestino = Carbon::parse($horarios_dia)->toDateString();
-
         // --- INICIO: Validación de datos relacionados ---
         // Si se está moviendo un horario existente (no creando uno nuevo desde un grupo base)
         if ($anterior_id != '0') {
@@ -678,17 +676,6 @@ class ShowHorarios extends Component
                 return;
             }
 
-            $existeAsignacionMismoDia = Horario::whereDate('horarios_dia', $fechaDestino)
-                ->where('grupo_id', $grupo_id)
-                ->when($horarios_id != '0', fn ($q) => $q->where('horarios_id', '!=', $horarios_id))
-                ->when($anterior_id != '0', fn ($q) => $q->where('horarios_id', '!=', $anterior_id))
-                ->exists();
-
-            if ($existeAsignacionMismoDia) {
-                $this->emit('alert', 'El grupo ya está asignado en otro horario para este día.', 'Advertencias!', 'warning');
-                $this->emitTo('show-horarios','render');
-                return;
-            }
             $id_espacios = (int)($espacios_id ?? 0);
             $fechaAnterior = $anterior_dia ? Carbon::parse($anterior_dia)->toDateString() : null;
             $horaAnterior = $anterior_hora ? (int) $anterior_hora : null;
