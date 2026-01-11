@@ -345,7 +345,7 @@ class ShowHorarios extends Component
     public function deactivateGrupo(int $grupoId, string $fecha, int $horaId): void
     {
         $fechaFormateada = Carbon::parse($fecha)->toDateString();
-        $modalidadId = Grupo::where('grupo_id', $grupoId)->value('modalidad_id') ?? $this->modalidad;
+        $modalidadId = $this->modalidad ?? Grupo::where('grupo_id', $grupoId)->value('modalidad_id');
 
         $grupoInactivo = GrupoInactivo::where('grupo_id', $grupoId)
             ->where('fecha', $fechaFormateada)
@@ -598,10 +598,10 @@ class ShowHorarios extends Component
             $evaluar = Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
 
             $inactivosGrupo = $gruposInactivos[$item->grupo_id] ?? collect();
-            $estaInactivo = $inactivosGrupo->first(function ($inactivo) use ($evaluar, $item) {
+            $estaInactivo = $inactivosGrupo->first(function ($inactivo) use ($evaluar, $modalidad, $item) {
                 return $inactivo->fecha === $evaluar
                     && (int) $inactivo->horas_id === (int) $item->horas_id
-                    && ($inactivo->modalidad_id === null || (int) $inactivo->modalidad_id === (int) $item->modalidad_id);
+                    && ($inactivo->modalidad_id === null || (int) $inactivo->modalidad_id === (int) $modalidad);
             });
 
             if ($estaInactivo) {
@@ -708,7 +708,7 @@ class ShowHorarios extends Component
                         $horarioAnterior->delete();
                     }
                 } elseif ($fechaAnterior && $horaAnterior && ($fechaAnterior !== Carbon::parse($horarios_dia)->toDateString() || $horaAnterior !== (int) $horas_id)) {
-                    $modalidadId = Grupo::where('grupo_id', $grupo_id)->value('modalidad_id');
+                    $modalidadId = $this->modalidad ?? Grupo::where('grupo_id', $grupo_id)->value('modalidad_id');
                     GrupoInactivo::firstOrCreate([
                         'grupo_id' => $grupo_id,
                         'fecha' => $fechaAnterior,
@@ -763,7 +763,8 @@ class ShowHorarios extends Component
     {
         $fechaOriginal = Carbon::parse($horarioOriginal->horarios_dia)->toDateString();
         $nuevaFecha = Carbon::parse($nuevoDia)->toDateString();
-        $modalidadId = $horarioOriginal->grupo?->modalidad_id
+        $modalidadId = $this->modalidad
+            ?? $horarioOriginal->grupo?->modalidad_id
             ?? Grupo::where('grupo_id', $horarioOriginal->grupo_id)->value('modalidad_id');
 
         $esMismaFecha = $fechaOriginal === $nuevaFecha;
