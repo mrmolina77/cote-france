@@ -345,10 +345,15 @@ class ShowHorarios extends Component
     public function deactivateGrupo(int $grupoId, string $fecha, int $horaId): void
     {
         $fechaFormateada = Carbon::parse($fecha)->toDateString();
+        $modalidadId = $this->modalidad ?? Grupo::where('grupo_id', $grupoId)->value('modalidad_id');
 
         $grupoInactivo = GrupoInactivo::where('grupo_id', $grupoId)
             ->where('fecha', $fechaFormateada)
             ->where('horas_id', $horaId)
+            ->where(function ($query) use ($modalidadId) {
+                $query->where('modalidad_id', $modalidadId)
+                    ->orWhereNull('modalidad_id');
+            })
             ->first();
 
         if ($grupoInactivo) {
@@ -360,6 +365,7 @@ class ShowHorarios extends Component
             'grupo_id' => $grupoId,
             'fecha' => $fechaFormateada,
             'horas_id' => $horaId,
+            'modalidad_id' => $modalidadId,
         ]);
 
         $this->emit('alert', 'El grupo fue desactivado para la fecha y hora seleccionada');
@@ -591,10 +597,14 @@ class ShowHorarios extends Component
             // Fecha exacta del día de la semana del detalle
             $evaluar = Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
 
-            if ($gruposInactivos->has($item->grupo_id) && $gruposInactivos[$item->grupo_id]
-                ->where('fecha', $evaluar)
-                ->where('horas_id', $item->horas_id)
-                ->isNotEmpty()) {
+            $inactivosGrupo = $gruposInactivos[$item->grupo_id] ?? collect();
+            $estaInactivo = $inactivosGrupo->first(function ($inactivo) use ($evaluar, $modalidad, $item) {
+                return $inactivo->fecha === $evaluar
+                    && (int) $inactivo->horas_id === (int) $item->horas_id
+                    && ($inactivo->modalidad_id === null || (int) $inactivo->modalidad_id === (int) $modalidad);
+            });
+
+            if ($estaInactivo) {
                 continue;
             }
 
@@ -698,10 +708,12 @@ class ShowHorarios extends Component
                         $horarioAnterior->delete();
                     }
                 } elseif ($fechaAnterior && $horaAnterior && ($fechaAnterior !== Carbon::parse($horarios_dia)->toDateString() || $horaAnterior !== (int) $horas_id)) {
+                    $modalidadId = $this->modalidad ?? Grupo::where('grupo_id', $grupo_id)->value('modalidad_id');
                     GrupoInactivo::firstOrCreate([
                         'grupo_id' => $grupo_id,
                         'fecha' => $fechaAnterior,
                         'horas_id' => $horaAnterior,
+                        'modalidad_id' => $modalidadId,
                     ]);
                 }
 
@@ -751,6 +763,9 @@ class ShowHorarios extends Component
     {
         $fechaOriginal = Carbon::parse($horarioOriginal->horarios_dia)->toDateString();
         $nuevaFecha = Carbon::parse($nuevoDia)->toDateString();
+        $modalidadId = $this->modalidad
+            ?? $horarioOriginal->grupo?->modalidad_id
+            ?? Grupo::where('grupo_id', $horarioOriginal->grupo_id)->value('modalidad_id');
 
         $esMismaFecha = $fechaOriginal === $nuevaFecha;
         $esMismaHora = (int) $horarioOriginal->horas_id === $nuevaHoraId;
@@ -763,6 +778,7 @@ class ShowHorarios extends Component
             'grupo_id' => $horarioOriginal->grupo_id,
             'fecha' => $fechaOriginal,
             'horas_id' => $horarioOriginal->horas_id,
+            'modalidad_id' => $modalidadId,
         ]);
     }
 
