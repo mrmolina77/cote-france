@@ -13,7 +13,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('grupos_inactivos', function (Blueprint $table) {
-            $table->dropUnique('grupos_inactivos_grupo_id_fecha_horas_id_unique');
             $table->unsignedBigInteger('modalidad_id')->nullable()->default(2)->after('horas_id');
             $table->foreign('modalidad_id')->references('modalidad_id')->on('modalidades');
             $table->unique(['grupo_id', 'fecha', 'horas_id', 'modalidad_id']);
@@ -33,7 +32,6 @@ return new class extends Migration
             $table->dropForeign(['modalidad_id']);
             $table->dropUnique('grupos_inactivos_grupo_id_fecha_horas_id_modalidad_id_unique');
             $table->dropColumn('modalidad_id');
-            $table->unique(['grupo_id', 'fecha', 'horas_id']);
         });
     }
 };
