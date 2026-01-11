@@ -14,5 +14,6 @@ class GrupoInactivo extends Model
         'grupo_id',
         'fecha',
         'horas_id',
+        'modalidad_id',
     ];
 }
