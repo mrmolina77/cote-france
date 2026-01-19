@@ -14,7 +14,7 @@ class Grupo extends Model
     protected $fillable = ['grupo_nombre','grupo_nivel','grupo_capitulo','grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','fecha_inicio','modalidad_id','estado_id','profesores_id'];
 
     protected $casts = [
-        'fecha_inicio' => 'date',
+        'fecha_inicio' => 'date:Y-m-d',
     ];
 
 
