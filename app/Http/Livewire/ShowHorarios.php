@@ -219,7 +219,18 @@ class ShowHorarios extends Component
 
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
-        $grupos = Grupo::where('modalidad_id',$this->modalidad)->where('estado_id',1)->get();
+        if ((int) $this->modalidad === 1) {
+            $grupos = Grupo::whereIn('modalidad_id', [1, 2])
+                ->where('estado_id', 1)
+                ->orderBy('modalidad_id')
+                ->orderBy('grupo_nombre')
+                ->get();
+        } else {
+            $grupos = Grupo::where('modalidad_id', $this->modalidad)
+                ->where('estado_id', 1)
+                ->orderBy('grupo_nombre')
+                ->get();
+        }
         $profesores = Profesor::where('modalidad_id',$this->modalidad)
             ->where('profesores_activo', 1)
             ->get();
