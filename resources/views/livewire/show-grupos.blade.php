@@ -269,6 +269,13 @@
                 </div>
                 <div>
                     <div class="mb-4 flex">
+                        <x-forms.label value="Fecha de inicio (opcional): " />
+                        <x-forms.input type="date" class="flex-1 ml-4" wire:model="grupo.fecha_inicio"/>
+                    </div>
+                    <x-forms.input-error for="grupo.fecha_inicio"/>
+                </div>
+                <div>
+                    <div class="mb-4 flex">
                         <x-forms.label value="{{__('Modality')}}: " />
                         <x-select class="flex-1 ml-4" wire:model="grupo.modalidad_id">
                             <option value="">{{__('Select')}}</option>
