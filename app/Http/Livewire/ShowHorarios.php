@@ -626,8 +626,12 @@ class ShowHorarios extends Component
             // Fecha exacta del día de la semana del detalle
             $evaluar = Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
 
-            if (!empty($item->fecha_inicio) && Carbon::parse($evaluar)->lt(Carbon::parse($item->fecha_inicio))) {
-                continue;
+            if (!empty($item->fecha_inicio)) {
+                $fechaEvaluar = Carbon::parse($evaluar)->toDateString();
+                $fechaInicio = Carbon::parse($item->fecha_inicio)->toDateString();
+                if (Carbon::parse($fechaEvaluar)->lt(Carbon::parse($fechaInicio))) {
+                    continue;
+                }
             }
 
             $inactivosGrupo = $gruposInactivos[$item->grupo_id] ?? collect();
