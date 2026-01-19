@@ -583,8 +583,15 @@
                     <x-forms.label for="grupo_id" value="{{__('Group')}}: "/>
                     <x-select class="flex-1 ml-4" wire:model.defer="grupo_id" id="grupo_id">
                         <option value="">{{__('Select')}}</option>
+                        @php
+                            $fechaSeleccionada = $horarios_dia ? \Carbon\Carbon::parse($horarios_dia)->toDateString() : null;
+                        @endphp
                         @forelse ($grupos as $item)
-                        <option value="{{$item->grupo_id}}">
+                        @php
+                            $inicioGrupo = $item->fecha_inicio ? \Carbon\Carbon::parse($item->fecha_inicio)->toDateString() : null;
+                            $esAnteriorInicio = $fechaSeleccionada && $inicioGrupo && \Carbon\Carbon::parse($fechaSeleccionada)->lt(\Carbon\Carbon::parse($inicioGrupo));
+                        @endphp
+                        <option value="{{$item->grupo_id}}" @if($esAnteriorInicio) disabled @endif>
                             {{ $item->modalidad_id == 1 ? '[P] ' : '[L] ' }}{{ $item->grupo_nombre }}
                         </option>
                         @empty
