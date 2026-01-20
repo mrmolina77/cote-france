@@ -38,6 +38,7 @@ class ShowGrupos extends Component
         'grupo.grupo_libro_maestro'=>'nullable|min:7|max:255',
         'grupo.grupo_libro_alumno'=>'nullable|min:7|max:255',
         'grupo.grupo_observacion'=>'nullable|min:7|max:255',
+        'grupo.fecha_inicio' => 'nullable|date',
         'grupo.modalidad_id'=>'required',
         'grupo.estado_id'=>'required',
     ];
@@ -152,6 +153,7 @@ class ShowGrupos extends Component
                 return;
             }
             // --- Fin: Validación de profesores agregada ---
+            $this->grupo->fecha_inicio = $this->grupo->fecha_inicio ?: null;
             $this->grupo->save();
             foreach ($this->borrados as $borrar) {
                 // $deta = GruposDetalles::find($borrar);

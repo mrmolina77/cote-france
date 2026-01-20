@@ -126,10 +126,10 @@
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             @if ($horarioItem['modalidad'] == '2')
                                                 <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
-                                                    <x-group-name :name="$horarioItem['nombre']" />
+                                                    <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                                 </a>
                                             @else
-                                                <x-group-name :name="$horarioItem['nombre']" />
+                                                <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                             @endif
                                         </div>
                                         @php
@@ -163,7 +163,7 @@
                                 @if($grupoDetalle)
                                     <div class="h-full p-[0.1rem] text-center {{ $isDayBoundary ? 'day-separator-left' : '' }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                            <x-group-name :name="$grupoDetalle['grupo_nombre']" :abbreviate="!$solo_profesor" class="text-center font-sans font-extrabold text-xs uppercase" />
                                         </div>
                                     </div>
                                 @else
@@ -201,7 +201,7 @@
                                 <div class="h-full p-[0.1rem] text-center {{ $isDayBoundary ? 'day-separator-left' : '' }}">
                                     <div class="relative w-full min-h-14 grid grid-cols-1 pb-4 {{$horarioItem['bgcolor']}} rounded-md">
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
-                                            <x-group-name :name="$horarioItem['nombre']" />
+                                            <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         </div>
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
@@ -240,7 +240,7 @@
                                 @if($grupoDetalle)
                                     <div class="h-full p-[0.1rem] text-center {{ $isDayBoundary ? 'day-separator-left' : '' }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $currentHourId }}-{{ $profesor->profesores_id }}">
-                                            <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                            <x-group-name :name="$grupoDetalle['grupo_nombre']" :abbreviate="!$solo_profesor" class="text-center font-sans font-extrabold text-xs uppercase" />
                                         </div>
                                     </div>
                                 @else
@@ -320,10 +320,10 @@
                                     <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                         @if ($horarioItem['modalidad'] == '2')
                                             <a href="{{$horarioItem['enlace']}}" target="_blank" rel="noopener noreferrer">
-                                                <x-group-name :name="$horarioItem['nombre']" />
+                                                <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                             </a>
                                         @else
-                                            <x-group-name :name="$horarioItem['nombre']" />
+                                            <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         @endif
                                     </div>
                                     @php
@@ -352,7 +352,7 @@
                             @if($grupoDetalle)
                                 <div class="h-full border p-0 text-center">
                                     <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center {{$grupoDetalle['color']}} uppercase" wire:key="task-daily-{{ $currentDayOfWeek }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                        <x-group-name :name="$grupoDetalle['grupo_nombre']" class="text-center font-sans font-extrabold text-xs uppercase" />
+                                        <x-group-name :name="$grupoDetalle['grupo_nombre']" :abbreviate="!$solo_profesor" class="text-center font-sans font-extrabold text-xs uppercase" />
                                     </div>
                                 </div>
                             @else

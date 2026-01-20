@@ -219,7 +219,18 @@ class ShowHorarios extends Component
 
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
-        $grupos = Grupo::where('modalidad_id',$this->modalidad)->where('estado_id',1)->get();
+        if ((int) $this->modalidad === 1) {
+            $grupos = Grupo::whereIn('modalidad_id', [1, 2])
+                ->where('estado_id', 1)
+                ->orderBy('modalidad_id')
+                ->orderBy('grupo_nombre')
+                ->get();
+        } else {
+            $grupos = Grupo::where('modalidad_id', $this->modalidad)
+                ->where('estado_id', 1)
+                ->orderBy('grupo_nombre')
+                ->get();
+        }
         $profesores = Profesor::where('modalidad_id',$this->modalidad)
             ->where('profesores_activo', 1)
             ->get();
@@ -293,6 +304,10 @@ class ShowHorarios extends Component
         $validated = $this->validate([
             'grupo_id'=>'required',
         ]);
+        if (! $this->puedeAsignarGrupoDesdeFecha((int) $this->grupo_id, $this->horarios_dia)) {
+            $this->emit('alert', 'No se puede asignar este grupo a un horario anterior a su fecha de inicio.', 'Error!', 'error');
+            return;
+        }
         // Check for blocks BEFORE creating
         $carbonFecha = Carbon::parse($this->horarios_dia);
         $isBlocked = BloqueosProfesores::isBlocked($this->profesores_id, $carbonFecha, $this->horas_id)->exists();
@@ -327,6 +342,20 @@ class ShowHorarios extends Component
         'horas_id','profesores_id']);
         $this->emitTo('show-horarios','render');
         $this->emit('alert','El horario fue agregado satifactoriamente');
+    }
+
+    private function puedeAsignarGrupoDesdeFecha(int $grupoId, string $fecha): bool
+    {
+        if ($grupoId === 0) {
+            return false;
+        }
+
+        $fechaInicio = Grupo::where('grupo_id', $grupoId)->value('fecha_inicio');
+        if (empty($fechaInicio)) {
+            return true;
+        }
+
+        return Carbon::parse($fecha)->toDateString() >= Carbon::parse($fechaInicio)->toDateString();
     }
 
     public function delete(Horario $horario){
@@ -574,7 +603,7 @@ class ShowHorarios extends Component
                                ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
                                ->where('grupos.modalidad_id', $modalidad)
                                ->where('grupos.estado_id', 1) // Solo grupos activos
-                               ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
+                               ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre', 'grupos.fecha_inicio') // Selecciona los campos que necesitas
                                ->orderBy('grupos_detalles.grupo_id', 'asc')
                                ->orderBy('grupos_detalles.dias_id', 'asc')
                                ->orderBy('grupos_detalles.horas_id', 'asc')
@@ -583,7 +612,7 @@ class ShowHorarios extends Component
             } else {
            $detalles = DB::table('grupos_detalles')
                                ->join('grupos', 'grupos_detalles.grupo_id', '=', 'grupos.grupo_id')
-                               ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre') // Selecciona los campos que necesitas
+                               ->select('grupos_detalles.*', 'grupos.modalidad_id', 'grupos.grupo_nombre', 'grupos.fecha_inicio') // Selecciona los campos que necesitas
                                ->where('grupos.estado_id', 1) // Solo grupos activos
                                ->orderBy('grupos_detalles.grupo_id', 'asc')
                                ->orderBy('grupos_detalles.dias_id', 'asc')
@@ -596,6 +625,14 @@ class ShowHorarios extends Component
         foreach ($detalles as $item) {
             // Fecha exacta del día de la semana del detalle
             $evaluar = Carbon::parse($this->fecha)->setISODate($this->year, $this->semana, $item->dias_id)->isoFormat('YYYY-MM-DD');
+
+            if (!empty($item->fecha_inicio)) {
+                $fechaEvaluar = Carbon::parse($evaluar)->toDateString();
+                $fechaInicio = Carbon::parse($item->fecha_inicio)->toDateString();
+                if (Carbon::parse($fechaEvaluar)->lt(Carbon::parse($fechaInicio))) {
+                    continue;
+                }
+            }
 
             $inactivosGrupo = $gruposInactivos[$item->grupo_id] ?? collect();
             $estaInactivo = $inactivosGrupo->first(function ($inactivo) use ($evaluar, $modalidad, $item) {
@@ -676,6 +713,11 @@ class ShowHorarios extends Component
             $this->emitTo('show-horarios','render');
             return;
         } else {
+            if (! $this->puedeAsignarGrupoDesdeFecha((int) $grupo_id, $horarios_dia)) {
+                $this->emit('alert', 'No se puede asignar este grupo a un horario anterior a su fecha de inicio.', 'Error!', 'error');
+                $this->emitTo('show-horarios','render');
+                return;
+            }
              // Check for blocks for the target professor, date, and hour
             $carbonFecha = Carbon::parse($horarios_dia);
             $isTargetSlotBlocked = BloqueosProfesores::isBlocked($profesores_id, $carbonFecha, $horas_id)->exists();
