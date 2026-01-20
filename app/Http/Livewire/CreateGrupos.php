@@ -19,7 +19,7 @@ class CreateGrupos extends Component
 {
     public $open = false;
 
-    public $grupo_nombre,$idnivel,$id_capitulo,$espacios;
+    public $grupo_nombre,$idnivel,$id_capitulo,$espacios,$fecha_inicio;
     public $grupo_libro_maestro,$grupo_libro_alumno,$grupo_observacion,$modalidad_id,$arr_horas;
     public $espacios_id,$diasid,$horasid,$detalles_grupos=array(),$arr_capitulos;
     protected $listeners = ['render','createDelete'];
@@ -31,6 +31,7 @@ class CreateGrupos extends Component
         'grupo_libro_maestro'=>'nullable|min:7|max:255',
         'grupo_libro_alumno'=>'nullable|min:7|max:255',
         'grupo_observacion'=>'nullable|min:7|max:255',
+        'fecha_inicio' => 'nullable|date',
         'modalidad_id'=>'required',
     ];
 
@@ -77,6 +78,7 @@ class CreateGrupos extends Component
             $grupo->grupo_libro_maestro =$this->grupo_libro_maestro;
             $grupo->grupo_libro_alumno  =$this->grupo_libro_alumno;
             $grupo->grupo_observacion   =$this->grupo_observacion;
+            $grupo->fecha_inicio        =$this->fecha_inicio ?: null;
             $grupo->modalidad_id        =$this->modalidad_id;
             $grupo->estado_id           =1;
             $grupo->save();
@@ -91,7 +93,7 @@ class CreateGrupos extends Component
             }
             DB::commit();
             $this->reset(['open','grupo_nombre','idnivel','id_capitulo',
-            'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','modalidad_id',
+            'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','fecha_inicio','modalidad_id',
             'espacios_id','detalles_grupos']);
             $this->espacios =  collect([]);
             $this->arr_capitulos = collect([]);
