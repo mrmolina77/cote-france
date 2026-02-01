@@ -792,19 +792,6 @@
                     </div>
                 @endforeach
             </div>
-            <div class="mt-6 border-t pt-4">
-                <h4 class="text-base font-semibold text-gray-700 dark:text-gray-100">Clases asignadas esta semana</h4>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    @foreach ($profesores as $profesor)
-                        <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                            <span class="font-medium">{{ $profesor->profesores_nombres }} {{ $profesor->profesores_apellidos }}</span>
-                            <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-100">
-                                {{ $clasesPorProfesor[$profesor->profesores_id] ?? 0 }}
-                            </span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
         </x-slot>
 
         <x-slot name="footer">
@@ -813,6 +800,20 @@
             </x-forms.red-button>
         </x-slot>
     </x-dialog-modal>
+
+    <div class="mt-6 border-t pt-4">
+        <h4 class="text-base font-semibold text-gray-700 dark:text-gray-100">Clases asignadas esta semana</h4>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            @foreach ($profesores as $profesor)
+                <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                    <span class="font-medium">{{ $profesor->profesores_nombres }} {{ $profesor->profesores_apellidos }}</span>
+                    <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-100">
+                        {{ $clasesPorProfesor[$profesor->profesores_id] ?? 0 }}
+                    </span>
+                </div>
+            @endforeach
+        </div>
+    </div>
 
 
     @push('js');
