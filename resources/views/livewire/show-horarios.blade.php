@@ -801,6 +801,36 @@
         </x-slot>
     </x-dialog-modal>
 
+    <div class="mt-6 border-t pt-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Resumen semanal</p>
+                <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Clases asignadas esta semana</h4>
+            </div>
+        </div>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            @foreach ($profesores as $profesor)
+                @php
+                    $profesorColor = $profesor->profesores_color ?? '#10b981';
+                @endphp
+                <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800" style="border-color: {{ $profesorColor }};">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Profesor</p>
+                    <div class="mt-2 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                {{ $profesor->profesores_nombres }} {{ $profesor->profesores_apellidos }}
+                            </p>
+                            <p class="text-xs text-gray-400">Clases asignadas</p>
+                        </div>
+                        <span class="rounded-full px-3 py-1 text-sm font-semibold text-white" style="background-color: {{ $profesorColor }};">
+                            {{ $clasesPorProfesor[$profesor->profesores_id] ?? 0 }}
+                        </span>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
 
     @push('js');
     <script>
