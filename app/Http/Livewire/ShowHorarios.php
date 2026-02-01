@@ -145,9 +145,16 @@ class ShowHorarios extends Component
             }
         }
 
-        $profesores = Profesor::where('modalidad_id',$this->modalidad)
-            ->where('profesores_activo', 1)
-            ->get();
+        $profesoresQuery = Profesor::query()
+            ->where('profesores_activo', 1);
+
+        if ((int) $this->modalidad === 1) {
+            $profesoresQuery->whereIn('modalidad_id', [1, 2]);
+        } else {
+            $profesoresQuery->where('modalidad_id', $this->modalidad);
+        }
+
+        $profesores = $profesoresQuery->get();
 
         // Iterate through all displayable slots
         $currentIterDay = Carbon::parse($this->inicio);
@@ -231,9 +238,15 @@ class ShowHorarios extends Component
                 ->orderBy('grupo_nombre')
                 ->get();
         }
-        $profesores = Profesor::where('modalidad_id',$this->modalidad)
-            ->where('profesores_activo', 1)
-            ->get();
+        $profesorIds = $profesores->pluck('profesores_id');
+
+        $clasesPorProfesor = $profesorIds->isNotEmpty()
+            ? Horario::whereBetween('horarios_dia', [$this->inicio, $this->fin])
+                ->whereIn('profesores_id', $profesorIds)
+                ->select('profesores_id', DB::raw('count(*) as total'))
+                ->groupBy('profesores_id')
+                ->pluck('total', 'profesores_id')
+            : collect();
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
@@ -245,6 +258,7 @@ class ShowHorarios extends Component
                                            ,'grupos'=>$grupos
                                            ,'grupo_deta'=>$grupo_deta
                                            ,'profesores'=>$profesores
+                                           ,'clasesPorProfesor'=>$clasesPorProfesor
                                            ,'dias'=>$dias
                                            ,'dias2'=>$dias2
                                            ,'fecha'=>$this->fecha
