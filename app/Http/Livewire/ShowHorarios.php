@@ -234,6 +234,11 @@ class ShowHorarios extends Component
         $profesores = Profesor::where('modalidad_id',$this->modalidad)
             ->where('profesores_activo', 1)
             ->get();
+
+        $clasesPorProfesor = Horario::whereBetween('horarios_dia', [$this->inicio, $this->fin])
+            ->select('profesores_id', DB::raw('count(*) as total'))
+            ->groupBy('profesores_id')
+            ->pluck('total', 'profesores_id');
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
@@ -245,6 +250,7 @@ class ShowHorarios extends Component
                                            ,'grupos'=>$grupos
                                            ,'grupo_deta'=>$grupo_deta
                                            ,'profesores'=>$profesores
+                                           ,'clasesPorProfesor'=>$clasesPorProfesor
                                            ,'dias'=>$dias
                                            ,'dias2'=>$dias2
                                            ,'fecha'=>$this->fecha
