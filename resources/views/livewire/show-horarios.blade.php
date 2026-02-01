@@ -810,7 +810,10 @@
         </div>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             @foreach ($profesores as $profesor)
-                <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+                @php
+                    $profesorColor = $profesor->profesores_color ?? '#10b981';
+                @endphp
+                <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800" style="border-color: {{ $profesorColor }};">
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Profesor</p>
                     <div class="mt-2 flex items-center justify-between">
                         <div>
@@ -819,7 +822,7 @@
                             </p>
                             <p class="text-xs text-gray-400">Clases asignadas</p>
                         </div>
-                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        <span class="rounded-full px-3 py-1 text-sm font-semibold text-white" style="background-color: {{ $profesorColor }};">
                             {{ $clasesPorProfesor[$profesor->profesores_id] ?? 0 }}
                         </span>
                     </div>
