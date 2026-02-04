@@ -47,7 +47,7 @@
                     title: titulo,
                     text: message,
                     icon: icono,
-                    timer: 5000,
+                    timer: 1500,
                     timerProgressBar: true,
                     showConfirmButton: false
                 });
