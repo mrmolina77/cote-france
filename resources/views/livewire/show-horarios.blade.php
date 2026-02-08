@@ -885,28 +885,37 @@
     {{-- <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script> --}}
 
     <script>
-    // Escuchar el evento de Livewire para inicializar el arrastre y la caída
-
     document.addEventListener('DOMContentLoaded', function () {
-        const initializeDragAndDrop = () => {
-            let table = document.getElementById('horarios-table');
+        const getTable = () => document.getElementById('horarios-table');
+
+        const refreshDraggableCells = () => {
+            const table = getTable();
             if (!table) return;
 
-            let cells = table.querySelectorAll('.grupo-cell');
+            table.querySelectorAll('.grupo-cell').forEach(cell => {
+                cell.setAttribute('draggable', 'true');
+            });
+        };
 
-            cells.forEach(cell => {
-                cell.setAttribute('draggable', true);
+        const bindDragAndDropOnce = () => {
+            const table = getTable();
+            if (!table) return;
 
-                cell.addEventListener('dragstart', function (e) {
-                    e.dataTransfer.setData('text', JSON.stringify({
-                        id: cell.dataset.id,
-                        dia: cell.dataset.dia,
-                        hora: cell.dataset.hora,
-                        grupo: cell.dataset.grupo,
-                        profesor: cell.dataset.profesor,
-                        espacio: cell.dataset.espacio,
-                    }));
-                });
+            if (table.dataset.dndBound === '1') return;
+            table.dataset.dndBound = '1';
+
+            table.addEventListener('dragstart', function (e) {
+                const cell = e.target.closest('.grupo-cell');
+                if (!cell) return;
+
+                e.dataTransfer.setData('text', JSON.stringify({
+                    id: cell.dataset.id,
+                    dia: cell.dataset.dia,
+                    hora: cell.dataset.hora,
+                    grupo: cell.dataset.grupo,
+                    profesor: cell.dataset.profesor,
+                    espacio: cell.dataset.espacio,
+                }));
             });
 
             table.addEventListener('dragover', function (e) {
@@ -915,31 +924,40 @@
 
             table.addEventListener('drop', function (e) {
                 e.preventDefault();
-                let data = JSON.parse(e.dataTransfer.getData('text'));
-                let targetCell = e.target.closest('.grupo-cell');
 
-                if (targetCell) {
-                    let targetId = targetCell.dataset.id;
-                    let targetDia = targetCell.dataset.dia;
-                    let targetHora = targetCell.dataset.hora;
-                    let targetProfesor = targetCell.dataset.profesor;
-                    let targetEspacio = targetCell.dataset.espacio;
-                    // Llama a Livewire directamente
-                    @this.updateGrupoHorario(
-                        targetId,
-                        targetDia,
-                        targetHora,
-                        data.grupo,
-                        targetProfesor,
-                        data.espacio,
-                        data.id,
-                        data.dia,
-                        data.hora,
-                        data.profesor,
-                        data.espacio
-                    );
+                const raw = e.dataTransfer.getData('text');
+                if (!raw) return;
 
+                let data;
+                try {
+                    data = JSON.parse(raw);
+                } catch (err) {
+                    console.error('DND invalid payload:', err);
+                    return;
                 }
+
+                const targetCell = e.target.closest('.grupo-cell');
+                if (!targetCell) return;
+
+                const targetId = targetCell.dataset.id;
+                const targetDia = targetCell.dataset.dia;
+                const targetHora = targetCell.dataset.hora;
+                const targetProfesor = targetCell.dataset.profesor;
+                const targetEspacio = targetCell.dataset.espacio;
+                // Llama a Livewire directamente
+                @this.updateGrupoHorario(
+                    targetId,
+                    targetDia,
+                    targetHora,
+                    data.grupo,
+                    targetProfesor,
+                    data.espacio,
+                    data.id,
+                    data.dia,
+                    data.hora,
+                    data.profesor,
+                    data.espacio
+                );
             });
         };
 
@@ -1009,12 +1027,13 @@
         };
 
         // Inicializar al cargar la página
-        initializeDragAndDrop();
+        bindDragAndDropOnce();
+        refreshDraggableCells();
         initializeColumnCollapse();
 
         // Volver a inicializar después de una actualización de Livewire
         document.addEventListener('livewire:update', () => {
-            initializeDragAndDrop();
+            refreshDraggableCells();
             initializeColumnCollapse();
         });
     });
