@@ -149,9 +149,9 @@ class ShowHorarios extends Component
             ->where('profesores_activo', 1);
 
         if ((int) $this->modalidad === 1) {
-            $profesoresQuery->whereIn('modalidad_id', [1, 2]);
+            $profesoresQuery->where('modalidad_id', 1);
         } else {
-            $profesoresQuery->where('modalidad_id', $this->modalidad);
+            $profesoresQuery->where('modalidad_id', (int) $this->modalidad);
         }
 
         $profesores = $profesoresQuery->get();
@@ -227,13 +227,12 @@ class ShowHorarios extends Component
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
         if ((int) $this->modalidad === 1) {
-            $grupos = Grupo::whereIn('modalidad_id', [1, 2])
+            $grupos = Grupo::where('modalidad_id', 1)
                 ->where('estado_id', 1)
-                ->orderBy('modalidad_id')
                 ->orderBy('grupo_nombre')
                 ->get();
         } else {
-            $grupos = Grupo::where('modalidad_id', $this->modalidad)
+            $grupos = Grupo::where('modalidad_id', (int) $this->modalidad)
                 ->where('estado_id', 1)
                 ->orderBy('grupo_nombre')
                 ->get();
