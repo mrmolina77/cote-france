@@ -135,6 +135,7 @@ class CreateGrupos extends Component
         }
 
         // Contar grupos ya existentes para ese día y hora (para verificar capacidad de profesores)
+        
         $cantidad_grupos = GruposDetalles::where('dias_id',$validatedData['diasid'])
                                     ->where('horas_id',$validatedData['horasid'])->count();
         if( $cantidad_profesores <= $cantidad_grupos){
