@@ -122,7 +122,7 @@ class CreateGrupos extends Component
 
 
         // Contar profesores disponibles según la modalidad
-        if($this->modalidad_id == 1){
+        if($this->modalidad_id == 2){
             $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
         } else {
             $cantidad_profesores = Profesor::count();
@@ -134,10 +134,12 @@ class CreateGrupos extends Component
             return;
         }
 
+
+
         // Contar grupos ya existentes para ese día y hora (para verificar capacidad de profesores)
 
         $cantidad_grupos = GruposDetalles::where('dias_id',$validatedData['diasid'])
-                                    ->where('horas_id',$validatedData['horasid'])->count();
+        ->where('horas_id',$validatedData['horasid'])->count();
         if( $cantidad_profesores < $cantidad_grupos){
             $this->addError('diasid', "No hay susficientes profesores para este horario");
         } else {
