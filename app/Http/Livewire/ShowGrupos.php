@@ -14,6 +14,7 @@ use App\Models\Nivel;
 use App\Models\Profesor;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 class ShowGrupos extends Component
@@ -134,25 +135,20 @@ class ShowGrupos extends Component
     public function update(){
         DB::beginTransaction();
         try {
-            // --- Inicio: Validación de profesores agregada ---
             if(is_null($this->grupo->modalidad_id) || $this->grupo->modalidad_id == 0){ // <-- Usar la modalidad del grupo
                 $this->addError('modalidad_id', "No hay modalidad seleccionada para validar profesores.");
-                DB::rollBack(); // Asegura que no se guarde nada si falla la validación
+                DB::rollBack();
                 return;
             }
 
-            if($this->grupo->modalidad_id == 1){ // Asumiendo 1 = Presencial <-- Usar la modalidad del grupo
-                $cantidad_profesores = Profesor::where('modalidad_id', $this->grupo->modalidad_id)->count();
-            } else { // Otras modalidades
-                $cantidad_profesores = Profesor::count();
-            }
+            $cantidad_profesores = $this->countAvailableTeachersByModalidad($this->grupo->modalidad_id);
 
             if ($cantidad_profesores == 0) {
                 $this->addError('modalidad_id', "No hay profesores disponibles registrados para la modalidad seleccionada.");
-                DB::rollBack(); // Asegura que no se guarde nada si falla la validación
+                DB::rollBack();
                 return;
             }
-            // --- Fin: Validación de profesores agregada ---
+
             $this->grupo->fecha_inicio = $this->grupo->fecha_inicio ?: null;
             $this->grupo->save();
             foreach ($this->borrados as $borrar) {
@@ -258,29 +254,29 @@ class ShowGrupos extends Component
             }
         });
 
-        // --- Inicio: Lógica adaptada de CreateGrupos ---
-        // Verifica si la modalidad del grupo está definida
         if(is_null($this->grupo->modalidad_id) || $this->grupo->modalidad_id == 0){
-            // Aunque esto no debería pasar si el grupo ya existe, es una salvaguarda.
             $this->emit('alert', 'Error: La modalidad del grupo no está definida.', 'Error!', 'error');
             return;
         }
 
-        // Cuenta profesores según la modalidad del grupo
-        if($this->grupo->modalidad_id == 1){ // Asumiendo 1 = Presencial
-            $cantidad_profesores = Profesor::where('modalidad_id', $this->grupo->modalidad_id)->count();
-        } else { // Para otras modalidades (ej. Virtual), cuenta todos. Ajusta si es necesario.
-            $cantidad_profesores = Profesor::count();
+        $cantidad_profesores = $this->countAvailableTeachersByModalidad($this->grupo->modalidad_id);
+
+        if ($cantidad_profesores == 0) {
+            $this->addError('modalidad_id', "No hay profesores disponibles registrados para la modalidad seleccionada.");
+            return;
         }
 
-        // Cuenta los detalles de grupo existentes para ese día y hora (en todos los grupos)
-        $cantidad_grupos = GruposDetalles::where('dias_id',$validatedData['diasid'])
-                                    ->where('horas_id',$validatedData['horasid'])->count();
-        if( $cantidad_profesores <= $cantidad_grupos){
-            $this->addError('modalidad_id', "No hay susficientes profesores para este modalidad") ;
+        $cantidad_grupos = $this->countActiveGroupsInSlotByModalidad(
+            $validatedData['diasid'],
+            $validatedData['horasid'],
+            $this->grupo->modalidad_id,
+            $this->grupo->grupo_id
+        );
+
+        if ($cantidad_grupos >= $cantidad_profesores){
+            $this->addError('modalidad_id', "No hay susficientes profesores para esta modalidad") ;
         } else {
             if ($existe_en_array) {
-        // --- Fin: Lógica adaptada de CreateGrupos ---
                 $this->addError('diasid', "Ya existe en este grupo") ;
             } else {
                 // Verificar duplicados en la base de datos
@@ -348,6 +344,39 @@ class ShowGrupos extends Component
             $this->addError('horasid', "No hay horas disponibles para este dia") ;
         }
 
+    }
+
+    private function countAvailableTeachersByModalidad($modalidadId)
+    {
+        // Regla de negocio:
+        // Presencial (1): usa todos los profesores.
+        // Otras modalidades (ej. en línea): filtra por modalidad.
+        if ((int) $modalidadId === 1) {
+            $query = Profesor::query();
+        } else {
+            $query = Profesor::where('modalidad_id', $modalidadId);
+        }
+
+        if (Schema::hasColumn('profesores', 'profesores_activo')) {
+            $query->where('profesores_activo', 1);
+        }
+
+        return $query->count();
+    }
+
+    private function countActiveGroupsInSlotByModalidad($diasId, $horasId, $modalidadId, $excludeGrupoId = null)
+    {
+        $query = GruposDetalles::join('grupos', 'grupos.grupo_id', '=', 'grupos_detalles.grupo_id')
+            ->where('grupos_detalles.dias_id', $diasId)
+            ->where('grupos_detalles.horas_id', $horasId)
+            ->where('grupos.modalidad_id', $modalidadId)
+            ->where('grupos.estado_id', 1);
+
+        if (!is_null($excludeGrupoId)) {
+            $query->where('grupos.grupo_id', '!=', $excludeGrupoId);
+        }
+
+        return $query->count();
     }
 
 }
