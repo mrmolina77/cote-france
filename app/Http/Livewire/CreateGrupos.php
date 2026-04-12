@@ -13,6 +13,7 @@ use App\Models\Espacio;
 use App\Models\Nivel;
 use App\Models\Profesor;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 class CreateGrupos extends Component
@@ -52,25 +53,20 @@ class CreateGrupos extends Component
         $this->validate();
         DB::beginTransaction();
         try {
-            // --- Inicio: Validación de profesores agregada ---
             if($this->modalidad_id == null || $this->modalidad_id == 0){
                 $this->addError('modalidad_id', "No hay modalidad seleccionada para validar profesores.");
-                DB::rollBack(); // Asegura que no se guarde nada si falla la validación
+                DB::rollBack();
                 return;
             }
 
-            if($this->modalidad_id == 1){ // Asumiendo 1 = Presencial
-                $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
-            } else { // Otras modalidades
-                $cantidad_profesores = Profesor::count();
-            }
+            $cantidad_profesores = $this->countAvailableTeachersByModalidad($this->modalidad_id);
 
             if ($cantidad_profesores == 0) {
                 $this->addError('modalidad_id', "No hay profesores disponibles registrados para la modalidad seleccionada.");
-                DB::rollBack(); // Asegura que no se guarde nada si falla la validación
+                DB::rollBack();
                 return;
             }
-            // --- Fin: Validación de profesores agregada ---
+
             $grupo = new Grupo();
             $grupo->grupo_nombre        =$this->grupo_nombre;
             $grupo->nivel_id            =$this->idnivel;
@@ -121,26 +117,20 @@ class CreateGrupos extends Component
         }
 
 
-        // Contar profesores disponibles según la modalidad
-        if($this->modalidad_id == 2){
-            $cantidad_profesores = Profesor::where('modalidad_id',$this->modalidad_id)->count();
-        } else {
-            $cantidad_profesores = Profesor::count();
-        }
+        $cantidad_profesores = $this->countAvailableTeachersByModalidad($this->modalidad_id);
 
         if ($cantidad_profesores == 0) {
-            // Error más preciso, asociado a la modalidad
             $this->addError('modalidad_id', "No hay profesores disponibles registrados para la modalidad seleccionada.");
             return;
         }
 
+        $cantidad_grupos = $this->countActiveGroupsInSlotByModalidad(
+            $validatedData['diasid'],
+            $validatedData['horasid'],
+            $this->modalidad_id
+        );
 
-
-        // Contar grupos ya existentes para ese día y hora (para verificar capacidad de profesores)
-
-        $cantidad_grupos = GruposDetalles::where('dias_id',$validatedData['diasid'])
-        ->where('horas_id',$validatedData['horasid'])->count();
-        if( $cantidad_profesores < $cantidad_grupos){
+        if ($cantidad_grupos >= $cantidad_profesores){
             $this->addError('diasid', "No hay susficientes profesores para este horario");
         } else {
              // Verificar duplicados en el array $this->detalles_grupos
@@ -246,6 +236,39 @@ class CreateGrupos extends Component
             $this->addError('horasid', "No hay horas disponibles para este dia") ;
         }
 
+    }
+
+    private function countAvailableTeachersByModalidad($modalidadId)
+    {
+        // Regla de negocio:
+        // Presencial (1): usa todos los profesores.
+        // Otras modalidades (ej. en línea): filtra por modalidad.
+        if ((int) $modalidadId === 1) {
+            $query = Profesor::query();
+        } else {
+            $query = Profesor::where('modalidad_id', $modalidadId);
+        }
+
+        if (Schema::hasColumn('profesores', 'profesores_activo')) {
+            $query->where('profesores_activo', 1);
+        }
+
+        return $query->count();
+    }
+
+    private function countActiveGroupsInSlotByModalidad($diasId, $horasId, $modalidadId, $excludeGrupoId = null)
+    {
+        $query = GruposDetalles::join('grupos', 'grupos.grupo_id', '=', 'grupos_detalles.grupo_id')
+            ->where('grupos_detalles.dias_id', $diasId)
+            ->where('grupos_detalles.horas_id', $horasId)
+            ->where('grupos.modalidad_id', $modalidadId)
+            ->where('grupos.estado_id', 1);
+
+        if (!is_null($excludeGrupoId)) {
+            $query->where('grupos.grupo_id', '!=', $excludeGrupoId);
+        }
+
+        return $query->count();
     }
 
 }
