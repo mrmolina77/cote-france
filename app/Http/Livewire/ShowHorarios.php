@@ -227,8 +227,8 @@ class ShowHorarios extends Component
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
         if ((int) $this->modalidad === 1) {
-            $grupos = Grupo::where('modalidad_id', 1)
-                ->where('estado_id', 1)
+            $grupos = Grupo::where('estado_id', 1)
+                ->orderBy('modalidad_id')
                 ->orderBy('grupo_nombre')
                 ->get();
         } else {
