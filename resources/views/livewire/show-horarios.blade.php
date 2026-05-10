@@ -634,10 +634,22 @@
         <x-slot name="title">Programar clase de prueba</x-slot>
         <x-slot name="content">
             <div class="grid grid-cols-2 gap-4">
-                <x-select wire:model="clase_prueba_prospectos_id"><option value="">Prospecto</option>@foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)<option value="{{$p->prospectos_id}}">{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}</option>@endforeach</x-select>
-                <x-select wire:model="clase_prueba_grupo_id"><option value="">Grupo</option>@foreach(\App\Models\Grupo::orderBy('grupo_nombre')->get() as $g)<option value="{{$g->grupo_id}}">{{$g->grupo_nombre}}</option>@endforeach</x-select>
-                <x-input type="date" wire:model="clase_prueba_horarios_dia" />
-                <x-select wire:model="clase_prueba_horas_id"><option value="">Hora</option>@foreach(\App\Models\Hora::orderBy('horas_id')->get() as $h)<option value="{{$h->horas_id}}">{{\Carbon\Carbon::parse($h->horas_desde)->format('H:i')}} - {{\Carbon\Carbon::parse($h->horas_hasta)->format('H:i')}}</option>@endforeach</x-select>
+                <div>
+                    <x-select wire:model="clase_prueba_prospectos_id"><option value="">Prospecto</option>@foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)<option value="{{$p->prospectos_id}}">{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}</option>@endforeach</x-select>
+                    <x-forms.input-error for="clase_prueba_prospectos_id" />
+                </div>
+                <div>
+                    <x-select wire:model="clase_prueba_grupo_id"><option value="">Grupo</option>@foreach(\App\Models\Grupo::orderBy('grupo_nombre')->get() as $g)<option value="{{$g->grupo_id}}">{{$g->grupo_nombre}}</option>@endforeach</x-select>
+                    <x-forms.input-error for="clase_prueba_grupo_id" />
+                </div>
+                <div>
+                    <x-input type="date" wire:model="clase_prueba_horarios_dia" />
+                    <x-forms.input-error for="clase_prueba_horarios_dia" />
+                </div>
+                <div>
+                    <x-select wire:model="clase_prueba_horas_id"><option value="">Hora</option>@foreach(\App\Models\Hora::orderBy('horas_id')->get() as $h)<option value="{{$h->horas_id}}">{{\Carbon\Carbon::parse($h->horas_desde)->format('H:i')}} - {{\Carbon\Carbon::parse($h->horas_hasta)->format('H:i')}}</option>@endforeach</x-select>
+                    <x-forms.input-error for="clase_prueba_horas_id" />
+                </div>
                 <x-select wire:model="clase_prueba_profesores_id"><option value="">Profesor (opcional)</option>@foreach(\App\Models\Profesor::orderBy('profesores_nombres')->get() as $pr)<option value="{{$pr->profesores_id}}">{{$pr->profesores_nombres}} {{$pr->profesores_apellidos}}</option>@endforeach</x-select>
                 <x-select wire:model="clase_prueba_espacios_id"><option value="">Espacio (opcional)</option>@foreach(\App\Models\Espacio::orderBy('espacios_nombre')->get() as $e)<option value="{{$e->espacios_id}}">{{$e->espacios_nombre}}</option>@endforeach</x-select>
                 <x-select wire:model="clase_prueba_modalidad_id"><option value="">Modalidad (opcional)</option>@foreach(\App\Models\Modalidad::orderBy('modalidad_descripcion')->get() as $m)<option value="{{$m->modalidad_id}}">{{$m->modalidad_descripcion}}</option>@endforeach</x-select>
