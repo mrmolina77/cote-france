@@ -390,6 +390,10 @@ class ShowHorarios extends Component
 
     public function saveClasePrueba(): void
     {
+        $this->clase_prueba_profesores_id = $this->clase_prueba_profesores_id ?: null;
+        $this->clase_prueba_espacios_id = $this->clase_prueba_espacios_id ?: null;
+        $this->clase_prueba_modalidad_id = $this->clase_prueba_modalidad_id ?: null;
+
         $this->validate([
             'clase_prueba_prospectos_id' => 'required|exists:prospectos,prospectos_id',
             'clase_prueba_grupo_id' => 'required|exists:grupos,grupo_id',
