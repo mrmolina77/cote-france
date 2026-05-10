@@ -385,7 +385,20 @@ class ShowHorarios extends Component
         $this->clase_prueba_horas_id = $horaId;
         $this->clase_prueba_profesores_id = $profesorId ?: null;
         $this->clase_prueba_grupo_id = $grupoId ?: null;
+        $this->clase_prueba_modalidad_id = $grupoId
+            ? Grupo::where('grupo_id', $grupoId)->value('modalidad_id')
+            : null;
         $this->open_create_clase_prueba = true;
+    }
+
+    public function updatedClasePruebaGrupoId($grupoId): void
+    {
+        if (! $grupoId) {
+            $this->clase_prueba_modalidad_id = null;
+            return;
+        }
+
+        $this->clase_prueba_modalidad_id = Grupo::where('grupo_id', $grupoId)->value('modalidad_id');
     }
 
     public function saveClasePrueba(): void
