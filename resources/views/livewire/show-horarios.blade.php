@@ -267,7 +267,10 @@
                                         data-column-key="{{ $columnKey }}"
                                         data-column-index="{{ $columnIndex }}">
                                         <div class="w-full min-h-14 grid grid-cols-1 justify-center items-center bg-amber-50 rounded-md" wire:key="task-{{ $dia->dias_id }}-{{ $hora->horas_id }}-{{ $profesor->profesores_id }}">
-                                            <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
+                                            <div class="flex items-center justify-center gap-2">
+                                                <i class="fas fa-plus text-emerald-500 cursor-pointer" wire:click="edit('{{$currentDateString}}',{{ $profesor->profesores_id }},{{$hora->horas_id}},{{$profesor->profesores_id}})"></i>
+                                                <i class="fas fa-user-plus text-blue-500 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},0)"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 @endif
@@ -627,6 +630,26 @@
         </x-slot>
     </x-dialog-modal>
 
+    <x-dialog-modal wire:model="open_create_clase_prueba">
+        <x-slot name="title">Programar clase de prueba</x-slot>
+        <x-slot name="content">
+            <div class="grid grid-cols-2 gap-4">
+                <x-select wire:model="clase_prueba_prospectos_id"><option value="">Prospecto</option>@foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)<option value="{{$p->prospectos_id}}">{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}</option>@endforeach</x-select>
+                <x-select wire:model="clase_prueba_grupo_id"><option value="">Grupo</option>@foreach(\App\Models\Grupo::orderBy('grupo_nombre')->get() as $g)<option value="{{$g->grupo_id}}">{{$g->grupo_nombre}}</option>@endforeach</x-select>
+                <x-input type="date" wire:model="clase_prueba_horarios_dia" />
+                <x-select wire:model="clase_prueba_horas_id"><option value="">Hora</option>@foreach(\App\Models\Hora::orderBy('horas_id')->get() as $h)<option value="{{$h->horas_id}}">{{\Carbon\Carbon::parse($h->horas_desde)->format('H:i')}} - {{\Carbon\Carbon::parse($h->horas_hasta)->format('H:i')}}</option>@endforeach</x-select>
+                <x-select wire:model="clase_prueba_profesores_id"><option value="">Profesor (opcional)</option>@foreach(\App\Models\Profesor::orderBy('profesores_nombres')->get() as $pr)<option value="{{$pr->profesores_id}}">{{$pr->profesores_nombres}} {{$pr->profesores_apellidos}}</option>@endforeach</x-select>
+                <x-select wire:model="clase_prueba_espacios_id"><option value="">Espacio (opcional)</option>@foreach(\App\Models\Espacio::orderBy('espacios_nombre')->get() as $e)<option value="{{$e->espacios_id}}">{{$e->espacios_nombre}}</option>@endforeach</x-select>
+                <x-select wire:model="clase_prueba_modalidad_id"><option value="">Modalidad (opcional)</option>@foreach(\App\Models\Modalidad::orderBy('modalidad_descripcion')->get() as $m)<option value="{{$m->modalidad_id}}">{{$m->modalidad_descripcion}}</option>@endforeach</x-select>
+                <x-input wire:model="clase_prueba_observacion" placeholder="Observación" />
+            </div>
+        </x-slot>
+        <x-slot name="footer">
+            <x-forms.red-button wire:click="$set('open_create_clase_prueba',false)">Cancelar</x-forms.red-button>
+            <x-forms.blue-button wire:click="saveClasePrueba">Guardar</x-forms.blue-button>
+        </x-slot>
+    </x-dialog-modal>
+
     <x-dialog-modal wire:model="open_edit_diario">
         <x-slot name="title">
             Actualizar diario
@@ -721,6 +744,27 @@
                     </tbody>
                 </table>
             </div>
+            @if (count($clasesPrueba))
+            <div class="mt-4 relative overflow-x-auto">
+                <h3 class="font-bold mb-2">Clases de prueba</h3>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr><th class="px-4 py-2 text-left">Prospecto</th><th class="px-4 py-2 text-center">Asistió</th><th class="px-4 py-2 text-center">No asistió</th><th class="px-4 py-2 text-center">Pendiente</th><th class="px-4 py-2">Observación</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($clasesPrueba as $clase)
+                            <tr>
+                                <td class="px-4 py-2">{{ $clase->prospecto?->prospectos_nombres }} {{ $clase->prospecto?->prospectos_apellidos }}</td>
+                                <td class="text-center"><input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="1"></td>
+                                <td class="text-center"><input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="0"></td>
+                                <td class="text-center"><input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value=""></td>
+                                <td><x-input wire:model="observacionesPrueba.{{$clase->clase_prueba_id}}" class="w-full"/></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
 
         </x-slot>
         <x-slot name="footer">
