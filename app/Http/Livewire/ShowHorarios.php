@@ -268,6 +268,13 @@ class ShowHorarios extends Component
             : collect();
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
+
+        $prospectosClasePrueba = Prospecto::where(function ($query) {
+                $query->whereNull('grupo_id')
+                    ->orWhereDoesntHave('inscripciones');
+            })
+            ->orderBy('prospectos_nombres')
+            ->get();
         // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
@@ -282,6 +289,7 @@ class ShowHorarios extends Component
                                            ,'dias2'=>$dias2
                                            ,'fecha'=>$this->fecha
                                            ,'clasesPruebaPorSlot' => $clasesPruebaPorSlot
+                                           ,'prospectosClasePrueba' => $prospectosClasePrueba
                                             ]);
     }
 

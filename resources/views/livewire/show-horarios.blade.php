@@ -637,7 +637,7 @@
                 <div x-data="{ q: '', setProspecto() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.prospectos.options].find(item => item.value.toLowerCase().trim() === value); $wire.set('clase_prueba_prospectos_id', option ? option.dataset.id : ''); } }">
                     <input type="text" x-model="q" @input.debounce.150ms="setProspecto" list="prospectos-clase-prueba" placeholder="Prospecto" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
                     <datalist id="prospectos-clase-prueba" x-ref="prospectos">
-                        @foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)
+                        @foreach($prospectosClasePrueba as $p)
                             <option data-id="{{$p->prospectos_id}}" value="{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}"></option>
                         @endforeach
                     </datalist>
