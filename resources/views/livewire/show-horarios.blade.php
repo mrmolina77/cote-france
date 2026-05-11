@@ -634,7 +634,7 @@
         <x-slot name="title">Programar clase de prueba</x-slot>
         <x-slot name="content">
             <div class="grid grid-cols-2 gap-4">
-                <div x-data="{ q: '', setProspecto() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.prospectos.options].find(item => item.value.toLowerCase() === value); $wire.set('clase_prueba_prospectos_id', option ? option.dataset.id : ''); } }">
+                <div x-data="{ q: '', setProspecto() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.prospectos.options].find(item => item.value.toLowerCase().trim() === value); $wire.set('clase_prueba_prospectos_id', option ? option.dataset.id : ''); } }">
                     <input type="text" x-model="q" @input.debounce.150ms="setProspecto" list="prospectos-clase-prueba" placeholder="Prospecto" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
                     <datalist id="prospectos-clase-prueba" x-ref="prospectos">
                         @foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)
