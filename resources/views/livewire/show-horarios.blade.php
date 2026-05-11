@@ -634,12 +634,22 @@
         <x-slot name="title">Programar clase de prueba</x-slot>
         <x-slot name="content">
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <x-select wire:model="clase_prueba_prospectos_id"><option value="">Prospecto</option>@foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)<option value="{{$p->prospectos_id}}">{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}</option>@endforeach</x-select>
+                <div x-data="{ q: '', setProspecto() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.prospectos.options].find(item => item.value.toLowerCase() === value); $wire.set('clase_prueba_prospectos_id', option ? option.dataset.id : ''); } }">
+                    <input type="text" x-model="q" @input.debounce.150ms="setProspecto" list="prospectos-clase-prueba" placeholder="Prospecto" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
+                    <datalist id="prospectos-clase-prueba" x-ref="prospectos">
+                        @foreach(\App\Models\Prospecto::orderBy('prospectos_nombres')->get() as $p)
+                            <option data-id="{{$p->prospectos_id}}" value="{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}"></option>
+                        @endforeach
+                    </datalist>
                     <x-forms.input-error for="clase_prueba_prospectos_id" />
                 </div>
-                <div>
-                    <x-select wire:model="clase_prueba_grupo_id"><option value="">Grupo</option>@foreach(\App\Models\Grupo::orderBy('grupo_nombre')->get() as $g)<option value="{{$g->grupo_id}}">{{$g->grupo_nombre}}</option>@endforeach</x-select>
+                <div x-data="{ q: '', setGrupo() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.grupos.options].find(item => item.value.toLowerCase() === value); $wire.set('clase_prueba_grupo_id', option ? option.dataset.id : ''); } }">
+                    <input type="text" x-model="q" @input.debounce.150ms="setGrupo" list="grupos-clase-prueba" placeholder="Grupo" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
+                    <datalist id="grupos-clase-prueba" x-ref="grupos">
+                        @foreach(\App\Models\Grupo::orderBy('grupo_nombre')->get() as $g)
+                            <option data-id="{{$g->grupo_id}}" value="{{$g->grupo_nombre}}"></option>
+                        @endforeach
+                    </datalist>
                     <x-forms.input-error for="clase_prueba_grupo_id" />
                 </div>
                 <div>
