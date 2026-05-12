@@ -634,14 +634,13 @@
         <x-slot name="title">Programar clase de prueba</x-slot>
         <x-slot name="content">
             <div class="grid grid-cols-2 gap-4">
-                <div x-data="{ q: '', setProspecto() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.prospectos.options].find(item => item.value.toLowerCase().trim() === value); $wire.set('clase_prueba_prospectos_id', option ? option.dataset.id : ''); } }">
-                    <input type="text" x-model="q" @input.debounce.150ms="setProspecto" list="prospectos-clase-prueba" placeholder="Prospecto" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
-                    <datalist id="prospectos-clase-prueba" x-ref="prospectos">
+                <div>
+                    <x-select wire:model="clase_prueba_prospectos_ids" multiple class="h-32">
                         @foreach($prospectosClasePrueba as $p)
-                            <option data-id="{{$p->prospectos_id}}" value="{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}"></option>
+                            <option value="{{$p->prospectos_id}}">{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}</option>
                         @endforeach
-                    </datalist>
-                    <x-forms.input-error for="clase_prueba_prospectos_id" />
+                    </x-select>
+                    <x-forms.input-error for="clase_prueba_prospectos_ids" />
                 </div>
                 <div x-data="{ q: '', setGrupo() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.grupos.options].find(item => item.value.toLowerCase() === value); $wire.set('clase_prueba_grupo_id', option ? option.dataset.id : ''); } }">
                     <input type="text" x-model="q" @input.debounce.150ms="setGrupo" list="grupos-clase-prueba" placeholder="Grupo" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />

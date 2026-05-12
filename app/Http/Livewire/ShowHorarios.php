@@ -54,7 +54,7 @@ class ShowHorarios extends Component
     public $asistenciasPrueba = [];
     public $observacionesPrueba = [];
     public $open_create_clase_prueba = false;
-    public $clase_prueba_prospectos_id, $clase_prueba_grupo_id, $clase_prueba_horarios_dia, $clase_prueba_horas_id, $clase_prueba_profesores_id, $clase_prueba_espacios_id, $clase_prueba_modalidad_id, $clase_prueba_observacion;
+    public $clase_prueba_prospectos_ids = [], $clase_prueba_grupo_id, $clase_prueba_horarios_dia, $clase_prueba_horas_id, $clase_prueba_profesores_id, $clase_prueba_espacios_id, $clase_prueba_modalidad_id, $clase_prueba_observacion;
 
     public function boot()
     {
@@ -393,6 +393,7 @@ class ShowHorarios extends Component
         $this->clase_prueba_horas_id = $horaId;
         $this->clase_prueba_profesores_id = $profesorId ?: null;
         $this->clase_prueba_grupo_id = $grupoId ?: null;
+        $this->clase_prueba_prospectos_ids = [];
         $this->clase_prueba_modalidad_id = $grupoId
             ? Grupo::where('grupo_id', $grupoId)->value('modalidad_id')
             : null;
@@ -416,7 +417,8 @@ class ShowHorarios extends Component
         $this->clase_prueba_modalidad_id = $this->clase_prueba_modalidad_id ?: null;
 
         $this->validate([
-            'clase_prueba_prospectos_id' => 'required|exists:prospectos,prospectos_id',
+            'clase_prueba_prospectos_ids' => 'required|array|min:1',
+            'clase_prueba_prospectos_ids.*' => 'required|exists:prospectos,prospectos_id',
             'clase_prueba_grupo_id' => 'required|exists:grupos,grupo_id',
             'clase_prueba_horarios_dia' => 'required|date',
             'clase_prueba_horas_id' => 'required|exists:horas,horas_id',
@@ -426,14 +428,15 @@ class ShowHorarios extends Component
             'clase_prueba_observacion' => 'nullable|string|max:255',
         ]);
 
-        $duplicado = ClasePrueba::where('prospectos_id', $this->clase_prueba_prospectos_id)
+        $prospectosIds = collect($this->clase_prueba_prospectos_ids)->filter()->unique()->values();
+        $duplicadosCount = ClasePrueba::whereIn('prospectos_id', $prospectosIds)
             ->where('grupo_id', $this->clase_prueba_grupo_id)
             ->whereDate('horarios_dia', $this->clase_prueba_horarios_dia)
             ->where('horas_id', $this->clase_prueba_horas_id)
             ->where('estado', '!=', 'cancelada')
-            ->exists();
-        if ($duplicado) {
-            $this->emit('alert', 'Ya existe una clase de prueba para este prospecto en el mismo grupo/fecha/hora.', 'Advertencias!', 'warning');
+            ->count();
+        if ($duplicadosCount > 0) {
+            $this->emit('alert', 'Uno o más prospectos ya tienen clase de prueba en el mismo grupo/fecha/hora.', 'Advertencias!', 'warning');
             return;
         }
 
@@ -443,26 +446,28 @@ class ShowHorarios extends Component
             ->first();
 
         Log::info('Programando clase de prueba', [
-            'prospectos_id' => $this->clase_prueba_prospectos_id,
+            'prospectos_ids' => $prospectosIds->all(),
             'grupo_id' => $this->clase_prueba_grupo_id,
             'horarios_id' => $horario?->horarios_id,
             'horarios_dia' => $this->clase_prueba_horarios_dia,
             'horas_id' => $this->clase_prueba_horas_id,
         ]);
 
-        ClasePrueba::create([
-            'prospectos_id' => $this->clase_prueba_prospectos_id,
-            'grupo_id' => $this->clase_prueba_grupo_id,
-            'horarios_id' => $horario?->horarios_id,
-            'horarios_dia' => $this->clase_prueba_horarios_dia,
-            'horas_id' => $this->clase_prueba_horas_id,
-            'profesores_id' => $this->clase_prueba_profesores_id,
-            'espacios_id' => $this->clase_prueba_espacios_id,
-            'modalidad_id' => $this->clase_prueba_modalidad_id,
-            'observacion' => $this->clase_prueba_observacion,
-        ]);
+        foreach ($prospectosIds as $prospectoId) {
+            ClasePrueba::create([
+                'prospectos_id' => $prospectoId,
+                'grupo_id' => $this->clase_prueba_grupo_id,
+                'horarios_id' => $horario?->horarios_id,
+                'horarios_dia' => $this->clase_prueba_horarios_dia,
+                'horas_id' => $this->clase_prueba_horas_id,
+                'profesores_id' => $this->clase_prueba_profesores_id,
+                'espacios_id' => $this->clase_prueba_espacios_id,
+                'modalidad_id' => $this->clase_prueba_modalidad_id,
+                'observacion' => $this->clase_prueba_observacion,
+            ]);
+        }
 
-        $this->reset(['open_create_clase_prueba', 'clase_prueba_prospectos_id', 'clase_prueba_grupo_id', 'clase_prueba_horarios_dia', 'clase_prueba_horas_id', 'clase_prueba_profesores_id', 'clase_prueba_espacios_id', 'clase_prueba_modalidad_id', 'clase_prueba_observacion']);
+        $this->reset(['open_create_clase_prueba', 'clase_prueba_prospectos_ids', 'clase_prueba_grupo_id', 'clase_prueba_horarios_dia', 'clase_prueba_horas_id', 'clase_prueba_profesores_id', 'clase_prueba_espacios_id', 'clase_prueba_modalidad_id', 'clase_prueba_observacion']);
         $this->emit('alert', 'Clase de prueba programada satisfactoriamente');
     }
 
