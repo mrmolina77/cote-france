@@ -662,13 +662,31 @@
                     </div>
                     <x-forms.input-error for="clase_prueba_prospectos_ids" />
                 </div>
-                <div x-data="{ q: '', setGrupo() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.grupos.options].find(item => item.value.toLowerCase() === value); $wire.set('clase_prueba_grupo_id', option ? option.dataset.id : ''); } }">
-                    <input type="text" x-model="q" @input.debounce.150ms="setGrupo" list="grupos-clase-prueba" placeholder="Grupo" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
-                    <datalist id="grupos-clase-prueba" x-ref="grupos">
-                        @foreach(\App\Models\Grupo::orderBy('grupo_nombre')->get() as $g)
-                            <option data-id="{{$g->grupo_id}}" value="{{$g->grupo_nombre}}"></option>
-                        @endforeach
-                    </datalist>
+                <div x-data="{ 
+                        open: false, 
+                        query: '', 
+                        selectedId: @entangle('clase_prueba_grupo_id').live,
+                        grupos: @js(\App\Models\Grupo::orderBy('grupo_nombre')->get()->map(fn($g) => ['id' => (string) $g->grupo_id, 'nombre' => $g->grupo_nombre])),
+                        get selectedName() {
+                            const item = this.grupos.find(g => g.id === String(this.selectedId));
+                            return item ? item.nombre : '';
+                        },
+                        selectGrupo(grupo) {
+                            this.selectedId = grupo.id;
+                            this.query = '';
+                            this.open = false;
+                        }
+                    }" class="relative" @click.away="open = false">
+                    <button type="button" @click="open = !open" class="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <span class="text-gray-500" x-show="!selectedName">Grupo</span>
+                        <span class="text-gray-800" x-show="selectedName" x-text="selectedName"></span>
+                    </button>
+                    <div x-show="open" x-transition class="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg p-2 max-h-64 overflow-y-auto">
+                        <input type="text" x-model="query" placeholder="Buscar grupo..." class="w-full border border-gray-300 rounded-md mb-2 px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                        <template x-for="grupo in grupos.filter(item => item.nombre.toLowerCase().includes(query.toLowerCase()))" :key="grupo.id">
+                            <button type="button" @click="selectGrupo(grupo)" class="w-full text-left py-1 px-1 rounded hover:bg-gray-50" x-text="grupo.nombre"></button>
+                        </template>
+                    </div>
                     <x-forms.input-error for="clase_prueba_grupo_id" />
                 </div>
                 <div>
