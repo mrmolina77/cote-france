@@ -634,12 +634,32 @@
         <x-slot name="title">Programar clase de prueba</x-slot>
         <x-slot name="content">
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <x-select wire:model="clase_prueba_prospectos_ids" multiple class="h-32">
-                        @foreach($prospectosClasePrueba as $p)
-                            <option value="{{$p->prospectos_id}}">{{$p->prospectos_nombres}} {{$p->prospectos_apellidos}}</option>
-                        @endforeach
-                    </x-select>
+                <div x-data="{ open: false, query: '', selected: @entangle('clase_prueba_prospectos_ids').live,
+                                toggle(id) {
+                                    id = String(id);
+                                    if (this.selected.includes(id)) {
+                                        this.selected = this.selected.filter(item => item !== id);
+                                    } else {
+                                        this.selected = [...this.selected, id];
+                                    }
+                                },
+                                isSelected(id) {
+                                    return this.selected.map(item => String(item)).includes(String(id));
+                                } }" class="relative" @click.away="open = false">
+                    <button type="button" @click="open = !open" class="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <span class="text-gray-500" x-show="selected.length === 0">Seleccionar...</span>
+                        <span x-show="selected.length > 0" class="text-gray-800" x-text="selected.length + ' prospecto(s) seleccionado(s)'"></span>
+                    </button>
+                    <div x-show="open" x-transition class="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg p-2 max-h-64 overflow-y-auto">
+                        <input type="text" x-model="query" placeholder="Buscar prospecto..." class="w-full border border-gray-300 rounded-md mb-2 px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                        <template x-for="prospecto in @js($prospectosClasePrueba->map(fn($p) => ['id' => (string) $p->prospectos_id, 'nombre' => $p->prospectos_nombres.' '.$p->prospectos_apellidos]))
+                            .filter(item => item.nombre.toLowerCase().includes(query.toLowerCase()))" :key="prospecto.id">
+                            <label class="flex items-center gap-2 py-1 cursor-pointer hover:bg-gray-50 rounded px-1">
+                                <input type="checkbox" :checked="isSelected(prospecto.id)" @change="toggle(prospecto.id)">
+                                <span x-text="prospecto.nombre"></span>
+                            </label>
+                        </template>
+                    </div>
                     <x-forms.input-error for="clase_prueba_prospectos_ids" />
                 </div>
                 <div x-data="{ q: '', setGrupo() { const value = this.q.toLowerCase().trim(); const option = [...this.$refs.grupos.options].find(item => item.value.toLowerCase() === value); $wire.set('clase_prueba_grupo_id', option ? option.dataset.id : ''); } }">
