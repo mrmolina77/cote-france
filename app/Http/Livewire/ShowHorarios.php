@@ -416,6 +416,14 @@ class ShowHorarios extends Component
         $this->clase_prueba_espacios_id = $this->clase_prueba_espacios_id ?: null;
         $this->clase_prueba_modalidad_id = $this->clase_prueba_modalidad_id ?: null;
 
+        $this->clase_prueba_prospectos_ids = collect($this->clase_prueba_prospectos_ids)
+            ->when(! is_array($this->clase_prueba_prospectos_ids), fn ($c) => collect((array) $this->clase_prueba_prospectos_ids))
+            ->map(fn ($id) => is_numeric($id) ? (int) $id : null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
         $this->validate([
             'clase_prueba_prospectos_ids' => 'required|array|min:1',
             'clase_prueba_prospectos_ids.*' => 'required|exists:prospectos,prospectos_id',
