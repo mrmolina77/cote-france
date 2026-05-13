@@ -635,17 +635,24 @@
         <x-slot name="content">
             <div class="grid grid-cols-2 gap-4">
                 <div x-data="{ open: false, query: '', selected: @entangle('clase_prueba_prospectos_ids').live,
+                                init() {
+                                    this.selected = Array.isArray(this.selected)
+                                        ? this.selected.map(item => String(item))
+                                        : [];
+                                },
                                 toggle(id) {
                                     id = String(id);
-                                    if (this.selected.includes(id)) {
-                                        this.selected = this.selected.filter(item => item !== id);
+                                    const selected = Array.isArray(this.selected) ? this.selected.map(item => String(item)) : [];
+                                    if (selected.includes(id)) {
+                                        this.selected = selected.filter(item => item !== id);
                                     } else {
-                                        this.selected = [...this.selected, id];
+                                        this.selected = [...selected, id];
                                     }
                                     $wire.set('clase_prueba_prospectos_ids', this.selected);
                                 },
                                 isSelected(id) {
-                                    return this.selected.map(item => String(item)).includes(String(id));
+                                    const selected = Array.isArray(this.selected) ? this.selected.map(item => String(item)) : [];
+                                    return selected.includes(String(id));
                                 } }" class="relative" @click.away="open = false">
                     <button type="button" @click="open = !open" class="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         <span class="text-gray-500" x-show="selected.length === 0">Seleccionar...</span>
