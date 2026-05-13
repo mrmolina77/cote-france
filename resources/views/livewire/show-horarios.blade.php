@@ -642,6 +642,7 @@
                                     } else {
                                         this.selected = [...this.selected, id];
                                     }
+                                    $wire.set('clase_prueba_prospectos_ids', this.selected);
                                 },
                                 isSelected(id) {
                                     return this.selected.map(item => String(item)).includes(String(id));
@@ -673,6 +674,7 @@
                         },
                         selectGrupo(grupo) {
                             this.selectedId = grupo.id;
+                            $wire.set('clase_prueba_grupo_id', grupo.id);
                             this.query = '';
                             this.open = false;
                         }
