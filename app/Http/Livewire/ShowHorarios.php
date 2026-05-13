@@ -604,7 +604,6 @@ class ShowHorarios extends Component
 
         if ($prospectos->isEmpty()) {
             $this->emit('alert', 'No hay estudiantes inscritos en este grupo', 'Advertencias!', 'warning');
-            return;
         }
 
         $this->estudiantes = $prospectos;
@@ -636,11 +635,16 @@ class ShowHorarios extends Component
         }
 
         $this->diarios_horarios_id = $id;
-        $clasesPruebaConHorario = ClasePrueba::where('horarios_id', $horario->horarios_id)->get();
-        $clasesPruebaSinHorario = ClasePrueba::whereNull('horarios_id')
+        $clasesPruebaConHorario = ClasePrueba::with('prospecto')
+            ->where('horarios_id', $horario->horarios_id)
+            ->where('estado', '!=', 'cancelada')
+            ->get();
+        $clasesPruebaSinHorario = ClasePrueba::with('prospecto')
+            ->whereNull('horarios_id')
             ->where('grupo_id', $horario->grupo_id)
             ->whereDate('horarios_dia', $horario->horarios_dia)
             ->where('horas_id', $horario->horas_id)
+            ->where('estado', '!=', 'cancelada')
             ->get();
         $this->clasesPrueba = $clasesPruebaConHorario->merge($clasesPruebaSinHorario)->unique('clase_prueba_id')->values();
         foreach ($this->clasesPrueba as $clasePrueba) {
