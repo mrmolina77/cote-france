@@ -215,6 +215,7 @@
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
+                                                <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
                                                 <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                             </div>
@@ -525,6 +526,7 @@
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
+                                            <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDailyDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
                                             <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                         </div>
