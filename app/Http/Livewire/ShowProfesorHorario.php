@@ -293,8 +293,12 @@ class ShowProfesorHorario extends Component
 
         $grupo = Grupo::find($grupoId);
 
-        $prospectos = Prospecto::whereHas('inscripciones', function($query) use ($grupoId) {
-            $query->where('grupo_id', $grupoId);
+        $prospectos = Prospecto::where(function ($query) use ($grupoId) {
+            $query->whereHas('inscripciones', function ($subQuery) use ($grupoId) {
+                $subQuery->where('grupo_id', $grupoId);
+            })
+            // Incluye también prospectos de clase de prueba asignados directamente al grupo.
+            ->orWhere('grupo_id', $grupoId);
         })
         ->with('evaluaciones')
         ->get();
