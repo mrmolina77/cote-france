@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call(OrigenSeeder::class);
         $this->call(NivelSeeder::class);
         $this->call(CapituloSeeder::class);
+        $this->call(TematicasSeeder::class);
         $this->call(OrigenSeeder::class);
         $this->call(SeguimientoSeeder::class);
         $this->call(EstatuTareaSeeder::class);
