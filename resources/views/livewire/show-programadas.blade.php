@@ -40,9 +40,9 @@
                     @endif
                     </th>
                 <th class="cursor-pointer px-6 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
-                    wire:click="order('prospectos_clase_hora')">
+                    wire:click="order('horas.horas_desde')">
                     Hora
-                    @if ($sort == 'prospectos_clase_hora')
+                    @if ($sort == 'horas.horas_desde')
                         @if ($direction == 'asc')
                             <i class="fas fa-sort-alpha-up-alt float-right mt-1"></i>
                         @else
@@ -130,8 +130,8 @@
                         {{$item->prospectos_correo}}
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                        <i class="fas fa-user-plus text-blue-600 mr-4 cursor-pointer" wire:click="edit({{ $item->prospectos_id }})"></i>
-                        <i class="fas fa-paper-plane text-green-600 mr-4 cursor-pointer" wire:click="notification({{ $item->prospectos_id }})"></i>
+                        <i class="fas fa-user-plus text-blue-600 mr-4 cursor-pointer" wire:click="edit({{ $item->clase_prueba_id }})"></i>
+                        <i class="fas fa-paper-plane text-green-600 mr-4 cursor-pointer" wire:click="notification({{ $item->clase_prueba_id }})"></i>
                     </td>
                 </tr>
                 @empty

@@ -18,6 +18,11 @@ class Evaluacion extends Model
         'horarios_id',
         'asistio',
         'observacion',
+        'validado',
+    ];
+
+    protected $casts = [
+        'validado' => 'boolean',
     ];
 
     public function prospecto()

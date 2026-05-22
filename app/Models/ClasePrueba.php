@@ -25,11 +25,13 @@ class ClasePrueba extends Model
         'asistio',
         'observacion',
         'estado',
+        'validado',
     ];
 
     protected $casts = [
         'horarios_dia' => 'date',
         'asistio' => 'integer',
+        'validado' => 'boolean',
     ];
 
     public function prospecto()

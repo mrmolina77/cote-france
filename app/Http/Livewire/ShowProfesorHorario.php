@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Models\Capitulo;
+use App\Models\ClasePrueba;
 use App\Models\Dia;
 use App\Models\Diario;
 use App\Models\Espacio;
@@ -18,6 +19,7 @@ use App\Models\Profesor;
 use App\Models\Prospecto;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class ShowProfesorHorario extends Component
@@ -29,6 +31,7 @@ class ShowProfesorHorario extends Component
     public $horarios_dia, $espacios_id, $horas_id, $grupo_id;
     public $planes_horarios_id, $planes_descripcion;
     public $diarios_horarios_id,$diarios_hecho,$diarios_porhacer;
+    public $tematica, $numero_clases;
     public $plan, $diario, $semanal, $year;
     public $semana, $inicio, $fin, $profesores_id;
     public $porcentajes, $dimenciones, $porcentaje = 0;
@@ -42,6 +45,11 @@ class ShowProfesorHorario extends Component
     public $asistencias = [];
     public $observaciones = [];
     public $evaluaciones = [];
+    public $validados = [];
+    public $clasesPrueba = [];
+    public $asistenciasPrueba = [];
+    public $observacionesPrueba = [];
+    public $validadosPrueba = [];
     protected $listeners = ['render', 'delete', 'scrollToBottom'];
     public $semana_activa = false;
     public $solo_profesor = false;
@@ -240,44 +248,108 @@ class ShowProfesorHorario extends Component
     {
         $horarioBase = Horario::findOrFail($id);
 
-        // Buscamos otros horarios del mismo grupo, en la misma hora y día de la semana, anteriores o iguales a hoy
-        $horariosRelacionados = Horario::where('grupo_id', $horarioBase->grupo_id)
-        ->where('horas_id', $horarioBase->horas_id)
-        ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
-        ->pluck('horarios_id');
+        // Buscamos todos los horarios del mismo grupo, en cualquier día y hora, anteriores o iguales a hoy
+        $horarios = Horario::with(['diario', 'profesor', 'espacio'])
+            ->where('grupo_id', $horarioBase->grupo_id)
+            ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
+            ->orderBy('horarios_dia', 'desc')
+            ->get();
 
-        // Traemos las evaluaciones con sus relaciones
-        $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio']) // Carga las relaciones necesarias
-            ->whereIn('horarios_id', $horariosRelacionados)
-            ->get() // Obtiene todas las evaluaciones que coinciden
-            ->groupBy('horarios_id');
-
-        // Ordena los grupos por la fecha del horario (descendente - más reciente primero)
-        $evaluaciones = $evaluaciones->sortByDesc(function ($items, $horarioId) {
-            return $items->first()->horario->horarios_dia ?? null; // Usa la fecha del primer horario en el grupo para ordenar
-        });
-
-
-        if ($evaluaciones->isEmpty()) {
+        if ($horarios->isEmpty()) {
             $this->emit('alert', 'No hay datos que mostrar', 'Advertencias!', 'warning');
             return;
         }
 
-        // Convertimos las colecciones anidadas a arrays planos para que Livewire los maneje bien
-        $this->evaluaciones = $evaluaciones
-        ->map(fn($items) => $items->values()->toArray())
-        ->toArray();
+        $horariosRelacionados = $horarios->pluck('horarios_id');
 
-        // dd($this->evaluaciones); // Asegúrate de comentar o quitar esto para ver el modal
+        // Traemos las evaluaciones y clases de prueba
+        $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio'])
+            ->whereIn('horarios_id', $horariosRelacionados)
+            ->get();
+
+        $clasesPrueba = ClasePrueba::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio'])
+            ->where(function ($query) use ($horariosRelacionados, $horarios) {
+                $query->whereIn('horarios_id', $horariosRelacionados);
+                foreach ($horarios as $h) {
+                    $query->orWhere(function ($subQuery) use ($h) {
+                        $subQuery->whereNull('horarios_id')
+                            ->whereDate('horarios_dia', $h->horarios_dia)
+                            ->where('horas_id', $h->horas_id)
+                            ->where('grupo_id', $h->grupo_id);
+                    });
+                }
+            })
+            ->where('estado', '!=', 'cancelada')
+            ->get();
+
+        foreach ($clasesPrueba as $clase) {
+            if (is_null($clase->horarios_id)) {
+                $matchingHorario = $horarios->first(function ($h) use ($clase) {
+                    return \Carbon\Carbon::parse($h->horarios_dia)->toDateString() === \Carbon\Carbon::parse($clase->horarios_dia)->toDateString()
+                        && (int)$h->horas_id === (int)$clase->horas_id
+                        && (int)$h->grupo_id === (int)$clase->grupo_id;
+                });
+                if ($matchingHorario) {
+                    $clase->horarios_id = $matchingHorario->horarios_id;
+                }
+            }
+        }
+
+        $merged = $evaluaciones->concat($clasesPrueba);
+        $grouped = $merged->groupBy('horarios_id');
+
+        // Construimos el array final de evaluaciones respetando el formato que espera el Blade
+        $finalEvaluaciones = [];
+
+        foreach ($horarios as $h) {
+            $hId = $h->horarios_id;
+            
+            if ($grouped->has($hId) && $grouped->get($hId)->isNotEmpty()) {
+                // Si hay evaluaciones reales o clases de prueba, las convertimos a array
+                $finalEvaluaciones[$hId] = $grouped->get($hId)->values()->toArray();
+            } else {
+                // Si no hay evaluaciones, inyectamos un elemento dummy con toda la info de la relación
+                $finalEvaluaciones[$hId] = [
+                    [
+                        'is_dummy' => true,
+                        'prospecto' => null,
+                        'asistio' => null,
+                        'observacion' => '',
+                        'horario' => [
+                            'horarios_dia' => $h->horarios_dia instanceof \Carbon\Carbon ? $h->horarios_dia->toDateString() : $h->horarios_dia,
+                            'profesor' => $h->profesor ? [
+                                'profesores_nombres' => $h->profesor->profesores_nombres ?? '',
+                                'profesores_apellidos' => $h->profesor->profesores_apellidos ?? '',
+                            ] : null,
+                            'espacio' => $h->espacio ? [
+                                'espacios_nombre' => $h->espacio->espacios_nombre ?? 'N/A',
+                            ] : null,
+                            'diario' => $h->diario ? [
+                                'diarios_hecho' => $h->diario->diarios_hecho,
+                                'diarios_porhacer' => $h->diario->diarios_porhacer,
+                                'tematica' => $h->diario->tematica,
+                                'numero_clases' => $h->diario->numero_clases,
+                                'niveles_id' => $h->diario->niveles_id,
+                                'capitulos_id' => $h->diario->capitulos_id,
+                            ] : null,
+                        ]
+                    ]
+                ];
+            }
+        }
+
+        $this->evaluaciones = $finalEvaluaciones;
 
         $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
         $arr_capitulos = Capitulo::all();
 
+        $this->arr_capitulos2 = [];
         foreach ($arr_capitulos as $capitulo) {
             $this->arr_capitulos2[$capitulo->capitulo_id] = $capitulo->capitulo_descripcion . ' - ' . $capitulo->capitulo_codigo;
         }
 
-        $this->emit('scrollToBottom'); // <-- Añade esta línea para emitir el evento
+        $this->emit('scrollToBottom');
+        $this->open_edit_diario = false;
         $this->open_edit_plan = true;
     }
 
@@ -288,30 +360,24 @@ class ShowProfesorHorario extends Component
         $horario = Horario::where('horarios_id',$id)->first();
         $this->diarios_profesor = $horario->profesor->profesores_nombres .' '.$horario->profesor->profesores_apellidos;
         $this->diarios_espacio = $horario->espacio->espacios_nombre ?? 'N/A';
+        $this->espacios_id = $horario->espacios_id;
 
         $grupoId = $horario->grupo_id;
 
         $grupo = Grupo::find($grupoId);
 
-        $prospectos = Prospecto::where(function ($query) use ($grupoId) {
-            $query->whereHas('inscripciones', function ($subQuery) use ($grupoId) {
-                $subQuery->where('grupo_id', $grupoId);
-            })
-            // Incluye también prospectos de clase de prueba asignados directamente al grupo.
-            ->orWhere('grupo_id', $grupoId);
+        $prospectos = Prospecto::whereHas('inscripciones', function ($query) use ($grupoId) {
+            $query->where('grupo_id', $grupoId);
         })
         ->with('evaluaciones')
         ->get();
 
-        // dd($prospectos);
-
-
         if ($prospectos->isEmpty()) {
             $this->emit('alert', 'No hay estudiantes inscritos en este grupo', 'Advertencias!', 'warning');
-            return;
         }
 
         $this->estudiantes = $prospectos;
+        $this->validados = [];
 
         foreach ($prospectos as $prospecto) {
             // Intenta encontrar la evaluación específica para este horario
@@ -326,6 +392,7 @@ class ShowProfesorHorario extends Component
             if ($evaluacionEspecifica) {
                 // Si existe, usa su observación, incluso si es una cadena vacía
                 $observacion = $evaluacionEspecifica->observacion ?? ''; // Usa la observación existente o '' si es null
+                $this->validados[$prospecto->prospectos_id] = (bool) ($evaluacionEspecifica->validado ?? false);
             } else {
                 // Si NO existe la evaluación para este día, busca la última observación no vacía de días anteriores
                 $ultimaEvaluacionConObservacion = $prospecto->evaluaciones // Busca en todas las evaluaciones cargadas
@@ -334,14 +401,48 @@ class ShowProfesorHorario extends Component
                     ->sortByDesc('horarios_id') // Ordena por ID de horario descendente (más reciente primero)
                     ->first(); // Obtiene la primera (la más reciente con observación)
                 $observacion = $ultimaEvaluacionConObservacion?->observacion ?? ''; // Usa la última observación o default a vacío
+                $this->validados[$prospecto->prospectos_id] = false;
             }
 
             $this->observaciones[$prospecto->prospectos_id] = $observacion;
         }
 
         $this->diarios_horarios_id = $id;
+
+        $clasesPruebaConHorario = ClasePrueba::with('prospecto')
+            ->where('horarios_id', $horario->horarios_id)
+            ->where('estado', '!=', 'cancelada')
+            ->get();
+        $clasesPruebaSinHorario = ClasePrueba::with('prospecto')
+            ->whereNull('horarios_id')
+            ->where(function ($query) use ($horario) {
+                $query->where('grupo_id', $horario->grupo_id)
+                      ->orWhere('profesores_id', $horario->profesores_id);
+            })
+            ->whereDate('horarios_dia', $horario->horarios_dia)
+            ->where('horas_id', $horario->horas_id)
+            ->where('estado', '!=', 'cancelada')
+            ->get();
+        $this->clasesPrueba = $clasesPruebaConHorario->merge($clasesPruebaSinHorario)->unique('clase_prueba_id')->values();
+        $this->validadosPrueba = [];
+        foreach ($this->clasesPrueba as $clasePrueba) {
+            Log::info('Clase de prueba cargada en actualizar diario', [
+                'clase_prueba_id' => $clasePrueba->clase_prueba_id,
+                'prospectos_id' => $clasePrueba->prospectos_id,
+                'grupo_id' => $clasePrueba->grupo_id,
+                'horarios_id' => $clasePrueba->horarios_id,
+                'horarios_dia' => $clasePrueba->horarios_dia?->toDateString(),
+                'horas_id' => $clasePrueba->horas_id,
+            ]);
+            $this->asistenciasPrueba[$clasePrueba->clase_prueba_id] = $clasePrueba->asistio;
+            $this->observacionesPrueba[$clasePrueba->clase_prueba_id] = $clasePrueba->observacion;
+            $this->validadosPrueba[$clasePrueba->clase_prueba_id] = (bool) ($clasePrueba->validado ?? false);
+        }
+
         $this->diarios_hecho = $this->diario?->diarios_hecho ?? "";
         $this->diarios_porhacer = $this->diario?->diarios_porhacer ?? "";
+        $this->tematica = $this->diario?->tematica ?? "";
+        $this->numero_clases = $this->diario?->numero_clases ?? 0.5;
         $nivelesid = $grupo->nivel_id;
         $capitulos_id = $grupo->capitulo_id;
         $this->idnivel = $this->diario?->niveles_id ?? $nivelesid;
@@ -351,6 +452,7 @@ class ShowProfesorHorario extends Component
         // dd($this->id_capitulo,$this->idnivel);
 
         $grupoId = $horario->grupo_id;
+        $this->open_edit_plan = false;
         $this->open_edit_diario = true;
     }
 
@@ -361,58 +463,104 @@ class ShowProfesorHorario extends Component
             'diarios_porhacer'=>'required|min:15|max:550',
             'idnivel'=>'required',
             'id_capitulo'=>'required',
+            'tematica'=>'nullable|string|max:255',
+            'numero_clases'=>'nullable|numeric|min:0.5',
         ]);
 
-        // dd($this->idnivel,$this->id_capitulo);
-        // Guardar o actualizar las evaluaciones de los estudiantes
-        foreach ($this->estudiantes as $estudiante) {
-            $id = $estudiante->prospectos_id; // o $estudiante->prospectos_id si ese es el nombre real
+        try {
+            DB::beginTransaction();
 
-            // Toma los valores desde los arrays de inputs
-            $asistio = $this->asistencias[$id] ?? false;
-            $observacion = $this->observaciones[$id] ?? null;
+            foreach ($this->estudiantes as $estudiante) {
+                $id = $estudiante->prospectos_id; // o $estudiante->prospectos_id si ese es el nombre real
 
-            // Guarda o actualiza la evaluación del estudiante para este horario
-            Evaluacion::updateOrCreate(
-                [
-                    'prospectos_id' => $id,
+                // Toma los valores desde los arrays de inputs
+                $asistio = $this->asistencias[$id] ?? false;
+                $observacion = $this->observaciones[$id] ?? null;
+                $validado = $this->validados[$id] ?? false;
+
+                // Guarda o actualiza la evaluación del estudiante para este horario
+                Evaluacion::updateOrCreate(
+                    [
+                        'prospectos_id' => $id,
+                        'horarios_id' => $this->diarios_horarios_id,
+                    ],
+                    [
+                        'asistio' => $asistio,
+                        'observacion' => $observacion,
+                        'validado' => $validado,
+                    ]
+                );
+            }
+
+            // Guardar o actualizar el diario
+            if($this->diario){
+                $this->diario->horarios_id = $this->diarios_horarios_id;
+                $this->diario->diarios_hecho = $this->diarios_hecho;
+                $this->diario->diarios_porhacer = $this->diarios_porhacer;
+                $this->diario->niveles_id = $this->idnivel;
+                $this->diario->capitulos_id = $this->id_capitulo;
+                $this->diario->tematica = $this->tematica;
+                $this->diario->numero_clases = $this->numero_clases;
+                $this->diario->save();
+            } else {
+                $asistencia = Diario::create([
                     'horarios_id' => $this->diarios_horarios_id,
-                ],
-                [
-                    'asistio' => $asistio,
-                    'observacion' => $observacion,
-                ]
-            );
+                    'diarios_hecho' => $this->diarios_hecho,
+                    'diarios_porhacer' => $this->diarios_porhacer,
+                    'niveles_id' => $this->idnivel,
+                    'capitulos_id' => $this->id_capitulo,
+                    'tematica' => $this->tematica,
+                    'numero_clases' => $this->numero_clases
+                ]);
+                // Guardar el nivel y capítulo en la tabla de grupos
+                $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
+
+                $grupo = Grupo::find($horario->grupo_id);
+                $grupo->nivel_id = $this->idnivel;
+                $grupo->capitulo_id = $this->id_capitulo;
+                $grupo->save();
+            }
+
+            $horarioActual = Horario::find($this->diarios_horarios_id);
+
+            foreach ($this->clasesPrueba as $clasePrueba) {
+                $asistio = $this->asistenciasPrueba[$clasePrueba->clase_prueba_id] ?? null;
+                $estado = is_null($asistio) ? 'programada' : ((int) $asistio === 1 ? 'asistio' : 'falto');
+                $clasePrueba->asistio = is_null($asistio) ? null : (int) $asistio;
+                $clasePrueba->observacion = $this->observacionesPrueba[$clasePrueba->clase_prueba_id] ?? null;
+                $clasePrueba->estado = $estado;
+                $clasePrueba->validado = $this->validadosPrueba[$clasePrueba->clase_prueba_id] ?? false;
+
+                // Update class details from the schedule
+                if ($horarioActual) {
+                    $clasePrueba->horarios_id = $horarioActual->horarios_id;
+                    $clasePrueba->profesores_id = $horarioActual->profesores_id;
+                    $clasePrueba->espacios_id = $this->espacios_id;
+                    $clasePrueba->horarios_dia = $horarioActual->horarios_dia;
+                    $clasePrueba->horas_id = $horarioActual->horas_id;
+                    $clasePrueba->grupo_id = $horarioActual->grupo_id;
+                }
+
+                $clasePrueba->save();
+                Log::info('Asistencia clase de prueba actualizada', [
+                    'clase_prueba_id' => $clasePrueba->clase_prueba_id,
+                    'prospectos_id' => $clasePrueba->prospectos_id,
+                    'grupo_id' => $clasePrueba->grupo_id,
+                    'horarios_id' => $clasePrueba->horarios_id,
+                    'horarios_dia' => $clasePrueba->horarios_dia?->toDateString(),
+                    'horas_id' => $clasePrueba->horas_id,
+                ]);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error al guardar diario/evaluaciones/clases_prueba', ['error' => $e->getMessage()]);
+            $this->emit('alert', 'Ocurrió un error al guardar el diario y asistencias.', 'Error!', 'error');
+            return;
         }
 
-        // Guardar o actualizar el diario
-        if($this->diario){
-            $this->diario->horarios_id = $this->diarios_horarios_id;
-            $this->diario->diarios_hecho = $this->diarios_hecho;
-            $this->diario->diarios_porhacer = $this->diarios_porhacer;
-            $this->diario->niveles_id = $this->idnivel;
-            $this->diario->capitulos_id = $this->id_capitulo;
-            $this->diario->save();
-        } else {
-            $asistencia = Diario::create([
-                'horarios_id' => $this->diarios_horarios_id,
-                'diarios_hecho' => $this->diarios_hecho,
-                'diarios_porhacer' => $this->diarios_porhacer,
-                'niveles_id' => $this->idnivel,
-                'capitulos_id' => $this->id_capitulo
-            ]);
-            // Guardar el nivel y capítulo en la tabla de grupos
-            $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
-
-            $grupo = Grupo::find($horario->grupo_id);
-            $grupo->nivel_id = $this->idnivel;
-            $grupo->capitulo_id = $this->id_capitulo;
-            $grupo->save();
-        }
-
-
-
-        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo']);
+        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo','tematica','numero_clases','validados','validadosPrueba']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
     }
 
@@ -519,6 +667,16 @@ class ShowProfesorHorario extends Component
         if ($this->arr_capitulos->isEmpty()) {
             $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel");
         }
+    }
+
+    public function toggleValidado($studentId)
+    {
+        $this->validados[$studentId] = ! ($this->validados[$studentId] ?? false);
+    }
+
+    public function toggleValidadoPrueba($clasePruebaId)
+    {
+        $this->validadosPrueba[$clasePruebaId] = ! ($this->validadosPrueba[$clasePruebaId] ?? false);
     }
 
     public function scrollToBottom()

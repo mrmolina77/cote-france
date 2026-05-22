@@ -377,87 +377,129 @@
 
     <!-- Modales (copiados de show-horarios.blade.php con las mismas mejoras) -->
 
+    @if($open_edit_diario)
     <x-dialog-modal wire:model="open_edit_diario">
         <x-slot name="title">
             Actualizar diario
         </x-slot>
         <x-slot name="content">
+            <div class="space-y-5">
+                {{-- Info Bar: Profesor y Salón (Read-only para profesores) --}}
+                <div class="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-wrap items-center justify-start gap-8">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Profesor</span>
+                        <span class="text-sm font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">{{ $diarios_profesor }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Salón</span>
+                        <span class="text-sm font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">{{ $diarios_espacio }}</span>
+                    </div>
+                </div>
 
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Teacher')}}: " class="font-bold mr-4"/>
-                    <x-forms.label value="{{ $diarios_profesor}} "/> {{-- Añadido font-bold y margen --}}
-                    <x-forms.label value="{{__('Salon')}}: " class="font-bold"/>
-                    <x-forms.label value="{{ $diarios_espacio}} "/> {{-- Añadido font-bold --}}
+                {{-- Fila 1: Nivel y Capítulo --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <x-forms.label value="{{__('Level')}}" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="idnivel">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_niveles as $key => $item)
+                            <option value="{{$key}}">{{ucfirst($item)}} </option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                        <x-forms.input-error for="idnivel" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-forms.label value="{{__('Chapter')}}" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="id_capitulo">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_capitulos as $item)
+                            <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                        <x-forms.input-error for="id_capitulo" class="mt-1" />
+                    </div>
                 </div>
-                <div class="mb-4 flex">
-                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}: "/>
-                    <x-forms.textarea id="diarios_hecho" rows="3" class="flex-1 ml-4" wire:model="diarios_hecho">
+
+                {{-- Fila 2: Temática y Número de Clases --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <x-forms.label value="Temática" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-input class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="tematica" placeholder="Escribe la temática de la clase" />
+                        <x-forms.input-error for="tematica" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-forms.label value="N° de Clases" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-input type="number" step="0.5" min="0.5" class="w-full text-sm text-center rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="numero_clases" />
+                        <x-forms.input-error for="numero_clases" class="mt-1" />
+                    </div>
+                </div>
+
+                {{-- Hecho (Done) --}}
+                <div>
+                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                    <x-forms.textarea id="diarios_hecho" rows="3" class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="diarios_hecho" placeholder="¿Qué se logró en la clase?">
                     </x-forms.textarea>
+                    <x-forms.input-error for="diarios_hecho" class="mt-1"/>
                 </div>
-                <x-forms.input-error for="diarios_hecho"/>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('To do')}}: "/>
-                    <x-forms.textarea id="diarios_porhacer" rows="3" class="flex-1 ml-4" wire:model="diarios_porhacer">
+
+                {{-- Por hacer (To do) --}}
+                <div>
+                    <x-forms.label for="diarios_porhacer" value="{{__('To do')}}" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                    <x-forms.textarea id="diarios_porhacer" rows="3" class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="diarios_porhacer" placeholder="Tareas o temas pendientes para la siguiente clase">
                     </x-forms.textarea>
+                    <x-forms.input-error for="diarios_porhacer" class="mt-1"/>
                 </div>
-                <x-forms.input-error for="diarios_porhacer"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Level')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="idnivel">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_niveles as $key => $item)
-                        <option value="{{$key}}">{{ucfirst($item)}} </option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="idnivel"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Chapter')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="id_capitulo">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_capitulos as $item)
-                        <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="id_capitulo"/>
-            </div>
-            <div class="relative overflow-x-auto">
+                  {{-- Tabla de Estudiantes --}}
+            <div class="relative overflow-x-auto mt-6 border border-slate-100 rounded-xl">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                    <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-gray-700/50 dark:text-gray-400 border-b border-slate-200/60">
                         <tr>
-                            <th scope="col" class="px-6 py-3 rounded-s-lg w-1/2">
+                            <th scope="col" class="px-6 py-3.5 font-bold w-1/2">
                                 Estudiante
                             </th>
-                            <th scope="col" class="px-4 py-3 text-center">
+                            <th scope="col" class="px-4 py-3.5 text-center font-bold">
                                 Asistió
                             </th>
-                            <th scope="col" class="px-4 py-3 rounded-e-lg text-center">
+                            <th scope="col" class="px-4 py-3.5 text-center font-bold">
                                 Observación
+                            </th>
+                            <th scope="col" class="px-4 py-3.5 text-center font-bold">
+                                Validar
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-slate-100">
                         @foreach ($estudiantes as $estudiante)
-                            <tr class="bg-white dark:bg-gray-800">
-                                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white w-1/2">
+                            @php
+                                $isValidated = $validados[$estudiante->prospectos_id] ?? false;
+                            @endphp
+                            <tr class="transition-colors duration-200 {{ $isValidated ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
+                                <td class="px-6 py-4 font-semibold text-slate-700 whitespace-nowrap dark:text-white w-1/2">
                                     {{ $estudiante->prospectos_nombres }} {{ $estudiante->prospectos_apellidos }}
-                                </th>
-                                <td class="px-4 py-4 text-center">
-                                    <x-checkbox  wire:model="asistencias.{{ $estudiante->prospectos_id }}" />
                                 </td>
                                 <td class="px-4 py-4 text-center">
-                                    <x-input  wire:model="observaciones.{{ $estudiante->prospectos_id }}"
-                                            class="h-10 w-25 text-sm text-center" maxlength="255" />
+                                    <x-checkbox wire:model="asistencias.{{ $estudiante->prospectos_id }}" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
+                                </td>
+                                <td class="px-4 py-4 text-center">
+                                    <x-input wire:model="observaciones.{{ $estudiante->prospectos_id }}"
+                                             class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 px-3" placeholder="Nota o detalle" maxlength="255" />
+                                </td>
+                                <td class="px-4 py-4 text-center">
+                                    <button type="button" wire:click="toggleValidado({{ $estudiante->prospectos_id }})" class="inline-flex items-center justify-center p-1.5 rounded-lg transition-all duration-200 {{ $isValidated ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600' }}">
+                                        @if ($isValidated)
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                                            </svg>
+                                        @else
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                            </svg>
+                                        @endif
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
@@ -465,6 +507,59 @@
                 </table>
             </div>
 
+            {{-- Tabla de Clases de Prueba --}}
+            @if (count($clasesPrueba))
+            <div class="mt-6 border border-slate-100 rounded-xl overflow-hidden">
+                <div class="bg-slate-50 px-6 py-3 border-b border-slate-200/60">
+                    <h3 class="text-xs uppercase tracking-wider font-bold text-slate-500">Clases de prueba</h3>
+                </div>
+                <div class="relative overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50/50 border-b border-slate-200/60">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 font-bold">Prospecto</th>
+                                <th scope="col" class="px-4 py-3 text-center font-bold">Asistió</th>
+                                <th scope="col" class="px-4 py-3 text-center font-bold">No asistió</th>
+                                <th scope="col" class="px-4 py-3 font-bold">Observación</th>
+                                <th scope="col" class="px-4 py-3 text-center font-bold">Validar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach ($clasesPrueba as $clase)
+                                @php
+                                    $isValidatedPrueba = $validadosPrueba[$clase->clase_prueba_id] ?? false;
+                                @endphp
+                                <tr class="transition-colors duration-200 {{ $isValidatedPrueba ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
+                                    <td class="px-6 py-4 font-semibold text-slate-700 whitespace-nowrap">{{ $clase->prospecto?->prospectos_nombres }} {{ $clase->prospecto?->prospectos_apellidos }}</td>
+                                    <td class="px-4 py-4 text-center">
+                                        <input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="1" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="0" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <x-input wire:model="observacionesPrueba.{{$clase->clase_prueba_id}}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 px-3" placeholder="Nota de prueba"/>
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <button type="button" wire:click="toggleValidadoPrueba({{ $clase->clase_prueba_id }})" class="inline-flex items-center justify-center p-1.5 rounded-lg transition-all duration-200 {{ $isValidatedPrueba ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600' }}">
+                                            @if ($isValidatedPrueba)
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                </svg>
+                                            @endif
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit_diario',false)">
@@ -476,7 +571,9 @@
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
     </x-dialog-modal>
+    @endif
 
+    @if($open_edit_plan)
     <x-dialog-modal wire:model="open_edit_plan">
         <x-slot name="title">
             Actualizar plan
@@ -491,16 +588,29 @@
                     <div class="mb-6">
                         @php
                             $firstItem = $items[0] ?? null;
-                            $diarios_hecho = $firstItem['horario']['diario']['diarios_hecho'] ?? 'Sin descripción';
-                            $diarios_porhacer = $firstItem['horario']['diario']['diarios_porhacer'] ?? 'Sin descripción';
-                            $fecha = date('d-m-Y', strtotime($firstItem['horario']['horarios_dia']));
+                            $diario = $firstItem['horario']['diario'] ?? null;
+                            $diarios_hecho = $diario['diarios_hecho'] ?? 'Sin descripción';
+                            $diarios_porhacer = $diario['diarios_porhacer'] ?? 'Sin descripción';
+                            $fecha = isset($firstItem['horario']['horarios_dia']) ? date('d-m-Y', strtotime($firstItem['horario']['horarios_dia'])) : '';
                             $profesor = ($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '');
-                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'];
+                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'] ?? 'N/A';
+                            $tematica = $diario['tematica'] ?? '';
+                            $numero_clases = $diario['numero_clases'] ?? '';
                         @endphp
 
                         <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
                         <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Salón: {{ $espacio }} </p>
 
+                        @if ($tematica)
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
+                            Temática: {{ $tematica }}
+                        </p>
+                        @endif
+                        @if ($numero_clases)
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
+                            Número de clases: {{ $numero_clases }}
+                        </p>
+                        @endif
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
                             Hecho: {{ $diarios_hecho }}
                         </p>
@@ -508,7 +618,7 @@
                             Por hacer: {{ $diarios_porhacer }}
                         </p>
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Nivel: {{ $arr_niveles[$firstItem['horario']['diario']['niveles_id']] ?? '' }} - Capitulo: {{ $arr_capitulos2[$firstItem['horario']['diario']['capitulos_id']] ?? '' }}
+                            Nivel: {{ $diario ? ($arr_niveles[$diario['niveles_id']] ?? '') : '' }} - Capitulo: {{ $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? '') : '' }}
                         </p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -521,14 +631,29 @@
                             </thead>
                             <tbody>
                                 @foreach($items as $eval)
-                                    <tr class="bg-white dark:bg-gray-800 border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
-                                            {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
-                                            {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
-                                        </td>
-                                        <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
-                                        <td class="px-4 py-2">{{ $eval['observacion'] }}</td>
-                                    </tr>
+                                    @if(isset($eval['is_dummy']) && $eval['is_dummy'])
+                                        <tr class="bg-white dark:bg-gray-800 border-b">
+                                            <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">
+                                                Sin registros de asistencia guardados
+                                            </td>
+                                        </tr>
+                                    @else
+                                        <tr class="bg-white dark:bg-gray-800 border-b">
+                                            <td class="px-4 py-2 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                <span>
+                                                    {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
+                                                    {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
+                                                </span>
+                                                @if (isset($eval['clase_prueba_id']))
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                                        Prueba
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
+                                            <td class="px-4 py-2">{{ $eval['observacion'] }}</td>
+                                        </tr>
+                                    @endif
                                 @endforeach
                             </tbody>
                         </table>
@@ -543,5 +668,6 @@
             </x-forms.red-button>
         </x-slot>
     </x-dialog-modal>
+    @endif
 
 </div>

@@ -2,7 +2,7 @@
 
 namespace App\Http\Livewire;
 
-use App\Models\Asistencia;
+use App\Models\ClasePrueba;
 use Livewire\Component;
 use App\Models\Prospecto;
 use App\Notifications\ClassReminder;
@@ -19,9 +19,8 @@ class ShowProgramadas extends Component
     public $cant = 50;
     public $readyToLoad = false;
     public $open_edit = false;
-    public $asistencia;
-
-    public $prospectos_id,$asistencias,$asistencias_fecha;
+    public $clase_prueba_id;
+    public $asistencias, $asistencias_fecha;
 
     public function mount(){
         $this->readyToLoad = true;
@@ -44,38 +43,40 @@ class ShowProgramadas extends Component
             //                        ->orderBy($this->sort,$this->direction)
             //                        ->paginate($this->cant);
 
-            $prospectos = DB::table('prospectos')
-                        ->select('prospectos.prospectos_id','prospectos_nombres','prospectos_apellidos','prospectos_telefono1','prospectos_correo'
-                        ,'origenes_descripcion','estatus_descripcion','asistencias','horas_desde','horarios_dia')
+            $prospectos = DB::table('clases_prueba')
+                        ->select(
+                            'clases_prueba.clase_prueba_id',
+                            'clases_prueba.prospectos_id',
+                            'clases_prueba.horarios_dia',
+                            'clases_prueba.asistio as asistencias',
+                            'prospectos.prospectos_nombres',
+                            'prospectos.prospectos_apellidos',
+                            'prospectos.prospectos_telefono1',
+                            'prospectos.prospectos_correo',
+                            'horas.horas_desde',
+                            'origenes.origenes_descripcion'
+                        )
+                        ->join('prospectos','clases_prueba.prospectos_id','=','prospectos.prospectos_id')
+                        ->leftJoin('horas','clases_prueba.horas_id','=','horas.horas_id')
                         ->leftJoin('origenes','prospectos.origenes_id','=','origenes.origenes_id')
-                        ->leftJoin('estatus','prospectos.estatus_id','=','estatus.estatus_id')
-                        ->leftJoin('grupos','grupos.grupo_id','=','prospectos.grupo_id')
-                        ->leftJoin('horarios','horarios.horarios_id','=','prospectos.horarios_id')
-                        ->leftJoin('profesores','profesores.profesores_id','=','horarios.profesores_id')
-                        ->leftJoin('horas','horas.horas_id','=','horarios.horas_id')
-                        ->leftJoin('asistencias', 'prospectos.prospectos_id', '=', 'asistencias.prospectos_id')
-                        ->whereNotNull('grupos.grupo_id')
-                        ->where('prospectos.seguimientos_id',2)
+                        ->whereNull('clases_prueba.deleted_at')
                         ->where(function ($query) {
                             $query->orWhere('prospectos.prospectos_nombres','like','%'.trim($this->search).'%')
                                   ->orWhere('prospectos.prospectos_apellidos','like','%'.trim($this->search).'%')
-                                  ->orWhere(DB::raw('DATE_FORMAT(horarios.horarios_dia,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
+                                  ->orWhere(DB::raw('DATE_FORMAT(clases_prueba.horarios_dia,"%d-%m-%Y")'),'like','%'.trim($this->search).'%')
                                   ->orWhere('horas.horas_desde','like','%'.trim($this->search).'%')
                                   ->orWhere('origenes.origenes_descripcion','like','%'.trim($this->search).'%');
                         })
-                        ->where(function ($query) {
-                            $query->whereNull('asistencias')
-                                  ->orWhere('asistencias','2');
-                        })
+                        ->whereNull('clases_prueba.asistio')
                         ->orderBy($this->sort,$this->direction)
                         ->paginate($this->cant);
         } else {
             $prospectos = array();
         }
 
-        $sel_asistencias[2] = 'En espera';
-        $sel_asistencias[0] = 'No asistio';
-        $sel_asistencias[1] = 'Asistio';
+        $sel_asistencias[''] = 'En espera';
+        $sel_asistencias[0] = 'No asistió';
+        $sel_asistencias[1] = 'Asistió';
 
         return view('livewire.show-programadas',['prospectos'=>$prospectos
                                               ,'sel_asistencias'=>$sel_asistencias]);
@@ -99,43 +100,67 @@ class ShowProgramadas extends Component
     }
 
     public function edit($id){
-        $prospecto = Prospecto::find($id);
-        $this->asistencia = Asistencia::where('prospectos_id',$id)->first();
-        $this->prospecto = $prospecto;
-        if($this->asistencia){
-            $this->prospectos_id = $this->asistencia->prospectos_id;
-            $this->asistencias = $this->asistencia->asistencias;
-            $this->asistencias_fecha = $this->asistencia->asistencias_fecha ;
-        } else {
-            $this->prospectos_id = $id;
-            $this->asistencias = 2;
-            $this->asistencias_fecha = date('Y-m-d');
+        $clase = ClasePrueba::find($id);
+        if($clase) {
+            $this->prospecto = $clase->prospecto;
+            $this->clase_prueba_id = $id;
+            $this->asistencias = is_null($clase->asistio) ? '' : $clase->asistio;
+            $this->asistencias_fecha = $clase->horarios_dia ? $clase->horarios_dia->format('Y-m-d') : date('Y-m-d');
         }
         $this->open_edit = true;
     }
 
     public function update(){
-        if($this->asistencia){
-            $this->asistencia->prospectos_id = $this->prospectos_id;
-            $this->asistencia->asistencias = $this->asistencias;
-            $this->asistencia->asistencias_fecha = $this->asistencias_fecha;
-            $this->asistencia->save();
-        } else {
-            $asistencia = Asistencia::create([
-                'prospectos_id' => $this->prospectos_id,
-                'asistencias' => $this->asistencias,
-                'asistencias_fecha' => $this->asistencias_fecha,
-            ]);
+        $clase = ClasePrueba::find($this->clase_prueba_id);
+        if($clase){
+            $asistio_val = $this->asistencias === '' ? null : $this->asistencias;
+            $clase->asistio = $asistio_val;
+            $clase->estado = is_null($asistio_val) ? 'programada' : ((int) $asistio_val === 1 ? 'asistio' : 'falto');
+            if ($this->asistencias_fecha) {
+                $clase->horarios_dia = $this->asistencias_fecha;
+            }
+            $clase->save();
         }
-        $this->reset(['open_edit','prospectos_id','asistencias','asistencias_fecha']);
+        $this->reset(['open_edit','clase_prueba_id','asistencias','asistencias_fecha']);
         $this->emit('alert','La asistencia fue actualización satisfactoriamente');
 
     }
 
     public function notification($id){
-        $prospecto = Prospecto::find($id);
-        $prospecto->notify(new ClassReminder($prospecto));
-        $this->emit('alert','La notificación fue enviada satisfactoriamente');
+        $clase = ClasePrueba::find($id);
+        if ($clase) {
+            // Resolve relationships from horario/grupo if they are null on the ClasePrueba itself
+            if (!$clase->profesor && $clase->horario) {
+                $clase->setRelation('profesor', $clase->horario->profesor);
+            }
+            if (!$clase->espacio && $clase->horario) {
+                $clase->setRelation('espacio', $clase->horario->espacio);
+            }
+            if (!$clase->hora && $clase->horario) {
+                $clase->setRelation('hora', $clase->horario->hora);
+            }
+            if (!$clase->modalidad) {
+                if ($clase->grupo) {
+                    $clase->setRelation('modalidad', $clase->grupo->modalidad);
+                } elseif ($clase->horario && $clase->horario->grupo) {
+                    $clase->setRelation('modalidad', $clase->horario->grupo->modalidad);
+                }
+            }
+
+            $prospecto = $clase->prospecto;
+            if ($prospecto && $prospecto->prospectos_correo) {
+                $prospecto->notify(new ClassReminder($clase));
+            }
+
+            $profesor = $clase->profesor;
+            if ($profesor && $profesor->profesores_email) {
+                $profesor->notify(new \App\Notifications\TeacherClassReminder($clase));
+            }
+
+            $this->emit('alert','La notificación fue enviada satisfactoriamente');
+        } else {
+            $this->emit('alert','Error: Clase de prueba no encontrada','Error!','error');
+        }
     }
 
 }

@@ -54,8 +54,38 @@ class CreateProspect extends Component
         $this->horarios = collect([]);
     }
 
+    public function updatedProspectosClaseFecha($value)
+    {
+        $this->prospectos_clase_hora = null;
+        $this->grupoid = null;
+    }
+
+    public function updatedProspectosClaseHora($value)
+    {
+        $this->grupoid = null;
+    }
+
     public function save(){
         $this->validate();
+
+        if ($this->seguimientos_id == 2) {
+            if (empty($this->prospectos_clase_fecha)) {
+                $this->addError('prospectos_clase_fecha', "La fecha es obligatoria");
+            }
+            if (empty($this->prospectos_clase_hora)) {
+                $this->addError('prospectos_clase_hora', "La hora es obligatoria");
+            }
+            if (empty($this->grupoid)) {
+                $this->addError('grupoid', "El grupo es obligatorio");
+            }
+            if (empty($this->modalidad_id)) {
+                $this->addError('modalidad_id', "La modalidad es obligatoria");
+            }
+            if ($this->getErrorBag()->any()) {
+                return;
+            }
+        }
+
         if ($this->seguimientos_id == 8 and ($this->grupoid == null or $this->cursos_id == null)){
             if ($this->cursos_id == null)
                 $this->addError('cursos_id', "El curso es obligatorio");
@@ -84,16 +114,31 @@ class CreateProspect extends Component
                 $prospecto->prospectos_comentarios = $this->prospectos_comentarios;
                 $prospecto->prospectos_fecha = $this->prospectos_fecha;
                 $prospecto->save();
-                if ($this->seguimientos_id == 2 and $this->horarios_id != null){
-                    $horario = Horario::find($this->horarios_id);
-                    $profesor = Profesor::find($horario->profesores_id);
+                if ($this->seguimientos_id == 2){
+                    \App\Models\ClasePrueba::create([
+                        'prospectos_id' => $prospecto->prospectos_id,
+                        'grupo_id' => $this->grupoid,
+                        'horarios_dia' => $this->prospectos_clase_fecha,
+                        'horas_id' => $this->prospectos_clase_hora,
+                        'modalidad_id' => $this->modalidad_id,
+                    ]);
 
-                    $datos = ['nombre'=>$this->prospectos_nombres.' '.$this->prospectos_apellidos,
-                              'hora'=>$horario->hora->horas_desde,
-                              'prospectos_telefono'=>$this->prospectos_telefono1,
-                              'fecha'=>$horario->horarios_dia,
-                              'prospectos_correo'=>$this->prospectos_correo];
-                    $profesor->notify(new ClassCreated($datos));
+                    $horario = Horario::where('grupo_id', $this->grupoid)
+                        ->whereDate('horarios_dia', $this->prospectos_clase_fecha)
+                        ->where('horas_id', $this->prospectos_clase_hora)
+                        ->first();
+
+                    if ($horario && $horario->profesores_id) {
+                        $profesor = Profesor::find($horario->profesores_id);
+                        if ($profesor) {
+                            $datos = ['nombre'=>$this->prospectos_nombres.' '.$this->prospectos_apellidos,
+                                      'hora'=>$horario->hora->horas_desde,
+                                      'prospectos_telefono'=>$this->prospectos_telefono1,
+                                      'fecha'=>$horario->horarios_dia,
+                                      'prospectos_correo'=>$this->prospectos_correo];
+                            $profesor->notify(new ClassCreated($datos));
+                        }
+                    }
                 }
 
                 if ($this->seguimientos_id == 8 and $this->grupoid != null){
@@ -129,12 +174,65 @@ class CreateProspect extends Component
         $grupos = Grupo::all();
         $modalidades = Modalidad::all();
         $cursos = Curso::all();
+
+        $lista_horas = collect([]);
+        if ($this->prospectos_clase_fecha) {
+            $dayOfWeek = \Carbon\Carbon::parse($this->prospectos_clase_fecha)->dayOfWeekIso;
+            if ($dayOfWeek >= 1 && $dayOfWeek <= 5) {
+                $lista_horas = \App\Models\Hora::where('tipo', 1)->get();
+            } elseif ($dayOfWeek == 6) {
+                $lista_horas = \App\Models\Hora::where('tipo', 2)->get();
+            }
+        }
+
+        $lista_grupos = collect([]);
+        if ($this->prospectos_clase_hora && $this->prospectos_clase_fecha) {
+            $fecha = \Carbon\Carbon::parse($this->prospectos_clase_fecha);
+            $inicioSemana = $fecha->copy()->startOfWeek()->toDateString();
+            $activeWeek = \App\Models\ActiveWeek::where('start_date', $inicioSemana)->first();
+            $is_active = $activeWeek ? $activeWeek->is_active : false;
+
+            if ($is_active) {
+                $gruposIds = \App\Models\Horario::whereDate('horarios_dia', $this->prospectos_clase_fecha)
+                    ->where('horas_id', $this->prospectos_clase_hora)
+                    ->pluck('grupo_id');
+            } else {
+                $fechaStr = $fecha->toDateString();
+                $dayOfWeek = $fecha->dayOfWeekIso;
+
+                $horarioIds = \App\Models\Horario::whereDate('horarios_dia', $fechaStr)
+                    ->where('horas_id', $this->prospectos_clase_hora)
+                    ->pluck('grupo_id');
+
+                $inactivos = \App\Models\GrupoInactivo::where('fecha', $fechaStr)
+                    ->where('horas_id', $this->prospectos_clase_hora)
+                    ->pluck('grupo_id');
+
+                $detallesIds = \App\Models\GruposDetalles::join('grupos', 'grupos.grupo_id', '=', 'grupos_detalles.grupo_id')
+                    ->where('grupos.estado_id', 1)
+                    ->where('grupos_detalles.dias_id', $dayOfWeek)
+                    ->where('grupos_detalles.horas_id', $this->prospectos_clase_hora)
+                    ->where(function($q) use ($fechaStr) {
+                        $q->whereNull('grupos.fecha_inicio')
+                          ->orWhereDate('grupos.fecha_inicio', '<=', $fechaStr);
+                    })
+                    ->whereNotIn('grupos_detalles.grupo_id', $inactivos)
+                    ->pluck('grupos_detalles.grupo_id');
+
+                $gruposIds = $horarioIds->merge($detallesIds)->unique();
+            }
+            
+            $lista_grupos = \App\Models\Grupo::whereIn('grupo_id', $gruposIds)->orderBy('grupo_nombre')->get();
+        }
+
         return view('livewire.create-prospect',['origenes'=>$origenes
                                                ,'seguimientos'=>$seguimientos
                                                ,'grupos'=>$grupos
                                                ,'modalidades'=>$modalidades
                                                ,'cursos'=>$cursos
-                                               ,'estatus'=>$estatus]);
+                                               ,'estatus'=>$estatus
+                                               ,'lista_horas'=>$lista_horas
+                                               ,'lista_grupos'=>$lista_grupos]);
     }
 
     public function updatedGrupoid($grupo_id){

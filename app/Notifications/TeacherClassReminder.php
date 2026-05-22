@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ClassReminder extends Notification
+class TeacherClassReminder extends Notification
 {
     use Queueable;
 
@@ -20,7 +20,6 @@ class ClassReminder extends Notification
      */
     public function __construct($clasePrueba)
     {
-        //
         $this->clasePrueba = $clasePrueba;
     }
 
@@ -43,20 +42,27 @@ class ClassReminder extends Notification
      */
     public function toMail($notifiable)
     {
+        $profesor = $this->clasePrueba->profesor;
         $prospecto = $this->clasePrueba->prospecto;
         $fecha = \Carbon\Carbon::parse($this->clasePrueba->horarios_dia)->format('d-m-Y');
         $hora = $this->clasePrueba->hora ? $this->clasePrueba->hora->horas_desde : 'N/A';
+        $modalidad = $this->clasePrueba->modalidad ? $this->clasePrueba->modalidad->modalidad_nombre : 'N/A';
+        $espacio = $this->clasePrueba->espacio ? $this->clasePrueba->espacio->espacios_nombre : 'N/A';
+
+        $nombreProfesor = $profesor ? ($profesor->profesores_nombres . ' ' . $profesor->profesores_apellidos) : 'Profesor';
+        $nombreProspecto = $prospecto ? ($prospecto->prospectos_nombres . ' ' . $prospecto->prospectos_apellidos) : 'Estudiante';
 
         return (new MailMessage)
-                    ->greeting('Hola '.$prospecto->prospectos_nombres.' '.$prospecto->prospectos_apellidos.':')
-                    ->line('Te recordamos que tienes una clase de prueba programada con nosotros el dia '
-                           .$fecha
-                           .' a las '.$hora)
-                    ->line('En esta sesión, tendrás la oportunidad de conocer el contenido y la dinámica de nuestras clases, resolver dudas y confirmar si este es el curso adecuado para ti.')
-                    ->line('Por favor, asegúrate de estar listo/a unos minutos antes para aprovechar al máximo el tiempo de la sesión.')
-                    ->line('Si tienes alguna pregunta o necesitas reprogramar la clase, no dudes en contactarnos.')
-                    ->line('¡Nos vemos pronto!')
-                    ->line('Saludos cordiales,');
+                    ->subject('Recordatorio de Clase de Prueba - ' . $nombreProspecto)
+                    ->greeting('Hola ' . $nombreProfesor . ':')
+                    ->line('Te recordamos que tienes una clase de prueba programada para mañana con el alumno ' . $nombreProspecto . '.')
+                    ->line('Detalles de la clase de prueba:')
+                    ->line('• Fecha: ' . $fecha)
+                    ->line('• Hora: ' . $hora)
+                    ->line('• Modalidad: ' . $modalidad)
+                    ->line('• Espacio/Aula: ' . $espacio)
+                    ->line('Por favor, asegúrate de estar disponible unos minutos antes para recibir al alumno.')
+                    ->line('¡Muchas gracias por tu compromiso!');
     }
 
     /**

@@ -70,32 +70,39 @@
             </div>
             @if ($seguimientos_id === '2')
                 <div>
+                    <div class="mb-4 flex">
+                        <x-forms.label value="{{__('Date')}}: " required />
+                        <x-forms.input type="date" class="flex-1 ml-4" wire:model="prospectos_clase_fecha"/>
+                    </div>
+                    <x-forms.input-error for="prospectos_clase_fecha"/>
+                </div>
+                <div>
                     <div class="mb-4 flex" >
-                        <x-forms.label value="{{__('Group')}}: " />
+                        <x-forms.label value="{{__('Timetable')}}: " required />
+                        <x-select class="flex-1 ml-4" wire:model="prospectos_clase_hora">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($lista_horas as $item)
+                            <option value="{{$item->horas_id}}">{{$item->horas_desde}} - {{$item->horas_hasta}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                    </div>
+                    <x-forms.input-error for="prospectos_clase_hora"/>
+                </div>
+                <div>
+                    <div class="mb-4 flex" >
+                        <x-forms.label value="{{__('Group')}}: " required />
                         <x-select class="flex-1 ml-4" wire:model="grupoid">
                             <option value="">{{__('Select')}}</option>
-                            @forelse ($grupos as $item)
+                            @forelse ($lista_grupos as $item)
                             <option value="{{$item->grupo_id}}">{{$item->grupo_nombre}}</option>
                             @empty
                             <option value="">{{__('No Content')}}</option>
                             @endforelse
                         </x-select>
                     </div>
-                    <x-forms.input-error for="grupo_id"/>
-                </div>
-                <div>
-                    <div class="mb-4 flex" >
-                        <x-forms.label value="{{__('Timetable')}}: " />
-                        <x-select class="flex-1 ml-4" wire:model="horarios_id">
-                            <option value="">{{__('Select')}}</option>
-                            @forelse ($horarios as $item)
-                            <option value="{{$item->horarios_id}}">{{\Carbon\Carbon::parse($item->horarios_dia)->format('d-m-Y')}} {{$item->hora->horas_desde}} {{$item->hora->horas_hasta}}</option>
-                            @empty
-                            <option value="">{{__('No Content')}}</option>
-                            @endforelse
-                        </x-select>
-                    </div>
-                    <x-forms.input-error for="estatus_id"/>
+                    <x-forms.input-error for="grupoid"/>
                 </div>
             @elseif ($seguimientos_id === '8')
             <div>
