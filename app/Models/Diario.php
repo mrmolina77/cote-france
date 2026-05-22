@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Tematica;
 // use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +16,7 @@ class Diario extends Model
     */
    protected $table = 'diarios';
 
-   protected $fillable = ['horarios_id','diarios_hecho','diarios_porhacer','niveles_id','capitulos_id','tematica','numero_clases'];
+   protected $fillable = ['horarios_id','diarios_hecho','diarios_porhacer','niveles_id','capitulos_id','tematica_id'];
 
    /**
     * The primary key associated with the table.
@@ -29,5 +30,10 @@ class Diario extends Model
         return $this->hasOne(Diario::class, 'horarios_id', 'horarios_id');
     }
 
+
+   public function tematica()
+    {
+        return $this->belongsTo(Tematica::class, 'tematica_id', 'tematica_id');
+    }
 
 }
