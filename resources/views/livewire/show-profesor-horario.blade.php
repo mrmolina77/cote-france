@@ -574,6 +574,8 @@
                             $numero_clases = $diario['numero_clases'] ?? '';
                             $nivel = $diario ? ($arr_niveles[$diario['niveles_id']] ?? 'Sin cargar') : 'Sin cargar';
                             $capitulo = $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? 'Sin cargar') : 'Sin cargar';
+                            $regulares = collect($items)->filter(fn($eval) => !isset($eval['is_dummy']) && !isset($eval['clase_prueba_id']));
+                            $pruebas = collect($items)->filter(fn($eval) => isset($eval['clase_prueba_id']));
                         @endphp
 
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha ?: 'Sin cargar' }}</p>
@@ -593,14 +595,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($items as $eval)
-                                    @if(isset($eval['is_dummy']) && $eval['is_dummy'])
-                                        <tr class="bg-white dark:bg-gray-800 border-b">
-                                            <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">
-                                                Sin registros de asistencia guardados
-                                            </td>
-                                        </tr>
-                                    @else
+                                @forelse($regulares as $eval)
                                         <tr class="bg-white dark:bg-gray-800 border-b">
                                             <td class="px-4 py-2 font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                                 <span>
@@ -616,10 +611,30 @@
                                             <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
                                             <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
                                         </tr>
-                                    @endif
-                                @endforeach
+                                @empty
+                                    <tr class="bg-white dark:bg-gray-800 border-b">
+                                        <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">Sin registros de asistencia guardados</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
+                        @if($pruebas->isNotEmpty())
+                            <h4 class="mt-4 mb-2 text-sm font-bold text-gray-700 dark:text-gray-100">Clases de prueba</h4>
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                                <tr><th class="px-4 py-2">Estudiante / Prospecto</th><th class="px-4 py-2">Asistencia</th><th class="px-4 py-2">Observación</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($pruebas as $eval)
+                                    <tr class="bg-white dark:bg-gray-800 border-b">
+                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ ($eval['prospecto']['prospectos_nombres'] ?? 'Sin cargar') . ' ' . ($eval['prospecto']['prospectos_apellidos'] ?? '') }} <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800">Prueba</span></td>
+                                        <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                        <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @endif
                     </div>
                 @endforeach
             </div>
