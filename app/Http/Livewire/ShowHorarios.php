@@ -44,6 +44,7 @@ class ShowHorarios extends Component
     public $id_tematica;
     public $diarios_profesor = '';
     public $diarios_espacio = '';
+    public $diario_contexto = '';
     public $espacios;
     public $arr_tematicas;
     public $semana_activa = false;
@@ -668,6 +669,11 @@ class ShowHorarios extends Component
 
         $horario = Horario::where('horarios_id',$id)->first();
         $this->diarios_profesor = $horario->profesor->profesores_nombres .' '.$horario->profesor->profesores_apellidos;
+        $grupoNombre = $horario->grupo?->grupo_nombre ?? 'Sin grupo';
+        $fechaClase = Carbon::parse($horario->horarios_dia)->format('d/m/Y');
+        $horaDesde = $horario->hora?->horas_desde ? Carbon::parse($horario->hora->horas_desde)->format('H:i') : '--:--';
+        $horaHasta = $horario->hora?->horas_hasta ? Carbon::parse($horario->hora->horas_hasta)->format('H:i') : '--:--';
+        $this->diario_contexto = "Grupo {$grupoNombre} | {$fechaClase} | {$horaDesde} - {$horaHasta}";
         $this->espacios_id = $horario->espacios_id;
 
         $grupoId = $horario->grupo_id;
