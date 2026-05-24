@@ -16,6 +16,7 @@ use App\Models\Horario;
 use App\Models\Nivel;
 use App\Models\Profesor;
 use App\Models\Prospecto;
+use App\Models\Tematica;
 use App\Models\BloqueosProfesores;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -39,9 +40,11 @@ class ShowHorarios extends Component
     public $arr_niveles, $arr_capitulos2;
     public $idnivel, $id_espacios;
     public $id_capitulo;
+    public $id_tematica;
     public $diarios_profesor = '';
     public $diarios_espacio = '';
     public $espacios;
+    public $arr_tematicas;
     public $semana_activa = false;
     // $asistencias;
     // public $estudiantes;
@@ -69,6 +72,7 @@ class ShowHorarios extends Component
         $this->fecha = Carbon::now();
         $this->ydiario = $this->fecha->isoFormat('Y-MM-DD');
         $this->arr_capitulos = collect([]);
+        $this->arr_tematicas = collect([]);
         $this->porcentajes[]="100%";
         $this->porcentajes[]="95%";
         $this->porcentajes[]="90%";
@@ -85,6 +89,7 @@ class ShowHorarios extends Component
         $this->modalidad = $modalidad;
         $this->estudiantes = collect([]);
         $this->arr_capitulos = collect([]);
+        $this->arr_tematicas = collect([]);
         $this->arr_niveles = Nivel::all()->pluck('nivel_descripcion','nivel_id');
         $this->espacios = Espacio::all();
 
@@ -666,6 +671,11 @@ class ShowHorarios extends Component
         $this->idnivel = $this->diario?->niveles_id ?? $nivelesid;
         $this->arr_capitulos = Capitulo::where('nivel_id', $this->idnivel)->get();
         $this->id_capitulo = $this->diario?->capitulos_id ?? $capitulos_id;
+        $this->arr_tematicas = Tematica::where('capitulo_id', $this->id_capitulo)
+            ->where('tematica_activo', true)
+            ->orderBy('tematica_descripcion')
+            ->get();
+        $this->id_tematica = $this->diario?->tematica_id;
 
         // dd($this->id_capitulo,$this->idnivel);
 
@@ -682,6 +692,7 @@ class ShowHorarios extends Component
                 'diarios_porhacer'=>'required|min:15|max:550',
                 'idnivel'=>'required',
                 'id_capitulo'=>'required',
+                'id_tematica'=>'required',
             ]);
 
             foreach ($this->estudiantes as $estudiante) {
@@ -711,6 +722,7 @@ class ShowHorarios extends Component
             $this->diario->diarios_porhacer = $this->diarios_porhacer;
             $this->diario->niveles_id = $this->idnivel;
             $this->diario->capitulos_id = $this->id_capitulo;
+            $this->diario->tematica_id = $this->id_tematica;
             $this->diario->save();
             } else {
             $asistencia = Diario::create([
@@ -718,7 +730,8 @@ class ShowHorarios extends Component
                 'diarios_hecho' => $this->diarios_hecho,
                 'diarios_porhacer' => $this->diarios_porhacer,
                 'niveles_id' => $this->idnivel,
-                'capitulos_id' => $this->id_capitulo
+                'capitulos_id' => $this->id_capitulo,
+                'tematica_id' => $this->id_tematica
             ]);
             // Guardar el nivel y capítulo en la tabla de grupos
             $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
@@ -757,7 +770,7 @@ class ShowHorarios extends Component
             return;
         }
 
-        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo']);
+        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo','id_tematica']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
     }
 
@@ -1074,8 +1087,22 @@ class ShowHorarios extends Component
     public function updatedidnivel($idnivel){
 
         $this->arr_capitulos = Capitulo::where('nivel_id',$idnivel)->get();
+        $this->id_tematica = null;
+        $this->arr_tematicas = collect([]);
         if ($this->arr_capitulos->isEmpty()) {
             $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel") ;
+        }
+    }
+
+    public function updatedIdCapitulo($capituloId)
+    {
+        $this->arr_tematicas = Tematica::where('capitulo_id', $capituloId)
+            ->where('tematica_activo', true)
+            ->orderBy('tematica_descripcion')
+            ->get();
+
+        if (! $this->arr_tematicas->pluck('tematica_id')->contains($this->id_tematica)) {
+            $this->id_tematica = null;
         }
     }
 
