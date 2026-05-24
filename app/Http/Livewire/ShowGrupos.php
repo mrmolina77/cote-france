@@ -318,24 +318,14 @@ class ShowGrupos extends Component
     }
 
     public function updatedhorasid($horasid){
-        $espacios_registrados = GruposDetalles::where('horas_id', $horasid)
-            ->where('dias_id', $this->diasid)
-            ->whereNotNull('espacios_id')
-            ->pluck('espacios_id');
-        $this->espacios = Espacio::whereNotIn('espacios_id', $espacios_registrados)
-            ->where('espacios_id', '>', 0)
-            ->get();
+        $espacios_registrados = GruposDetalles::where('horas_id',$horasid)->where('dias_id',$this->dias_id)->pluck('espacios_id');
+        $this->espacios = Espacio::wherenotIn('espacios_id',$espacios_registrados)->where('espacios_id','>',0)->get();
         if ($this->espacios->isEmpty()) {
             $this->addError('espacios_id', "No hay salones disponibles para esta hora") ;
         }
     }
 
     public function updatedidnivel($idnivel){
-
-        if ($this->grupo) {
-            $this->grupo->nivel_id = $idnivel;
-            $this->grupo->capitulo_id = null;
-        }
 
         $this->arr_capitulos = Capitulo::where('nivel_id',$idnivel)->get();
         if ($this->arr_capitulos->isEmpty()) {
