@@ -326,11 +326,28 @@ class ShowGrupos extends Component
     }
 
     public function updatedidnivel($idnivel){
-
+        $this->grupo->nivel_id = $idnivel;
         $this->arr_capitulos = Capitulo::where('nivel_id',$idnivel)->get();
+        if ($this->arr_capitulos->isNotEmpty()) {
+            $this->grupo->capitulo_id = $this->arr_capitulos->first()->capitulo_id;
+        }
         if ($this->arr_capitulos->isEmpty()) {
             $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel") ;
         }
+    }
+
+    public function updatedGrupoEsEvento($value)
+    {
+        if (! $value) {
+            return;
+        }
+
+        $this->grupo->grupo_libro_maestro = null;
+        $this->grupo->grupo_libro_alumno = null;
+
+        $niveles = Nivel::orderBy('nivel_id')->get();
+        $this->nivelid = optional($niveles->first())->nivel_id;
+        $this->updatedidnivel($this->nivelid);
     }
 
     public function updateddiasid($diasid){
