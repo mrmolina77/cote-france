@@ -34,8 +34,8 @@ class ShowGrupos extends Component
 
     protected $rules = [
         'grupo.grupo_nombre'=>'required|min:3|max:50',
-        'grupo.nivel_id'=>'required',
-        'grupo.capitulo_id'=>'required',
+        'grupo.nivel_id'=>'nullable',
+        'grupo.capitulo_id'=>'nullable',
         'grupo.grupo_libro_maestro'=>'nullable|min:7|max:255',
         'grupo.grupo_libro_alumno'=>'nullable|min:7|max:255',
         'grupo.grupo_observacion'=>'nullable|min:7|max:255',
@@ -128,6 +128,7 @@ class ShowGrupos extends Component
         $this->nivelid = $grupo->nivel_id;
         $this->grupo = $grupo;
         $this->arr_capitulos = Capitulo::where('nivel_id',$grupo->nivel_id)->get();
+        $this->applyEventoDefaultsIfNeeded();
 
         $this->open_edit = true;
     }
@@ -135,6 +136,18 @@ class ShowGrupos extends Component
     public function update(){
         DB::beginTransaction();
         try {
+            $this->applyEventoDefaultsIfNeeded();
+            $this->validate([
+                'grupo.grupo_nombre' => 'required|min:3|max:50',
+                'grupo.nivel_id' => $this->grupo->es_evento ? 'nullable' : 'required',
+                'grupo.capitulo_id' => $this->grupo->es_evento ? 'nullable' : 'required',
+                'grupo.grupo_libro_maestro' => 'nullable|min:7|max:255',
+                'grupo.grupo_libro_alumno' => 'nullable|min:7|max:255',
+                'grupo.grupo_observacion' => 'nullable|min:7|max:255',
+                'grupo.fecha_inicio' => 'nullable|date',
+                'grupo.modalidad_id' => 'required',
+                'grupo.estado_id' => 'required',
+            ]);
             if(is_null($this->grupo->modalidad_id) || $this->grupo->modalidad_id == 0){ // <-- Usar la modalidad del grupo
                 $this->addError('modalidad_id', "No hay modalidad seleccionada para validar profesores.");
                 DB::rollBack();
@@ -179,6 +192,44 @@ class ShowGrupos extends Component
         } catch (\Throwable $th) {
             DB::rollBack(); // Revertir los cambios si algo falla
             $this->emit('alert','El grupo presento problema no fue agregado satifactoriamente'.$th->getMessage(),'Error!','error');
+        }
+    }
+
+    public function updatedGrupoEsEvento($value)
+    {
+        if ($value) {
+            $this->applyEventoDefaultsIfNeeded();
+        }
+    }
+
+    public function updatedGrupoNivelId($value)
+    {
+        $this->arr_capitulos = Capitulo::where('nivel_id', $value)->get();
+        if ($this->arr_capitulos->isEmpty()) {
+            $this->addError('grupo.capitulo_id', "No hay capitulos disponibles para este nivel");
+            return;
+        }
+        if (!$this->arr_capitulos->contains('capitulo_id', $this->grupo->capitulo_id)) {
+            $this->grupo->capitulo_id = optional($this->arr_capitulos->first())->capitulo_id;
+        }
+    }
+
+    private function applyEventoDefaultsIfNeeded(): void
+    {
+        if (!data_get($this->grupo, 'es_evento')) {
+            return;
+        }
+
+        if (empty($this->grupo->nivel_id)) {
+            $firstNivel = Nivel::orderBy('nivel_id')->first();
+            $this->grupo->nivel_id = $firstNivel?->nivel_id;
+        }
+
+        if (!empty($this->grupo->nivel_id)) {
+            $this->arr_capitulos = Capitulo::where('nivel_id', $this->grupo->nivel_id)->get();
+            if (empty($this->grupo->capitulo_id)) {
+                $this->grupo->capitulo_id = optional($this->arr_capitulos->first())->capitulo_id;
+            }
         }
     }
 
