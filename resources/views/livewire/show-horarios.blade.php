@@ -756,6 +756,9 @@
                     </div>
                 </div>
 
+                <fieldset class='border border-slate-200 rounded-lg p-3'>
+                <legend class='px-2 font-semibold text-slate-700'>Parte 1 — Datos generales</legend>
+                <div class='flex justify-end mb-2'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_datos_generales"/> Validado</label></div>
                 {{-- Fila 1: Nivel y Capítulo --}}
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -783,10 +786,8 @@
                         <x-forms.input-error for="id_capitulo" class="mt-1" />
                     </div>
                 </div>
-
-                <fieldset class='border border-slate-200 rounded-lg p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 1 — Datos generales</legend><div class='flex justify-end mb-2'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_datos_generales"/> Validado</label></div>
                 {{-- Fila 2: Temática y Número de Clases --}}
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4 mt-4">
                     <div>
                         <x-forms.label value="Temática" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
                         <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="id_tematica">

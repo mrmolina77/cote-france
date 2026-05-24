@@ -792,6 +792,7 @@ class ShowHorarios extends Component
 
         try {
             DB::beginTransaction();
+            $datosGeneralesValidados = (bool) ($this->validado_datos_generales && $this->idnivel && $this->id_capitulo);
             $validated = $this->validate([
                 'diarios_hecho'=>'required|min:15|max:550',
                 'diarios_porhacer'=>'required|min:15|max:550',
@@ -828,7 +829,7 @@ class ShowHorarios extends Component
             $this->diario->niveles_id = $this->idnivel;
             $this->diario->capitulos_id = $this->id_capitulo;
             $this->diario->tematica_id = $this->id_tematica;
-            $this->diario->validado_datos_generales = (bool) $this->validado_datos_generales;
+            $this->diario->validado_datos_generales = $datosGeneralesValidados;
             $this->diario->validado_contenido_clase = (bool) $this->validado_contenido_clase;
             $this->diario->validado_estudiantes = (bool) $this->validado_estudiantes;
             $this->diario->validado_prospectos = (bool) $this->validado_prospectos;
@@ -841,7 +842,7 @@ class ShowHorarios extends Component
                 'niveles_id' => $this->idnivel,
                 'capitulos_id' => $this->id_capitulo,
                 'tematica_id' => $this->id_tematica,
-                'validado_datos_generales' => (bool) $this->validado_datos_generales,
+                'validado_datos_generales' => $datosGeneralesValidados,
                 'validado_contenido_clase' => (bool) $this->validado_contenido_clase,
                 'validado_estudiantes' => (bool) $this->validado_estudiantes,
                 'validado_prospectos' => (bool) $this->validado_prospectos
