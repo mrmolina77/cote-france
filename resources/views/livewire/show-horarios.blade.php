@@ -823,12 +823,6 @@
                 <x-forms.input-error for="diarios_porhacer"/>
             </div>
             <div class="relative overflow-x-auto">
-                <div class="flex items-center justify-end mb-2">
-                    <label class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        <x-checkbox wire:model="estudiantes_revisados" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4" />
-                        Grupo revisado
-                    </label>
-                </div>
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-gray-700/50 dark:text-gray-400 border-b border-slate-200/60">
                         <tr>
@@ -841,11 +835,17 @@
                             <th scope="col" class="px-3 py-2.5 text-center font-bold">
                                 Observación
                             </th>
+                            <th scope="col" class="px-3 py-2.5 text-center font-bold">
+                                Validar
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($estudiantes as $estudiante)
-                            <tr class="transition-colors duration-200 {{ $estudiantes_revisados ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
+                            @php
+                                $isValidated = $validados[$estudiante->prospectos_id] ?? false;
+                            @endphp
+                            <tr class="transition-colors duration-200 {{ $isValidated ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
                                 <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap dark:text-white w-1/2">
                                     {{ $estudiante->prospectos_nombres }} {{ $estudiante->prospectos_apellidos }}
                                 </td>
@@ -855,6 +855,19 @@
                                 <td class="px-3 py-2.5 text-center">
                                     <x-input wire:model="observaciones.{{ $estudiante->prospectos_id }}"
                                              class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2.5" placeholder="Nota o detalle" maxlength="255" />
+                                </td>
+                                <td class="px-3 py-2.5 text-center">
+                                    <button type="button" wire:click="toggleValidado({{ $estudiante->prospectos_id }})" class="inline-flex items-center justify-center p-1.5 rounded-lg transition-all duration-200 {{ $isValidated ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600' }}">
+                                        @if ($isValidated)
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                                            </svg>
+                                        @else
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                            </svg>
+                                        @endif
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
@@ -869,12 +882,6 @@
                     <h3 class="text-xs uppercase tracking-wider font-bold text-slate-500">Clases de prueba</h3>
                 </div>
                 <div class="relative overflow-x-auto">
-                    <div class="flex items-center justify-end px-4 pt-2">
-                        <label class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            <x-checkbox wire:model="prospectos_revisados" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4" />
-                            Grupo revisado
-                        </label>
-                    </div>
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50/50 border-b border-slate-200/60">
                             <tr>
@@ -882,11 +889,15 @@
                                 <th scope="col" class="px-3 py-2.5 text-center font-bold">Asistió</th>
                                 <th scope="col" class="px-3 py-2.5 text-center font-bold">No asistió</th>
                                 <th scope="col" class="px-3 py-2.5 font-bold">Observación</th>
+                                <th scope="col" class="px-3 py-2.5 text-center font-bold">Validar</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @foreach ($clasesPrueba as $clase)
-                                <tr class="transition-colors duration-200 {{ $prospectos_revisados ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
+                                @php
+                                    $isValidatedPrueba = $validadosPrueba[$clase->clase_prueba_id] ?? false;
+                                @endphp
+                                <tr class="transition-colors duration-200 {{ $isValidatedPrueba ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
                                     <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{{ $clase->prospecto?->prospectos_nombres }} {{ $clase->prospecto?->prospectos_apellidos }}</td>
                                     <td class="px-3 py-2.5 text-center">
                                         <input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="1" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
@@ -896,6 +907,19 @@
                                     </td>
                                     <td class="px-4 py-4">
                                         <x-input wire:model="observacionesPrueba.{{$clase->clase_prueba_id}}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2.5" placeholder="Nota de prueba"/>
+                                    </td>
+                                    <td class="px-3 py-2.5 text-center">
+                                        <button type="button" wire:click="toggleValidadoPrueba({{ $clase->clase_prueba_id }})" class="inline-flex items-center justify-center p-1.5 rounded-lg transition-all duration-200 {{ $isValidatedPrueba ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600' }}">
+                                            @if ($isValidatedPrueba)
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                </svg>
+                                            @endif
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
