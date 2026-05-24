@@ -20,7 +20,7 @@ class CreateGrupos extends Component
 {
     public $open = false;
 
-    public $grupo_nombre,$idnivel,$id_capitulo,$espacios,$fecha_inicio,$es_evento=false;
+    public $grupo_nombre,$idnivel,$id_capitulo,$espacios,$fecha_inicio;
     public $grupo_libro_maestro,$grupo_libro_alumno,$grupo_observacion,$modalidad_id,$arr_horas;
     public $espacios_id,$diasid,$horasid,$detalles_grupos=array(),$arr_capitulos;
     protected $listeners = ['render','createDelete'];
@@ -50,7 +50,6 @@ class CreateGrupos extends Component
     } */
 
     public function save(){
-        $this->applyEventoDefaultsIfNeeded();
         $this->validate();
         DB::beginTransaction();
         try {
@@ -91,7 +90,7 @@ class CreateGrupos extends Component
             DB::commit();
             $this->reset(['open','grupo_nombre','idnivel','id_capitulo',
             'grupo_libro_maestro','grupo_libro_alumno','grupo_observacion','fecha_inicio','modalidad_id',
-            'espacios_id','detalles_grupos','es_evento']);
+            'espacios_id','detalles_grupos']);
             $this->espacios =  collect([]);
             $this->arr_capitulos = collect([]);
             $this->arr_horas = collect([]);
@@ -223,33 +222,6 @@ class CreateGrupos extends Component
         $this->arr_capitulos = Capitulo::where('nivel_id',$idnivel)->get();
         if ($this->arr_capitulos->isEmpty()) {
             $this->addError('id_capitulo', "No hay capitulos disponibles para este nivel") ;
-        }
-    }
-
-    public function updatedEsEvento($value)
-    {
-        if ($value) {
-            $this->applyEventoDefaultsIfNeeded();
-        }
-    }
-
-    private function applyEventoDefaultsIfNeeded(): void
-    {
-        if (!$this->es_evento) {
-            return;
-        }
-
-        if (empty($this->idnivel)) {
-            $firstNivel = Nivel::orderBy('nivel_id')->first();
-            $this->idnivel = $firstNivel?->nivel_id;
-        }
-
-        if (!empty($this->idnivel)) {
-            $this->arr_capitulos = Capitulo::where('nivel_id', $this->idnivel)->get();
-
-            if (empty($this->id_capitulo)) {
-                $this->id_capitulo = optional($this->arr_capitulos->first())->capitulo_id;
-            }
         }
     }
 
