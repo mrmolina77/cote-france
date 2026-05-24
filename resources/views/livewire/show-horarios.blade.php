@@ -912,7 +912,7 @@
     @if($open_edit_plan)
     <x-dialog-modal wire:model="open_edit_plan">
         <x-slot name="title">
-            Actualizar plan
+            Actualizar plan - Grupo: {{ $plan_modal_grupo ?? 'Sin cargar' }} - Fecha: {{ $plan_modal_fecha ?? 'Sin cargar' }} - Hora: {{ $plan_modal_hora ?? 'Sin cargar' }}
         </x-slot>
 
         <x-slot name="content">
@@ -925,37 +925,26 @@
                         @php
                             $firstItem = $items[0] ?? null;
                             $diario = $firstItem['horario']['diario'] ?? null;
-                            $diarios_hecho = $diario['diarios_hecho'] ?? 'Sin descripción';
-                            $diarios_porhacer = $diario['diarios_porhacer'] ?? 'Sin descripción';
-                            $fecha = isset($firstItem['horario']['horarios_dia']) ? date('d-m-Y', strtotime($firstItem['horario']['horarios_dia'])) : '';
-                            $profesor = ($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '');
-                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'] ?? 'N/A';
-                            $tematica = $diario['tematica'] ?? '';
-                            $numero_clases = $diario['numero_clases'] ?? '';
+                            $diarios_hecho = $diario['diarios_hecho'] ?? 'Sin cargar';
+                            $diarios_porhacer = $diario['diarios_porhacer'] ?? 'Sin cargar';
+                            $fecha = isset($firstItem['horario']['horarios_dia']) ? date('d-m-Y', strtotime($firstItem['horario']['horarios_dia'])) : 'Sin cargar';
+                            $profesor = trim(($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '')) ?: 'Sin cargar';
+                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'] ?? 'Sin cargar';
+                            $tematica = $diario['tematica'] ?? 'Sin cargar';
+                            $numero_clases = $diario['numero_clases'] ?? 'Sin cargar';
+                            $nivel = $diario ? ($arr_niveles[$diario['niveles_id']] ?? 'Sin cargar') : 'Sin cargar';
+                            $capitulo = $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? 'Sin cargar') : 'Sin cargar';
+                            $regulares = collect($items)->filter(fn($eval) => !isset($eval['is_dummy']) && !isset($eval['clase_prueba_id']));
+                            $pruebas = collect($items)->filter(fn($eval) => isset($eval['clase_prueba_id']));
                         @endphp
 
-                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
-                        <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Salón: {{ $espacio }} </p>
-
-                        @if ($tematica)
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Temática: {{ $tematica }}
-                        </p>
-                        @endif
-                        @if ($numero_clases)
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Número de clases: {{ $numero_clases }}
-                        </p>
-                        @endif
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Hecho: {{ $diarios_hecho }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Por hacer: {{ $diarios_porhacer }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Nivel: {{ $diario ? ($arr_niveles[$diario['niveles_id']] ?? '') : '' }} - Capitulo: {{ $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? '') : '' }}
-                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Profesor:</strong> {{ $profesor }} - <strong>Salón:</strong> {{ $espacio }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Hecho:</strong> {{ $diarios_hecho }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Por hacer:</strong> {{ $diarios_porhacer }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Nivel:</strong> {{ $nivel }} - <strong>Capítulo:</strong> {{ $capitulo }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Temática:</strong> {{ $tematica ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>N° de clases:</strong> {{ $numero_clases !== '' ? $numero_clases : 'Sin cargar' }}</p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
@@ -966,14 +955,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($items as $eval)
-                                    @if(isset($eval['is_dummy']) && $eval['is_dummy'])
-                                        <tr class="bg-white dark:bg-gray-800 border-b">
-                                            <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">
-                                                Sin registros de asistencia guardados
-                                            </td>
-                                        </tr>
-                                    @else
+                                @forelse($regulares as $eval)
                                         <tr class="bg-white dark:bg-gray-800 border-b">
                                             <td class="px-4 py-2 font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                                 <span>
@@ -986,13 +968,33 @@
                                                     </span>
                                                 @endif
                                             </td>
-                                            <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
-                                            <td class="px-4 py-2">{{ $eval['observacion'] }}</td>
+                                            <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                            <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
                                         </tr>
-                                    @endif
-                                @endforeach
+                                @empty
+                                    <tr class="bg-white dark:bg-gray-800 border-b">
+                                        <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">Sin registros de asistencia guardados</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
+                        @if($pruebas->isNotEmpty())
+                            <h4 class="mt-4 mb-2 text-sm font-bold text-gray-700 dark:text-gray-100">Clases de prueba</h4>
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                                <tr><th class="px-4 py-2">Estudiante / Prospecto</th><th class="px-4 py-2">Asistencia</th><th class="px-4 py-2">Observación</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($pruebas as $eval)
+                                    <tr class="bg-white dark:bg-gray-800 border-b">
+                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ ($eval['prospecto']['prospectos_nombres'] ?? 'Sin cargar') . ' ' . ($eval['prospecto']['prospectos_apellidos'] ?? '') }} <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800">Prueba</span></td>
+                                        <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                        <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @endif
                     </div>
                 @endforeach
             </div>
