@@ -16,13 +16,7 @@
                 </div>
                 <x-forms.input-error for="grupo_nombre"/>
            </div>
-           <div>
-                <div class="mb-4 flex items-center">
-                    <x-forms.label value="Evento: " />
-                    <input type="checkbox" class="ml-4 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" wire:model="es_evento">
-                </div>
-            </div>
-            <div @if($es_evento) class="hidden" @endif>
+            <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Level')}}: " required/>
                     <x-select class="flex-1 ml-4" wire:model="idnivel">
@@ -36,7 +30,7 @@
                 </div>
                 <x-forms.input-error for="idnivel"/>
             </div>
-            <div @if($es_evento) class="hidden" @endif>
+            <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Chapter')}}: " required/>
                     <x-select class="flex-1 ml-4" wire:model="id_capitulo">
@@ -50,7 +44,7 @@
                 </div>
                 <x-forms.input-error for="id_capitulo"/>
             </div>
-            <div @if($es_evento) class="hidden" @endif>
+            <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Master book')}}: " />
                     <x-forms.textarea rows="2" class="flex-1 ml-4" wire:model="grupo_libro_maestro">
@@ -58,7 +52,7 @@
                 </div>
                 <x-forms.input-error for="grupo_libro_maestro"/>
             </div>
-            <div @if($es_evento) class="hidden" @endif>
+            <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Student book')}}: " />
                     <x-forms.textarea rows="2" class="flex-1 ml-4" wire:model="grupo_libro_alumno">

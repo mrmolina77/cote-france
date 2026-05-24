@@ -21,8 +21,4 @@ class Curso extends Model
     * @var string
     */
    protected $primaryKey = 'cursos_id';
-
-   protected $casts = [
-       'cursos_evento' => 'boolean',
-   ];
 }
