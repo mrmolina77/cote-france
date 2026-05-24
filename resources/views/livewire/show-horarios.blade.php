@@ -787,9 +787,16 @@
                 {{-- Fila 2: Temática y Número de Clases --}}
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <x-forms.label value="Temática" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
-                        <x-input class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="tematica" placeholder="Escribe la temática de la clase" />
-                        <x-forms.input-error for="tematica" class="mt-1" />
+                        <x-forms.label value="Temática" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="id_tematica">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_tematicas as $tematica)
+                            <option value="{{$tematica->tematica_id}}">{{$tematica->tematica_descripcion}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                        <x-forms.input-error for="id_tematica" class="mt-1" />
                     </div>
                     <div>
                         <x-forms.label value="N° de Clases" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
@@ -814,48 +821,6 @@
                     <x-forms.input-error for="diarios_porhacer" class="mt-1"/>
                 </div>
                 <x-forms.input-error for="diarios_porhacer"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Level')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="idnivel">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_niveles as $key => $item)
-                        <option value="{{$key}}">{{ucfirst($item)}} </option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="idnivel"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Chapter')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="id_capitulo">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_capitulos as $item)
-                        <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="id_capitulo"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="Temática: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="id_tematica">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_tematicas as $tematica)
-                        <option value="{{$tematica->tematica_id}}">{{$tematica->tematica_descripcion}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="id_tematica"/>
             </div>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
