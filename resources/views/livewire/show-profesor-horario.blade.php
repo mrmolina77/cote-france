@@ -453,8 +453,51 @@
                     </x-forms.textarea>
                     <x-forms.input-error for="diarios_porhacer" class="mt-1"/>
                 </div>
-                  {{-- Tabla de Estudiantes --}}
-            <div class="relative overflow-x-auto mt-6 border border-slate-100 rounded-xl">
+                <x-forms.input-error for="diarios_porhacer"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Level')}}: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="idnivel">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_niveles as $key => $item)
+                        <option value="{{$key}}">{{ucfirst($item)}} </option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="idnivel"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="{{__('Chapter')}}: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="id_capitulo">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_capitulos as $item)
+                        <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="id_capitulo"/>
+            </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="Temática: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="id_tematica">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_tematicas as $tematica)
+                        <option value="{{$tematica->tematica_id}}">{{$tematica->tematica_descripcion}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="id_tematica"/>
+            </div>
+            <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-gray-700/50 dark:text-gray-400 border-b border-slate-200/60">
                         <tr>
