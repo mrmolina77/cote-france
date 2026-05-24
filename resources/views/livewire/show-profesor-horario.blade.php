@@ -552,7 +552,7 @@
     @if($open_edit_plan)
     <x-dialog-modal wire:model="open_edit_plan">
         <x-slot name="title">
-            Actualizar plan
+            Actualizar plan - Grupo: {{ $plan_modal_grupo ?? 'Sin cargar' }} - Fecha: {{ $plan_modal_fecha ?? 'Sin cargar' }} - Hora: {{ $plan_modal_hora ?? 'Sin cargar' }}
         </x-slot>
 
         <x-slot name="content">
@@ -572,33 +572,20 @@
                             $espacio = $firstItem['horario']['espacio']['espacios_nombre'] ?? 'N/A';
                             $tematica = $diario['tematica'] ?? '';
                             $numero_clases = $diario['numero_clases'] ?? '';
+                            $nivel = $diario ? ($arr_niveles[$diario['niveles_id']] ?? 'Sin cargar') : 'Sin cargar';
+                            $capitulo = $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? 'Sin cargar') : 'Sin cargar';
                         @endphp
 
-                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
-                        <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Salón: {{ $espacio }} </p>
-
-                        @if ($tematica)
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Temática: {{ $tematica }}
-                        </p>
-                        @endif
-                        @if ($numero_clases)
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Número de clases: {{ $numero_clases }}
-                        </p>
-                        @endif
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Hecho: {{ $diarios_hecho }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Por hacer: {{ $diarios_porhacer }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Nivel: {{ $diario ? ($arr_niveles[$diario['niveles_id']] ?? '') : '' }} - Capitulo: {{ $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? '') : '' }}
-                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Profesor:</strong> {{ trim($profesor) ?: 'Sin cargar' }} - <strong>Salón:</strong> {{ $espacio }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Hecho:</strong> {{ $diarios_hecho }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Por hacer:</strong> {{ $diarios_porhacer }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Nivel:</strong> {{ $nivel }} - <strong>Capítulo:</strong> {{ $capitulo }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Temática:</strong> {{ $tematica ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>N° de clases:</strong> {{ $numero_clases !== '' ? $numero_clases : 'Sin cargar' }}</p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-4 py-2">Estudiante</th>
                                     <th class="px-4 py-2">Asistencia</th>
@@ -626,8 +613,8 @@
                                                     </span>
                                                 @endif
                                             </td>
-                                            <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
-                                            <td class="px-4 py-2">{{ $eval['observacion'] }}</td>
+                                            <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                            <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
                                         </tr>
                                     @endif
                                 @endforeach
