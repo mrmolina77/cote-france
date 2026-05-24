@@ -53,6 +53,8 @@ class ShowProfesorHorario extends Component
     public $asistenciasPrueba = [];
     public $observacionesPrueba = [];
     public $validadosPrueba = [];
+    public $validadoEstudiantesSeccion = false;
+    public $validadoPruebaSeccion = false;
     protected $listeners = ['render', 'delete', 'scrollToBottom'];
     public $semana_activa = false;
     public $solo_profesor = false;
@@ -417,6 +419,7 @@ class ShowProfesorHorario extends Component
 
             $this->observaciones[$prospecto->prospectos_id] = $observacion;
         }
+        $this->validadoEstudiantesSeccion = !empty($this->validados) && collect($this->validados)->every(fn ($v) => (bool) $v);
 
         $this->diarios_horarios_id = $id;
 
@@ -449,6 +452,7 @@ class ShowProfesorHorario extends Component
             $this->observacionesPrueba[$clasePrueba->clase_prueba_id] = $clasePrueba->observacion;
             $this->validadosPrueba[$clasePrueba->clase_prueba_id] = (bool) ($clasePrueba->validado ?? false);
         }
+        $this->validadoPruebaSeccion = !empty($this->validadosPrueba) && collect($this->validadosPrueba)->every(fn ($v) => (bool) $v);
 
         $this->diarios_hecho = $this->diario?->diarios_hecho ?? "";
         $this->diarios_porhacer = $this->diario?->diarios_porhacer ?? "";
@@ -491,7 +495,7 @@ class ShowProfesorHorario extends Component
                 // Toma los valores desde los arrays de inputs
                 $asistio = $this->asistencias[$id] ?? false;
                 $observacion = $this->observaciones[$id] ?? null;
-                $validado = $this->validados[$id] ?? false;
+                $validado = $this->validadoEstudiantesSeccion;
 
                 // Guarda o actualiza la evaluación del estudiante para este horario
                 Evaluacion::updateOrCreate(
@@ -544,7 +548,7 @@ class ShowProfesorHorario extends Component
                 $clasePrueba->asistio = is_null($asistio) ? null : (int) $asistio;
                 $clasePrueba->observacion = $this->observacionesPrueba[$clasePrueba->clase_prueba_id] ?? null;
                 $clasePrueba->estado = $estado;
-                $clasePrueba->validado = $this->validadosPrueba[$clasePrueba->clase_prueba_id] ?? false;
+                $clasePrueba->validado = $this->validadoPruebaSeccion;
 
                 // Update class details from the schedule
                 if ($horarioActual) {
