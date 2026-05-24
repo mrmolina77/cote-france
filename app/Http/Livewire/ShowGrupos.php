@@ -40,6 +40,7 @@ class ShowGrupos extends Component
         'grupo.grupo_libro_alumno'=>'nullable|min:7|max:255',
         'grupo.grupo_observacion'=>'nullable|min:7|max:255',
         'grupo.fecha_inicio' => 'nullable|date',
+        'grupo.es_evento' => 'boolean',
         'grupo.modalidad_id'=>'required',
         'grupo.estado_id'=>'required',
     ];
