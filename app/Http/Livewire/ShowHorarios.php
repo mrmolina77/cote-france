@@ -64,6 +64,9 @@ class ShowHorarios extends Component
     public $observacionesPrueba = [];
     public $open_create_clase_prueba = false;
     public $clase_prueba_prospectos_ids = [], $clase_prueba_grupo_id, $clase_prueba_horarios_dia, $clase_prueba_horas_id, $clase_prueba_profesores_id, $clase_prueba_espacios_id, $clase_prueba_modalidad_id, $clase_prueba_observacion;
+    public $plan_modal_grupo = 'Sin cargar';
+    public $plan_modal_fecha = 'Sin cargar';
+    public $plan_modal_hora = 'Sin cargar';
 
     public function boot()
     {
@@ -555,7 +558,10 @@ class ShowHorarios extends Component
 
     public function editPlan($id)
     {
-        $horarioBase = Horario::findOrFail($id);
+        $horarioBase = Horario::with(['grupo', 'hora'])->findOrFail($id);
+        $this->plan_modal_grupo = $horarioBase->grupo?->grupo_nombre ?: 'Sin cargar';
+        $this->plan_modal_fecha = $horarioBase->horarios_dia ? Carbon::parse($horarioBase->horarios_dia)->format('d-m-Y') : 'Sin cargar';
+        $this->plan_modal_hora = $horarioBase->hora?->horas_desde ? Carbon::parse($horarioBase->hora->horas_desde)->format('H:i') : 'Sin cargar';
 
         // Buscamos todos los horarios del mismo grupo, en cualquier día y hora, anteriores o iguales a hoy
         $horarios = Horario::with(['diario', 'profesor', 'espacio'])
