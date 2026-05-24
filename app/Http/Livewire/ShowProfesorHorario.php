@@ -48,11 +48,13 @@ class ShowProfesorHorario extends Component
     public $asistencias = [];
     public $observaciones = [];
     public $evaluaciones = [];
-    public $validados = [];
+    public $validado_datos_generales = false;
+    public $validado_contenido_clase = false;
+    public $validado_estudiantes = false;
+    public $validado_prospectos = false;
     public $clasesPrueba = [];
     public $asistenciasPrueba = [];
     public $observacionesPrueba = [];
-    public $validadosPrueba = [];
     protected $listeners = ['render', 'delete', 'scrollToBottom'];
     public $semana_activa = false;
     public $solo_profesor = false;
@@ -388,8 +390,7 @@ class ShowProfesorHorario extends Component
         }
 
         $this->estudiantes = $prospectos;
-        $this->validados = [];
-
+        
         foreach ($prospectos as $prospecto) {
             // Intenta encontrar la evaluación específica para este horario
             $evaluacionEspecifica = $prospecto->evaluaciones
@@ -403,8 +404,7 @@ class ShowProfesorHorario extends Component
             if ($evaluacionEspecifica) {
                 // Si existe, usa su observación, incluso si es una cadena vacía
                 $observacion = $evaluacionEspecifica->observacion ?? ''; // Usa la observación existente o '' si es null
-                $this->validados[$prospecto->prospectos_id] = (bool) ($evaluacionEspecifica->validado ?? false);
-            } else {
+                            } else {
                 // Si NO existe la evaluación para este día, busca la última observación no vacía de días anteriores
                 $ultimaEvaluacionConObservacion = $prospecto->evaluaciones // Busca en todas las evaluaciones cargadas
                     ->whereNotNull('observacion') // Asegura que la observación no sea null
@@ -412,8 +412,7 @@ class ShowProfesorHorario extends Component
                     ->sortByDesc('horarios_id') // Ordena por ID de horario descendente (más reciente primero)
                     ->first(); // Obtiene la primera (la más reciente con observación)
                 $observacion = $ultimaEvaluacionConObservacion?->observacion ?? ''; // Usa la última observación o default a vacío
-                $this->validados[$prospecto->prospectos_id] = false;
-            }
+                            }
 
             $this->observaciones[$prospecto->prospectos_id] = $observacion;
         }
@@ -435,8 +434,7 @@ class ShowProfesorHorario extends Component
             ->where('estado', '!=', 'cancelada')
             ->get();
         $this->clasesPrueba = $clasesPruebaConHorario->merge($clasesPruebaSinHorario)->unique('clase_prueba_id')->values();
-        $this->validadosPrueba = [];
-        foreach ($this->clasesPrueba as $clasePrueba) {
+                foreach ($this->clasesPrueba as $clasePrueba) {
             Log::info('Clase de prueba cargada en actualizar diario', [
                 'clase_prueba_id' => $clasePrueba->clase_prueba_id,
                 'prospectos_id' => $clasePrueba->prospectos_id,
@@ -447,8 +445,7 @@ class ShowProfesorHorario extends Component
             ]);
             $this->asistenciasPrueba[$clasePrueba->clase_prueba_id] = $clasePrueba->asistio;
             $this->observacionesPrueba[$clasePrueba->clase_prueba_id] = $clasePrueba->observacion;
-            $this->validadosPrueba[$clasePrueba->clase_prueba_id] = (bool) ($clasePrueba->validado ?? false);
-        }
+                    }
 
         $this->diarios_hecho = $this->diario?->diarios_hecho ?? "";
         $this->diarios_porhacer = $this->diario?->diarios_porhacer ?? "";
@@ -464,6 +461,10 @@ class ShowProfesorHorario extends Component
             ->orderBy('tematica_descripcion')
             ->get();
         $this->id_tematica = $this->diario?->tematica_id;
+        $this->validado_datos_generales = (bool) ($this->diario?->validado_datos_generales ?? false);
+        $this->validado_contenido_clase = (bool) ($this->diario?->validado_contenido_clase ?? false);
+        $this->validado_estudiantes = (bool) ($this->diario?->validado_estudiantes ?? false);
+        $this->validado_prospectos = (bool) ($this->diario?->validado_prospectos ?? false);
 
         // dd($this->id_capitulo,$this->idnivel);
 
@@ -491,8 +492,7 @@ class ShowProfesorHorario extends Component
                 // Toma los valores desde los arrays de inputs
                 $asistio = $this->asistencias[$id] ?? false;
                 $observacion = $this->observaciones[$id] ?? null;
-                $validado = $this->validados[$id] ?? false;
-
+    
                 // Guarda o actualiza la evaluación del estudiante para este horario
                 Evaluacion::updateOrCreate(
                     [
@@ -502,8 +502,7 @@ class ShowProfesorHorario extends Component
                     [
                         'asistio' => $asistio,
                         'observacion' => $observacion,
-                        'validado' => $validado,
-                    ]
+                        ]
                 );
             }
 
@@ -544,7 +543,6 @@ class ShowProfesorHorario extends Component
                 $clasePrueba->asistio = is_null($asistio) ? null : (int) $asistio;
                 $clasePrueba->observacion = $this->observacionesPrueba[$clasePrueba->clase_prueba_id] ?? null;
                 $clasePrueba->estado = $estado;
-                $clasePrueba->validado = $this->validadosPrueba[$clasePrueba->clase_prueba_id] ?? false;
 
                 // Update class details from the schedule
                 if ($horarioActual) {
@@ -583,6 +581,10 @@ class ShowProfesorHorario extends Component
             $this->diario->niveles_id = $this->idnivel;
             $this->diario->capitulos_id = $this->id_capitulo;
             $this->diario->tematica_id = $this->id_tematica;
+            $this->diario->validado_datos_generales = (bool) $this->validado_datos_generales;
+            $this->diario->validado_contenido_clase = (bool) $this->validado_contenido_clase;
+            $this->diario->validado_estudiantes = (bool) $this->validado_estudiantes;
+            $this->diario->validado_prospectos = (bool) $this->validado_prospectos;
             $this->diario->save();
         } else {
             $asistencia = Diario::create([
@@ -591,7 +593,11 @@ class ShowProfesorHorario extends Component
                 'diarios_porhacer' => $this->diarios_porhacer,
                 'niveles_id' => $this->idnivel,
                 'capitulos_id' => $this->id_capitulo,
-                'tematica_id' => $this->id_tematica
+                'tematica_id' => $this->id_tematica,
+                'validado_datos_generales' => (bool) $this->validado_datos_generales,
+                'validado_contenido_clase' => (bool) $this->validado_contenido_clase,
+                'validado_estudiantes' => (bool) $this->validado_estudiantes,
+                'validado_prospectos' => (bool) $this->validado_prospectos
             ]);
             // Guardar el nivel y capítulo en la tabla de grupos
             $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();

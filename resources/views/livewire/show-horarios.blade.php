@@ -784,6 +784,7 @@
                     </div>
                 </div>
 
+                <fieldset class='border border-slate-200 rounded-lg p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 1 — Datos generales</legend><div class='flex justify-end mb-2'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_datos_generales"/> Validado</label></div>
                 {{-- Fila 2: Temática y Número de Clases --}}
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -803,8 +804,9 @@
                         <x-input type="number" step="0.5" min="0.5" class="w-full text-sm text-center rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="numero_clases" />
                         <x-forms.input-error for="numero_clases" class="mt-1" />
                     </div>
-                </div>
+                </div></fieldset>
 
+                <fieldset class='border border-slate-200 rounded-lg p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 2 — Hecho y Por hacer</legend><div class='flex justify-end mb-2'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_contenido_clase"/> Validado</label></div>
                 {{-- Hecho (Done) --}}
                 <div>
                     <x-forms.label for="diarios_hecho" value="{{__('Done')}}" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
@@ -821,7 +823,8 @@
                     <x-forms.input-error for="diarios_porhacer" class="mt-1"/>
                 </div>
                 <x-forms.input-error for="diarios_porhacer"/>
-            </div>
+            </div></fieldset>
+            <fieldset class='border border-slate-200 rounded-lg p-3 mt-4'><legend class='px-2 font-semibold text-slate-700'>Parte 3 — Estudiantes</legend><div class='flex justify-end mb-2'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_estudiantes"/> Validado</label></div>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-gray-700/50 dark:text-gray-400 border-b border-slate-200/60">
@@ -835,17 +838,11 @@
                             <th scope="col" class="px-3 py-2.5 text-center font-bold">
                                 Observación
                             </th>
-                            <th scope="col" class="px-3 py-2.5 text-center font-bold">
-                                Validar
-                            </th>
-                        </tr>
+                                                    </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($estudiantes as $estudiante)
-                            @php
-                                $isValidated = $validados[$estudiante->prospectos_id] ?? false;
-                            @endphp
-                            <tr class="transition-colors duration-200 {{ $isValidated ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
+                            <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
                                 <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap dark:text-white w-1/2">
                                     {{ $estudiante->prospectos_nombres }} {{ $estudiante->prospectos_apellidos }}
                                 </td>
@@ -856,28 +853,15 @@
                                     <x-input wire:model="observaciones.{{ $estudiante->prospectos_id }}"
                                              class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2.5" placeholder="Nota o detalle" maxlength="255" />
                                 </td>
-                                <td class="px-3 py-2.5 text-center">
-                                    <button type="button" wire:click="toggleValidado({{ $estudiante->prospectos_id }})" class="inline-flex items-center justify-center p-1.5 rounded-lg transition-all duration-200 {{ $isValidated ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600' }}">
-                                        @if ($isValidated)
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                                            </svg>
-                                        @else
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                            </svg>
-                                        @endif
-                                    </button>
-                                </td>
-                            </tr>
+                                                            </tr>
                         @endforeach
                     </tbody>
                 </table>
-            </div>
+            </div></fieldset>
 
             {{-- Tabla de Clases de Prueba --}}
             @if (count($clasesPrueba))
-            <div class="mt-6 border border-slate-100 rounded-xl overflow-hidden">
+            <fieldset class='mt-6 border border-slate-100 rounded-xl overflow-hidden p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 4 — Clases de prueba / Prospectos</legend><div class='flex justify-end mb-2'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_prospectos"/> Validado</label></div>
                 <div class="bg-slate-50 px-4 py-2 border-b border-slate-200/60">
                     <h3 class="text-xs uppercase tracking-wider font-bold text-slate-500">Clases de prueba</h3>
                 </div>
@@ -889,15 +873,11 @@
                                 <th scope="col" class="px-3 py-2.5 text-center font-bold">Asistió</th>
                                 <th scope="col" class="px-3 py-2.5 text-center font-bold">No asistió</th>
                                 <th scope="col" class="px-3 py-2.5 font-bold">Observación</th>
-                                <th scope="col" class="px-3 py-2.5 text-center font-bold">Validar</th>
-                            </tr>
+                                                            </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @foreach ($clasesPrueba as $clase)
-                                @php
-                                    $isValidatedPrueba = $validadosPrueba[$clase->clase_prueba_id] ?? false;
-                                @endphp
-                                <tr class="transition-colors duration-200 {{ $isValidatedPrueba ? 'bg-emerald-50/60 hover:bg-emerald-100/40 dark:bg-emerald-950/20' : 'bg-white hover:bg-slate-50/50 dark:bg-gray-800' }}">
+                                <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
                                     <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{{ $clase->prospecto?->prospectos_nombres }} {{ $clase->prospecto?->prospectos_apellidos }}</td>
                                     <td class="px-3 py-2.5 text-center">
                                         <input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="1" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
@@ -908,25 +888,12 @@
                                     <td class="px-4 py-4">
                                         <x-input wire:model="observacionesPrueba.{{$clase->clase_prueba_id}}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2.5" placeholder="Nota de prueba"/>
                                     </td>
-                                    <td class="px-3 py-2.5 text-center">
-                                        <button type="button" wire:click="toggleValidadoPrueba({{ $clase->clase_prueba_id }})" class="inline-flex items-center justify-center p-1.5 rounded-lg transition-all duration-200 {{ $isValidatedPrueba ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600' }}">
-                                            @if ($isValidatedPrueba)
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                                    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                                                </svg>
-                                            @else
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                                </svg>
-                                            @endif
-                                        </button>
-                                    </td>
-                                </tr>
+                                                                    </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </fieldset>
             @endif
         </x-slot>
         <x-slot name="footer">

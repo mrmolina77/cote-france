@@ -16,7 +16,14 @@ class Diario extends Model
     */
    protected $table = 'diarios';
 
-   protected $fillable = ['horarios_id','diarios_hecho','diarios_porhacer','niveles_id','capitulos_id','tematica_id'];
+   protected $fillable = ['horarios_id','diarios_hecho','diarios_porhacer','niveles_id','capitulos_id','tematica_id','validado_datos_generales','validado_contenido_clase','validado_estudiantes','validado_prospectos'];
+
+   protected $casts = [
+        'validado_datos_generales' => 'boolean',
+        'validado_contenido_clase' => 'boolean',
+        'validado_estudiantes' => 'boolean',
+        'validado_prospectos' => 'boolean',
+   ];
 
    /**
     * The primary key associated with the table.
