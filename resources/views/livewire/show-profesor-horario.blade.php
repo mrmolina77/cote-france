@@ -431,6 +431,20 @@
                 </div>
                 <x-forms.input-error for="id_capitulo"/>
             </div>
+            <div>
+                <div class="mb-4 flex">
+                    <x-forms.label value="Temática: " required/>
+                    <x-select class="flex-1 ml-4" wire:model="id_tematica">
+                        <option value="">{{__('Select')}}</option>
+                        @forelse ($arr_tematicas as $tematica)
+                        <option value="{{$tematica->tematica_id}}">{{$tematica->tematica_descripcion}}</option>
+                        @empty
+                        <option value="">{{__('No Content')}}</option>
+                        @endforelse
+                    </x-select>
+                </div>
+                <x-forms.input-error for="id_tematica"/>
+            </div>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
