@@ -633,4 +633,19 @@
     </x-dialog-modal>
     @endif
 
+    <script>
+        // Mantiene el mismo comportamiento que la vista administrativa:
+        // al abrir el modal de plan, posiciona el scroll al final del contenido.
+        document.addEventListener('livewire:load', function () {
+            Livewire.on('scrollToBottom', () => {
+                setTimeout(() => {
+                    const container = document.getElementById('scroll-container');
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                }, 50);
+            });
+        });
+    </script>
+
 </div>
