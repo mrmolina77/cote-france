@@ -619,10 +619,17 @@ class ShowHorarios extends Component
 
         foreach ($horarios as $h) {
             $hId = $h->horarios_id;
+            $horarioPlanData = $this->buildHorarioPlanData($h);
             
             if ($grouped->has($hId) && $grouped->get($hId)->isNotEmpty()) {
                 // Si hay evaluaciones reales o clases de prueba, las convertimos a array
-                $finalEvaluaciones[$hId] = $grouped->get($hId)->values()->toArray();
+                // y garantizamos que cada item tenga los datos completos del horario/diario.
+                $finalEvaluaciones[$hId] = $grouped->get($hId)->values()->map(function ($item) use ($horarioPlanData) {
+                    $itemArray = $item->toArray();
+                    $itemArray['horario'] = $horarioPlanData;
+
+                    return $itemArray;
+                })->toArray();
             } else {
                 // Si no hay evaluaciones, inyectamos un elemento dummy con toda la info de la relación
                 $finalEvaluaciones[$hId] = [
@@ -631,38 +638,7 @@ class ShowHorarios extends Component
                         'prospecto' => null,
                         'asistio' => null,
                         'observacion' => '',
-                        'horario' => [
-                            'horarios_dia' => $h->horarios_dia instanceof \Carbon\Carbon ? $h->horarios_dia->toDateString() : $h->horarios_dia,
-                            'profesor' => $h->profesor ? [
-                                'profesores_nombres' => $h->profesor->profesores_nombres ?? '',
-                                'profesores_apellidos' => $h->profesor->profesores_apellidos ?? '',
-                            ] : null,
-                            'espacio' => $h->espacio ? [
-                                'espacios_nombre' => $h->espacio->espacios_nombre ?? 'N/A',
-                            ] : null,
-                            'diario' => $h->diario ? [
-                                'diarios_id' => $h->diario->diarios_id,
-                                'niveles_id' => $h->diario->niveles_id,
-                                'capitulos_id' => $h->diario->capitulos_id,
-                                'tematica_id' => $h->diario->tematica_id,
-                                'numero_clases' => $h->diario->numero_clases,
-                                'diarios_hecho' => $h->diario->diarios_hecho,
-                                'diarios_porhacer' => $h->diario->diarios_porhacer,
-                                'nivel' => $h->diario->nivel ? [
-                                    'nivel_id' => $h->diario->nivel->nivel_id,
-                                    'nivel_descripcion' => $h->diario->nivel->nivel_descripcion,
-                                ] : null,
-                                'capitulo' => $h->diario->capitulo ? [
-                                    'capitulo_id' => $h->diario->capitulo->capitulo_id,
-                                    'capitulo_descripcion' => $h->diario->capitulo->capitulo_descripcion,
-                                    'capitulo_codigo' => $h->diario->capitulo->capitulo_codigo,
-                                ] : null,
-                                'tematica' => $h->diario->relationLoaded('tematica') && $h->diario->getRelation('tematica') ? [
-                                    'tematica_id' => $h->diario->getRelation('tematica')->tematica_id,
-                                    'tematica_descripcion' => $h->diario->getRelation('tematica')->tematica_descripcion,
-                                ] : null,
-                            ] : null,
-                        ]
+                        'horario' => $horarioPlanData,
                     ]
                 ];
             }
@@ -683,6 +659,43 @@ class ShowHorarios extends Component
         $this->open_edit = false;
         $this->open_create_clase_prueba = false;
         $this->open_edit_plan = true;
+    }
+
+    private function buildHorarioPlanData(Horario $horario): array
+    {
+        return [
+            'horarios_id' => $horario->horarios_id,
+            'horarios_dia' => $horario->horarios_dia instanceof Carbon ? $horario->horarios_dia->toDateString() : $horario->horarios_dia,
+            'profesor' => $horario->profesor ? [
+                'profesores_nombres' => $horario->profesor->profesores_nombres ?? '',
+                'profesores_apellidos' => $horario->profesor->profesores_apellidos ?? '',
+            ] : null,
+            'espacio' => $horario->espacio ? [
+                'espacios_nombre' => $horario->espacio->espacios_nombre ?? 'N/A',
+            ] : null,
+            'diario' => $horario->diario ? [
+                'diarios_id' => $horario->diario->diarios_id,
+                'niveles_id' => $horario->diario->niveles_id,
+                'capitulos_id' => $horario->diario->capitulos_id,
+                'tematica_id' => $horario->diario->tematica_id,
+                'numero_clases' => $horario->diario->numero_clases,
+                'diarios_hecho' => $horario->diario->diarios_hecho,
+                'diarios_porhacer' => $horario->diario->diarios_porhacer,
+                'nivel' => $horario->diario->nivel ? [
+                    'nivel_id' => $horario->diario->nivel->nivel_id,
+                    'nivel_descripcion' => $horario->diario->nivel->nivel_descripcion,
+                ] : null,
+                'capitulo' => $horario->diario->capitulo ? [
+                    'capitulo_id' => $horario->diario->capitulo->capitulo_id,
+                    'capitulo_descripcion' => $horario->diario->capitulo->capitulo_descripcion,
+                    'capitulo_codigo' => $horario->diario->capitulo->capitulo_codigo,
+                ] : null,
+                'tematica' => $horario->diario->relationLoaded('tematica') && $horario->diario->getRelation('tematica') ? [
+                    'tematica_id' => $horario->diario->getRelation('tematica')->tematica_id,
+                    'tematica_descripcion' => $horario->diario->getRelation('tematica')->tematica_descripcion,
+                ] : null,
+            ] : null,
+        ];
     }
 
 
