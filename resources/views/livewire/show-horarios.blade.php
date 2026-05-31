@@ -925,26 +925,35 @@
                         @php
                             $firstItem = $items[0] ?? null;
                             $diario = $firstItem['horario']['diario'] ?? null;
-                            $diarios_hecho = $diario['diarios_hecho'] ?? 'Sin cargar';
-                            $diarios_porhacer = $diario['diarios_porhacer'] ?? 'Sin cargar';
+                            $diarios_hecho = data_get($diario, 'diarios_hecho');
+                            $diarios_porhacer = data_get($diario, 'diarios_porhacer');
                             $fecha = isset($firstItem['horario']['horarios_dia']) ? date('d-m-Y', strtotime($firstItem['horario']['horarios_dia'])) : 'Sin cargar';
                             $profesor = trim(($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '')) ?: 'Sin cargar';
                             $espacio = $firstItem['horario']['espacio']['espacios_nombre'] ?? 'Sin cargar';
-                            $tematica = $diario['tematica'] ?? 'Sin cargar';
-                            $numero_clases = $diario['numero_clases'] ?? 'Sin cargar';
-                            $nivel = $diario ? ($arr_niveles[$diario['niveles_id']] ?? 'Sin cargar') : 'Sin cargar';
-                            $capitulo = $diario ? ($arr_capitulos2[$diario['capitulos_id']] ?? 'Sin cargar') : 'Sin cargar';
+                            $nivel = data_get($diario, 'nivel.nivel_descripcion')
+                                ?? ($diario ? ($arr_niveles[data_get($diario, 'niveles_id')] ?? null) : null);
+                            $capitulo = data_get($diario, 'capitulo.capitulo_descripcion')
+                                ? trim(data_get($diario, 'capitulo.capitulo_descripcion') . ' - ' . data_get($diario, 'capitulo.capitulo_codigo'))
+                                : ($diario ? ($arr_capitulos2[data_get($diario, 'capitulos_id')] ?? null) : null);
+                            $tematicaRelacion = data_get($diario, 'tematica.tematica_descripcion');
+                            $tematicaTexto = is_array(data_get($diario, 'tematica')) ? null : data_get($diario, 'tematica');
+                            $tematica = $tematicaRelacion ?? data_get($diario, 'tematica_descripcion') ?? $tematicaTexto;
+                            $numero_clases = data_get($diario, 'numero_clases');
+                            $numero_clases_formateado = ($numero_clases !== null && $numero_clases !== '')
+                                ? str_replace('.', ',', (string) (floor((float) $numero_clases) == (float) $numero_clases ? (int) $numero_clases : $numero_clases))
+                                : null;
                             $regulares = collect($items)->filter(fn($eval) => !isset($eval['is_dummy']) && !isset($eval['clase_prueba_id']));
                             $pruebas = collect($items)->filter(fn($eval) => isset($eval['clase_prueba_id']));
                         @endphp
 
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Profesor:</strong> {{ $profesor }} - <strong>Salón:</strong> {{ $espacio }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Hecho:</strong> {{ $diarios_hecho }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Por hacer:</strong> {{ $diarios_porhacer }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Nivel:</strong> {{ $nivel }} - <strong>Capítulo:</strong> {{ $capitulo }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Profesor:</strong> {{ $profesor ?: 'Sin cargar' }} - <strong>Salón:</strong> {{ $espacio ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Nivel:</strong> {{ $nivel ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Capítulo:</strong> {{ $capitulo ?: 'Sin cargar' }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Temática:</strong> {{ $tematica ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>N° de clases:</strong> {{ $numero_clases !== '' ? $numero_clases : 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>N° de clases:</strong> {{ $numero_clases_formateado ?? 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Hecho:</strong> {{ $diarios_hecho ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Por hacer:</strong> {{ $diarios_porhacer ?: 'Sin cargar' }}</p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">

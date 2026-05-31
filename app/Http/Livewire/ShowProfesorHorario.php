@@ -263,7 +263,7 @@ class ShowProfesorHorario extends Component
         $this->plan_modal_hora = $horarioBase->hora?->horas_desde ? Carbon::parse($horarioBase->hora->horas_desde)->format('H:i') : 'Sin cargar';
 
         // Buscamos todos los horarios del mismo grupo, en cualquier día y hora, anteriores o iguales a hoy
-        $horarios = Horario::with(['diario', 'profesor', 'espacio'])
+        $horarios = Horario::with(['diario.nivel', 'diario.capitulo', 'diario.tematica', 'profesor', 'espacio'])
             ->where('grupo_id', $horarioBase->grupo_id)
             ->whereDate('horarios_dia', '<=', $horarioBase->horarios_dia)
             ->orderBy('horarios_dia', 'desc')
@@ -277,11 +277,11 @@ class ShowProfesorHorario extends Component
         $horariosRelacionados = $horarios->pluck('horarios_id');
 
         // Traemos las evaluaciones y clases de prueba
-        $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio'])
+        $evaluaciones = Evaluacion::with(['prospecto', 'horario.diario.nivel', 'horario.diario.capitulo', 'horario.diario.tematica', 'horario.profesor', 'horario.espacio'])
             ->whereIn('horarios_id', $horariosRelacionados)
             ->get();
 
-        $clasesPrueba = ClasePrueba::with(['prospecto', 'horario.diario', 'horario.profesor', 'horario.espacio'])
+        $clasesPrueba = ClasePrueba::with(['prospecto', 'horario.diario.nivel', 'horario.diario.capitulo', 'horario.diario.tematica', 'horario.profesor', 'horario.espacio'])
             ->where(function ($query) use ($horariosRelacionados, $horarios) {
                 $query->whereIn('horarios_id', $horariosRelacionados);
                 foreach ($horarios as $h) {
@@ -305,6 +305,7 @@ class ShowProfesorHorario extends Component
                 });
                 if ($matchingHorario) {
                     $clase->horarios_id = $matchingHorario->horarios_id;
+                    $clase->setRelation('horario', $matchingHorario);
                 }
             }
         }
@@ -339,12 +340,26 @@ class ShowProfesorHorario extends Component
                                 'espacios_nombre' => $h->espacio->espacios_nombre ?? 'N/A',
                             ] : null,
                             'diario' => $h->diario ? [
-                                'diarios_hecho' => $h->diario->diarios_hecho,
-                                'diarios_porhacer' => $h->diario->diarios_porhacer,
-                                'tematica' => $h->diario->tematica,
-                                'numero_clases' => $h->diario->numero_clases,
+                                'diarios_id' => $h->diario->diarios_id,
                                 'niveles_id' => $h->diario->niveles_id,
                                 'capitulos_id' => $h->diario->capitulos_id,
+                                'tematica_id' => $h->diario->tematica_id,
+                                'numero_clases' => $h->diario->numero_clases,
+                                'diarios_hecho' => $h->diario->diarios_hecho,
+                                'diarios_porhacer' => $h->diario->diarios_porhacer,
+                                'nivel' => $h->diario->nivel ? [
+                                    'nivel_id' => $h->diario->nivel->nivel_id,
+                                    'nivel_descripcion' => $h->diario->nivel->nivel_descripcion,
+                                ] : null,
+                                'capitulo' => $h->diario->capitulo ? [
+                                    'capitulo_id' => $h->diario->capitulo->capitulo_id,
+                                    'capitulo_descripcion' => $h->diario->capitulo->capitulo_descripcion,
+                                    'capitulo_codigo' => $h->diario->capitulo->capitulo_codigo,
+                                ] : null,
+                                'tematica' => $h->diario->relationLoaded('tematica') && $h->diario->getRelation('tematica') ? [
+                                    'tematica_id' => $h->diario->getRelation('tematica')->tematica_id,
+                                    'tematica_descripcion' => $h->diario->getRelation('tematica')->tematica_descripcion,
+                                ] : null,
                             ] : null,
                         ]
                     ]
@@ -487,19 +502,18 @@ class ShowProfesorHorario extends Component
             'idnivel'=>'required',
             'id_capitulo'=>'required',
             'id_tematica'=>'required',
+            'numero_clases'=>'nullable|numeric|min:0.5',
         ]);
 
         try {
             DB::beginTransaction();
+            $datosGeneralesValidados = (bool) ($this->validado_datos_generales && $this->idnivel && $this->id_capitulo);
 
             foreach ($this->estudiantes as $estudiante) {
-                $id = $estudiante->prospectos_id; // o $estudiante->prospectos_id si ese es el nombre real
-
-                // Toma los valores desde los arrays de inputs
+                $id = $estudiante->prospectos_id;
                 $asistio = $this->asistencias[$id] ?? false;
                 $observacion = $this->observaciones[$id] ?? null;
-    
-                // Guarda o actualiza la evaluación del estudiante para este horario
+
                 Evaluacion::updateOrCreate(
                     [
                         'prospectos_id' => $id,
@@ -508,19 +522,22 @@ class ShowProfesorHorario extends Component
                     [
                         'asistio' => $asistio,
                         'observacion' => $observacion,
-                        ]
+                    ]
                 );
             }
 
-            // Guardar o actualizar el diario
             if($this->diario){
                 $this->diario->horarios_id = $this->diarios_horarios_id;
                 $this->diario->diarios_hecho = $this->diarios_hecho;
                 $this->diario->diarios_porhacer = $this->diarios_porhacer;
                 $this->diario->niveles_id = $this->idnivel;
                 $this->diario->capitulos_id = $this->id_capitulo;
-                $this->diario->tematica = $this->tematica;
+                $this->diario->tematica_id = $this->id_tematica;
                 $this->diario->numero_clases = $this->numero_clases;
+                $this->diario->validado_datos_generales = $datosGeneralesValidados;
+                $this->diario->validado_contenido_clase = (bool) $this->validado_contenido_clase;
+                $this->diario->validado_estudiantes = (bool) $this->validado_estudiantes;
+                $this->diario->validado_prospectos = (bool) $this->validado_prospectos;
                 $this->diario->save();
             } else {
                 $asistencia = Diario::create([
@@ -529,12 +546,15 @@ class ShowProfesorHorario extends Component
                     'diarios_porhacer' => $this->diarios_porhacer,
                     'niveles_id' => $this->idnivel,
                     'capitulos_id' => $this->id_capitulo,
-                    'tematica' => $this->tematica,
-                    'numero_clases' => $this->numero_clases
+                    'tematica_id' => $this->id_tematica,
+                    'numero_clases' => $this->numero_clases,
+                    'validado_datos_generales' => $datosGeneralesValidados,
+                    'validado_contenido_clase' => (bool) $this->validado_contenido_clase,
+                    'validado_estudiantes' => (bool) $this->validado_estudiantes,
+                    'validado_prospectos' => (bool) $this->validado_prospectos,
                 ]);
-                // Guardar el nivel y capítulo en la tabla de grupos
-                $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
 
+                $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
                 $grupo = Grupo::find($horario->grupo_id);
                 $grupo->nivel_id = $this->idnivel;
                 $grupo->capitulo_id = $this->id_capitulo;
@@ -550,7 +570,6 @@ class ShowProfesorHorario extends Component
                 $clasePrueba->observacion = $this->observacionesPrueba[$clasePrueba->clase_prueba_id] ?? null;
                 $clasePrueba->estado = $estado;
 
-                // Update class details from the schedule
                 if ($horarioActual) {
                     $clasePrueba->horarios_id = $horarioActual->horarios_id;
                     $clasePrueba->profesores_id = $horarioActual->profesores_id;
@@ -578,45 +597,6 @@ class ShowProfesorHorario extends Component
             $this->emit('alert', 'Ocurrió un error al guardar el diario y asistencias.', 'Error!', 'error');
             return;
         }
-
-        $datosGeneralesValidados = (bool) ($this->validado_datos_generales && $this->idnivel && $this->id_capitulo);
-
-        // Guardar o actualizar el diario
-        if($this->diario){
-            $this->diario->horarios_id = $this->diarios_horarios_id;
-            $this->diario->diarios_hecho = $this->diarios_hecho;
-            $this->diario->diarios_porhacer = $this->diarios_porhacer;
-            $this->diario->niveles_id = $this->idnivel;
-            $this->diario->capitulos_id = $this->id_capitulo;
-            $this->diario->tematica_id = $this->id_tematica;
-            $this->diario->validado_datos_generales = $datosGeneralesValidados;
-            $this->diario->validado_contenido_clase = (bool) $this->validado_contenido_clase;
-            $this->diario->validado_estudiantes = (bool) $this->validado_estudiantes;
-            $this->diario->validado_prospectos = (bool) $this->validado_prospectos;
-            $this->diario->save();
-        } else {
-            $asistencia = Diario::create([
-                'horarios_id' => $this->diarios_horarios_id,
-                'diarios_hecho' => $this->diarios_hecho,
-                'diarios_porhacer' => $this->diarios_porhacer,
-                'niveles_id' => $this->idnivel,
-                'capitulos_id' => $this->id_capitulo,
-                'tematica_id' => $this->id_tematica,
-                'validado_datos_generales' => $datosGeneralesValidados,
-                'validado_contenido_clase' => (bool) $this->validado_contenido_clase,
-                'validado_estudiantes' => (bool) $this->validado_estudiantes,
-                'validado_prospectos' => (bool) $this->validado_prospectos
-            ]);
-            // Guardar el nivel y capítulo en la tabla de grupos
-            $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
-
-            $grupo = Grupo::find($horario->grupo_id);
-            $grupo->nivel_id = $this->idnivel;
-            $grupo->capitulo_id = $this->id_capitulo;
-            $grupo->save();
-        }
-
-
 
         $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo','id_tematica']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
