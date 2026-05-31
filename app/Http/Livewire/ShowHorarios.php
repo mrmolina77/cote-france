@@ -553,8 +553,8 @@ class ShowHorarios extends Component
             return;
         }
 
-        if ($horario->protegido || $horario->origen === 'manual') {
-            Log::info('[HorariosProtegidos] Eliminación explícita de horario protegido confirmada por usuario', [
+        if ($horario->origen === 'manual') {
+            Log::info('[HorariosProtegidos] Intento de eliminar clase manual bloqueado', [
                 'horarios_id' => $horario->horarios_id,
                 'grupo_id' => $horario->grupo_id,
                 'horarios_dia' => $horario->horarios_dia,
@@ -562,6 +562,9 @@ class ShowHorarios extends Component
                 'origen' => $horario->origen,
                 'protegido' => $horario->protegido,
             ]);
+
+            $this->emit('alert', 'No se puede eliminar una clase creada manualmente.', 'Advertencias!', 'warning');
+            return;
         }
 
         $horario->delete();
@@ -1176,8 +1179,55 @@ class ShowHorarios extends Component
             $id_espacios = $this->normalizeEspacioId($espacios_id);
             $fechaAnterior = $anterior_dia ? Carbon::parse($anterior_dia)->toDateString() : null;
             $horaAnterior = $anterior_hora ? (int) $anterior_hora : null;
+
+            $horarioDestino = $horarios_id != '0' ? Horario::find($horarios_id) : null;
+
+            if ($horarioDestino && $horarioDestino->origen === 'manual' && (string) $horarioDestino->horarios_id !== (string) $anterior_id) {
+                Log::info('[HorariosProtegidos] Drag and drop bloqueado: destino es clase manual', [
+                    'destino_horarios_id' => $horarioDestino->horarios_id,
+                    'destino_grupo_id' => $horarioDestino->grupo_id,
+                    'destino_fecha' => $horarioDestino->horarios_dia,
+                    'destino_hora_id' => $horarioDestino->horas_id,
+                    'origen_destino' => $horarioDestino->origen,
+                    'source_horarios_id' => $anterior_id,
+                    'nuevo_grupo_id' => $grupo_id,
+                ]);
+
+                $this->emit('alert', 'No se puede mover el grupo sobre una clase creada manualmente.', 'Advertencias!', 'warning');
+                $this->emitTo('show-horarios', 'render');
+                return;
+            }
+
+            $queryManualDestino = Horario::whereDate('horarios_dia', Carbon::parse($horarios_dia)->toDateString())
+                ->where('horas_id', $horas_id)
+                ->where('profesores_id', $profesores_id)
+                ->where('origen', 'manual');
+
+            if (is_null($id_espacios)) {
+                $queryManualDestino->whereNull('espacios_id');
+            } else {
+                $queryManualDestino->where('espacios_id', $id_espacios);
+            }
+
+            $manualDestino = $queryManualDestino->first();
+
+            if ($manualDestino && (string) $manualDestino->horarios_id !== (string) $anterior_id) {
+                Log::info('[HorariosProtegidos] Creación/movimiento bloqueado: existe clase manual en destino', [
+                    'manual_horarios_id' => $manualDestino->horarios_id,
+                    'manual_grupo_id' => $manualDestino->grupo_id,
+                    'fecha' => $horarios_dia,
+                    'hora_id' => $horas_id,
+                    'profesor_id' => $profesores_id,
+                    'espacio_id' => $id_espacios,
+                    'source_horarios_id' => $anterior_id,
+                ]);
+
+                $this->emit('alert', 'No se puede colocar el grupo en esta celda porque ya existe una clase manual.', 'Advertencias!', 'warning');
+                $this->emitTo('show-horarios', 'render');
+                return;
+            }
             // dd($id_espacios);
-            DB::transaction(function () use (
+            $operacionRealizada = DB::transaction(function () use (
                 $anterior_id,
                 $horarios_dia,
                 $horas_id,
@@ -1192,7 +1242,8 @@ class ShowHorarios extends Component
                 $origenDragDrop = $horarioAnterior && $horarioAnterior->origen === 'manual'
                     ? 'manual'
                     : 'drag_drop';
-                $protegidoAt = $horarioAnterior?->protegido_at ?? now();
+                $protegidoDragDrop = $origenDragDrop === 'manual';
+                $protegidoAt = $protegidoDragDrop ? ($horarioAnterior?->protegido_at ?? now()) : null;
 
                 if ($horarioAnterior) {
                     if ($horarioAnterior->protegido || $horarioAnterior->origen === 'manual') {
@@ -1215,7 +1266,7 @@ class ShowHorarios extends Component
                         'espacios_id' => $id_espacios,
                         'profesores_id' => $profesores_id,
                         'origen' => $origenDragDrop,
-                        'protegido' => true,
+                        'protegido' => $protegidoDragDrop,
                         'protegido_at' => $protegidoAt,
                     ]);
 
@@ -1228,7 +1279,7 @@ class ShowHorarios extends Component
                         'protegido' => $horarioAnterior->protegido,
                     ]);
 
-                    return;
+                    return true;
                 }
 
                 if ($fechaAnterior && $horaAnterior && ($fechaAnterior !== Carbon::parse($horarios_dia)->toDateString() || $horaAnterior !== (int) $horas_id)) {
@@ -1244,16 +1295,20 @@ class ShowHorarios extends Component
                 if ($horarios_id != '0') {
                     $horario = Horario::find($horarios_id);
                     if ($horario) {
-                        $origen = $horario->origen === 'manual' ? 'manual' : 'drag_drop';
+                        if ($horario->origen === 'manual' && (string) $horario->horarios_id !== (string) $anterior_id) {
+                            $this->emit('alert', 'No se puede sobrescribir una clase creada manualmente.', 'Advertencias!', 'warning');
+                            return false;
+                        }
+
                         $horario->update([
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
                             'espacios_id' => $id_espacios,
                             'profesores_id' => $profesores_id,
-                            'origen' => $origen,
-                            'protegido' => true,
-                            'protegido_at' => $horario->protegido_at ?? now(),
+                            'origen' => 'drag_drop',
+                            'protegido' => false,
+                            'protegido_at' => null,
                         ]);
 
                         Log::info('[HorariosProtegidos] Horario destino actualizado por drag and drop', [
@@ -1264,6 +1319,8 @@ class ShowHorarios extends Component
                             'origen' => $horario->origen,
                             'protegido' => $horario->protegido,
                         ]);
+
+                        return true;
                     } else {
                         $horario = Horario::create([
                             'horarios_dia' => $horarios_dia,
@@ -1272,8 +1329,8 @@ class ShowHorarios extends Component
                             'espacios_id' => $id_espacios,
                             'profesores_id' => $profesores_id,
                             'origen' => 'drag_drop',
-                            'protegido' => true,
-                            'protegido_at' => now(),
+                            'protegido' => false,
+                            'protegido_at' => null,
                         ]);
 
                         Log::info('[HorariosProtegidos] Horario creado por drag and drop', [
@@ -1284,6 +1341,8 @@ class ShowHorarios extends Component
                             'origen' => $horario->origen,
                             'protegido' => $horario->protegido,
                         ]);
+
+                        return true;
                     }
                 } else {
                     $queryCantidad = Horario::where('horarios_dia', $horarios_dia)
@@ -1307,8 +1366,8 @@ class ShowHorarios extends Component
                             'espacios_id' => $id_espacios,
                             'profesores_id' => $profesores_id,
                             'origen' => 'drag_drop',
-                            'protegido' => true,
-                            'protegido_at' => now(),
+                            'protegido' => false,
+                            'protegido_at' => null,
                         ]);
 
                         Log::info('[HorariosProtegidos] Horario creado por drag and drop', [
@@ -1319,10 +1378,20 @@ class ShowHorarios extends Component
                             'origen' => $horario->origen,
                             'protegido' => $horario->protegido,
                         ]);
+
+                        return true;
                     }
                 }
+
+                return false;
             });
+
             $this->emitTo('show-horarios','render');
+
+            if (! $operacionRealizada) {
+                return;
+            }
+
             $this->emit('alert', 'El horario fue agregado satisfactoriamente');
         }
     }

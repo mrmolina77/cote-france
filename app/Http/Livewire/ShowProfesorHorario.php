@@ -253,8 +253,15 @@ class ShowProfesorHorario extends Component
             return;
         }
 
-        if ($horario->protegido || $horario->origen === 'manual') {
-            Log::info('[HorariosProtegidos] Eliminación explícita de horario protegido confirmada por profesor', [
+        $evaluaciones = Evaluacion::where('horarios_id', $horario->horarios_id)->exists();
+
+        if ($evaluaciones) {
+            $this->emit('alert', 'No se puede eliminar el horario porque tiene evaluaciones asociadas', 'Advertencias!', 'warning');
+            return;
+        }
+
+        if ($horario->origen === 'manual') {
+            Log::info('[HorariosProtegidos] Intento de eliminar clase manual bloqueado por profesor', [
                 'horarios_id' => $horario->horarios_id,
                 'grupo_id' => $horario->grupo_id,
                 'horarios_dia' => $horario->horarios_dia,
@@ -262,6 +269,9 @@ class ShowProfesorHorario extends Component
                 'origen' => $horario->origen,
                 'protegido' => $horario->protegido,
             ]);
+
+            $this->emit('alert', 'No se puede eliminar una clase creada manualmente.', 'Advertencias!', 'warning');
+            return;
         }
 
         $horario->delete();
