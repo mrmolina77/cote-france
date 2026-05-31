@@ -594,38 +594,83 @@
         </x-slot>
         <x-slot name="content">
             <div>
-                <div class="mb-4 flex">
+                @php
+                    $fechaSeleccionada = $horarios_dia ? \Carbon\Carbon::parse($horarios_dia)->toDateString() : null;
+                    $gruposDiario = $grupos->map(function ($item) use ($fechaSeleccionada) {
+                        $inicioGrupo = $item->fecha_inicio ? \Carbon\Carbon::parse($item->fecha_inicio)->toDateString() : null;
+                        $esAnteriorInicio = $fechaSeleccionada && $inicioGrupo && \Carbon\Carbon::parse($fechaSeleccionada)->lt(\Carbon\Carbon::parse($inicioGrupo));
+
+                        return [
+                            'id' => (string) $item->grupo_id,
+                            'nombre' => ($item->modalidad_id == 1 ? '[P] ' : '[L] ') . $item->grupo_nombre,
+                            'disabled' => $esAnteriorInicio,
+                        ];
+                    })->values();
+                    $espaciosDiario = $espacios->map(fn ($item) => [
+                        'id' => (string) $item->espacios_id,
+                        'nombre' => $item->espacios_nombre,
+                        'disabled' => false,
+                    ])->values();
+                @endphp
+                <div class="mb-4 flex items-start">
                     <x-forms.label for="grupo_id" value="{{__('Group')}}: "/>
-                    <x-select class="flex-1 ml-4" wire:model.defer="grupo_id" id="grupo_id">
-                        <option value="">{{__('Select')}}</option>
-                        @php
-                            $fechaSeleccionada = $horarios_dia ? \Carbon\Carbon::parse($horarios_dia)->toDateString() : null;
-                        @endphp
-                        @forelse ($grupos as $item)
-                        @php
-                            $inicioGrupo = $item->fecha_inicio ? \Carbon\Carbon::parse($item->fecha_inicio)->toDateString() : null;
-                            $esAnteriorInicio = $fechaSeleccionada && $inicioGrupo && \Carbon\Carbon::parse($fechaSeleccionada)->lt(\Carbon\Carbon::parse($inicioGrupo));
-                        @endphp
-                        <option value="{{$item->grupo_id}}" @if($esAnteriorInicio) disabled @endif>
-                            {{ $item->modalidad_id == 1 ? '[P] ' : '[L] ' }}{{ $item->grupo_nombre }}
-                        </option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
+                    <div class="relative flex-1 ml-4" x-data="searchableDiarySelect({
+                            selected: @entangle('grupo_id').defer,
+                            options: @js($gruposDiario),
+                            placeholder: '{{ __('Select') }}',
+                            searchPlaceholder: 'Buscar grupo...'
+                        })" @click.away="close()">
+                        <input type="hidden" id="grupo_id" :value="selected">
+                        <button type="button" @click="toggle()" class="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex items-center justify-between gap-3">
+                            <span class="truncate" :class="selectedLabel() ? 'text-gray-800' : 'text-gray-500'" x-text="selectedLabel() || placeholder"></span>
+                            <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                        </button>
+                        <div x-show="open" x-transition class="mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-lg p-2" style="display: none;">
+                            <div class="relative mb-2">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+                                <input type="text" x-model="query" x-ref="search"  :placeholder="searchPlaceholder" class="w-full border border-blue-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+                            </div>
+                            <div class="max-h-64 overflow-y-auto pr-1">
+                                <template x-if="filteredOptions().length === 0">
+                                    <div class="px-3 py-2 text-sm text-gray-500">{{ __('No Content') }}</div>
+                                </template>
+                                <template x-for="option in filteredOptions()" :key="option.id">
+                                    <button type="button" @click="selectOption(option)" :disabled="option.disabled" class="w-full text-left px-3 py-2 text-sm rounded-lg transition" :class="option.disabled ? 'text-gray-400 cursor-not-allowed' : (String(selected) === String(option.id) ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-blue-50')" x-text="option.nombre"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <x-forms.input-error for="grupo_id"/>
                 <div>
-                    <div class="mb-4 flex">
+                    <div class="mb-4 flex items-start">
                         <x-forms.label for="id_espacios" value="{{__('Salons')}}: "/>
-                        <x-select class="flex-1 ml-4" wire:model="id_espacios" id="id_espacios">
-                            <option value="">{{__('Select')}}</option>
-                            @forelse ($espacios as $item)
-                            <option value="{{$item->espacios_id}}">{{$item->espacios_nombre}}</option>
-                            @empty
-                            <option value="">{{__('No Content')}}</option>
-                            @endforelse
-                        </x-select>
+                        <div class="relative flex-1 ml-4" x-data="searchableDiarySelect({
+                                selected: @entangle('id_espacios'),
+                                options: @js($espaciosDiario),
+                                placeholder: '{{ __('Select') }}',
+                                searchPlaceholder: 'Buscar salón...'
+                            })" @click.away="close()">
+                            <input type="hidden" id="id_espacios" :value="selected">
+                            <button type="button" @click="toggle()" class="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-left bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex items-center justify-between gap-3">
+                                <span class="truncate" :class="selectedLabel() ? 'text-gray-800' : 'text-gray-500'" x-text="selectedLabel() || placeholder"></span>
+                                <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                            </button>
+                            <div x-show="open" x-transition class="mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-lg p-2" style="display: none;">
+                                <div class="relative mb-2">
+                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+                                    <input type="text" x-model="query" x-ref="search"  :placeholder="searchPlaceholder" class="w-full border border-blue-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+                                </div>
+                                <div class="max-h-64 overflow-y-auto pr-1">
+                                    <template x-if="filteredOptions().length === 0">
+                                        <div class="px-3 py-2 text-sm text-gray-500">{{ __('No Content') }}</div>
+                                    </template>
+                                    <template x-for="option in filteredOptions()" :key="option.id">
+                                        <button type="button" @click="selectOption(option)" :disabled="option.disabled" class="w-full text-left px-3 py-2 text-sm rounded-lg transition" :class="option.disabled ? 'text-gray-400 cursor-not-allowed' : (String(selected) === String(option.id) ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-blue-50')" x-text="option.nombre"></button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <x-forms.input-error for="id_espacios"/>
                 </div>
@@ -1156,6 +1201,48 @@
     {{-- <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js"></script> --}}
 
     <script>
+    window.searchableDiarySelect = function ({ selected, options, placeholder, searchPlaceholder }) {
+        return {
+            open: false,
+            query: '',
+            selected,
+            options,
+            placeholder,
+            searchPlaceholder,
+            toggle() {
+                this.open = !this.open;
+                if (this.open) {
+                    this.$nextTick(() => this.$refs.search?.focus());
+                }
+            },
+            close() {
+                this.open = false;
+                this.query = '';
+            },
+            selectedLabel() {
+                const option = this.options.find(item => String(item.id) === String(this.selected));
+                return option ? option.nombre : '';
+            },
+            filteredOptions() {
+                const normalizedQuery = this.query.toLowerCase().trim();
+
+                if (!normalizedQuery) {
+                    return this.options;
+                }
+
+                return this.options.filter(item => item.nombre.toLowerCase().includes(normalizedQuery));
+            },
+            selectOption(option) {
+                if (option.disabled) {
+                    return;
+                }
+
+                this.selected = option.id;
+                this.close();
+            },
+        };
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
         const getTable = () => document.getElementById('horarios-table');
 
