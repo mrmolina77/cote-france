@@ -260,17 +260,10 @@ class ShowHorarios extends Component
 
         $this->ocupados=array();
         $grupo_deta=$this->cargaDetalleGrupo($this->modalidad);
-        if ((int) $this->modalidad === 1) {
-            $grupos = Grupo::where('estado_id', 1)
-                ->orderBy('modalidad_id')
-                ->orderBy('grupo_nombre')
-                ->get();
-        } else {
-            $grupos = Grupo::where('modalidad_id', (int) $this->modalidad)
-                ->where('estado_id', 1)
-                ->orderBy('grupo_nombre')
-                ->get();
-        }
+        $grupos = Grupo::where('estado_id', 1)
+            ->orderBy('modalidad_id')
+            ->orderBy('grupo_nombre')
+            ->get();
         $profesorIds = $profesores->pluck('profesores_id');
 
         $clasesPorProfesor = $profesorIds->isNotEmpty()
@@ -310,6 +303,7 @@ class ShowHorarios extends Component
     public function edit($horarios_dia,$espacios_id,$horas_id,$profesores_id,$grupo_id=''){
         $this->horarios_dia = $horarios_dia;
         $this->espacios_id = $espacios_id;
+        $this->id_espacios = $espacios_id ?: null;
         $this->horas_id = $horas_id;
         $this->grupo_id = $grupo_id;
         $this->profesores_id = $profesores_id;
@@ -398,7 +392,7 @@ class ShowHorarios extends Component
         ]);
         $this->enlazarClasesPruebaPendientes($horario);
 
-        $this->reset(['open_edit','horarios_dia','espacios_id','grupo_id',
+        $this->reset(['open_edit','horarios_dia','espacios_id','id_espacios','grupo_id',
         'horas_id','profesores_id']);
         $this->emitTo('show-horarios','render');
         $this->emit('alert','El horario fue agregado satifactoriamente');
@@ -505,12 +499,12 @@ class ShowHorarios extends Component
             return false;
         }
 
-        $fechaInicio = Grupo::where('grupo_id', $grupoId)->value('fecha_inicio');
-        if (empty($fechaInicio)) {
+        $grupo = Grupo::select('fecha_inicio', 'es_evento')->where('grupo_id', $grupoId)->first();
+        if (! $grupo || $grupo->es_evento || empty($grupo->fecha_inicio)) {
             return true;
         }
 
-        return Carbon::parse($fecha)->toDateString() >= Carbon::parse($fechaInicio)->toDateString();
+        return Carbon::parse($fecha)->toDateString() >= Carbon::parse($grupo->fecha_inicio)->toDateString();
     }
 
     public function delete(Horario $horario){

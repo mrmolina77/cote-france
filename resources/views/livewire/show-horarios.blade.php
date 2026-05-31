@@ -599,11 +599,12 @@
                     $gruposDiario = $grupos->map(function ($item) use ($fechaSeleccionada) {
                         $inicioGrupo = $item->fecha_inicio ? \Carbon\Carbon::parse($item->fecha_inicio)->toDateString() : null;
                         $esAnteriorInicio = $fechaSeleccionada && $inicioGrupo && \Carbon\Carbon::parse($fechaSeleccionada)->lt(\Carbon\Carbon::parse($inicioGrupo));
+                        $prefijoGrupo = $item->es_evento ? '[E] ' : ($item->modalidad_id == 1 ? '[P] ' : '[L] ');
 
                         return [
                             'id' => (string) $item->grupo_id,
-                            'nombre' => ($item->modalidad_id == 1 ? '[P] ' : '[L] ') . $item->grupo_nombre,
-                            'disabled' => $esAnteriorInicio,
+                            'nombre' => $prefijoGrupo . $item->grupo_nombre,
+                            'disabled' => ! $item->es_evento && $esAnteriorInicio,
                         ];
                     })->values();
                     $espaciosDiario = $espacios->map(fn ($item) => [
@@ -627,8 +628,8 @@
                         </button>
                         <div x-show="open" x-transition class="mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-lg p-2" style="display: none;">
                             <div class="relative mb-2">
-                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
-                                <input type="text" x-model="query" x-ref="search"  :placeholder="searchPlaceholder" class="w-full border border-blue-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+                                <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm text-slate-400"></i>
+                                <input type="text" x-model="query" x-ref="search"  :placeholder="searchPlaceholder" class="w-full border border-blue-300 rounded-xl !pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400" style="padding-left: 2.5rem;" />
                             </div>
                             <div class="max-h-64 overflow-y-auto pr-1">
                                 <template x-if="filteredOptions().length === 0">
@@ -658,8 +659,8 @@
                             </button>
                             <div x-show="open" x-transition class="mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-lg p-2" style="display: none;">
                                 <div class="relative mb-2">
-                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
-                                    <input type="text" x-model="query" x-ref="search"  :placeholder="searchPlaceholder" class="w-full border border-blue-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+                                    <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm text-slate-400"></i>
+                                    <input type="text" x-model="query" x-ref="search"  :placeholder="searchPlaceholder" class="w-full border border-blue-300 rounded-xl !pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400" style="padding-left: 2.5rem;" />
                                 </div>
                                 <div class="max-h-64 overflow-y-auto pr-1">
                                     <template x-if="filteredOptions().length === 0">
