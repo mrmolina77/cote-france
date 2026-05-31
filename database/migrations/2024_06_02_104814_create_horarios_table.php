@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('horarios', function (Blueprint $table) {
             $table->id('horarios_id');
             $table->date('horarios_dia');
-            $table->unsignedBigInteger('espacios_id');
+            $table->unsignedBigInteger('espacios_id')->nullable();
             $table->unsignedBigInteger('horas_id');
             $table->unsignedBigInteger('grupo_id');
             $table->unsignedBigInteger('profesores_id');
