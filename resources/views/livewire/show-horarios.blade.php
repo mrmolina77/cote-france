@@ -1303,20 +1303,43 @@
                 const targetHora = targetCell.dataset.hora;
                 const targetProfesor = targetCell.dataset.profesor;
                 const targetEspacio = targetCell.dataset.espacio;
-                // Llama a Livewire directamente
-                @this.updateGrupoHorario(
-                    targetId,
-                    targetDia,
-                    targetHora,
-                    data.grupo,
-                    targetProfesor,
-                    data.espacio,
-                    data.id,
-                    data.dia,
-                    data.hora,
-                    data.profesor,
-                    data.espacio
-                );
+                const updateGrupoHorario = () => {
+                    @this.updateGrupoHorario(
+                        targetId,
+                        targetDia,
+                        targetHora,
+                        data.grupo,
+                        targetProfesor,
+                        data.espacio,
+                        data.id,
+                        data.dia,
+                        data.hora,
+                        data.profesor,
+                        data.espacio
+                    );
+                };
+
+                const isChangingRow = String(data.hora) !== String(targetHora);
+
+                if (!isChangingRow) {
+                    updateGrupoHorario();
+                    return;
+                }
+
+                Swal.fire({
+                    title: '¿Está seguro de cambiar este grupo de fila?',
+                    text: 'El grupo se moverá a un horario diferente. Esta acción puede afectar la programación existente.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    cancelButtonText: "{{ __('Cancel') }}",
+                    confirmButtonText: 'Sí, cambiar de fila'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        updateGrupoHorario();
+                    }
+                });
             });
         };
 
