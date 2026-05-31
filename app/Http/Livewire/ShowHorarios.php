@@ -353,6 +353,17 @@ class ShowHorarios extends Component
         $this->emit('alert', $message);
     }
 
+    private function normalizeEspacioId($espaciosId): ?int
+    {
+        if (blank($espaciosId) || (int) $espaciosId <= 0) {
+            return null;
+        }
+
+        $espaciosId = (int) $espaciosId;
+
+        return Espacio::whereKey($espaciosId)->exists() ? $espaciosId : null;
+    }
+
     public function save(){
         $validated = $this->validate([
             'grupo_id'=>'required',
@@ -384,11 +395,11 @@ class ShowHorarios extends Component
 
 
         $horario = Horario::create([
-            'horarios_dia' =>$this->horarios_dia,
-            'espacios_id' =>$this->id_espacios ?? 0,
-            'horas_id' =>$this->horas_id,
-            'grupo_id' =>$this->grupo_id,
-            'profesores_id' =>$this->profesores_id
+            'horarios_dia' => $this->horarios_dia,
+            'espacios_id' => $this->normalizeEspacioId($this->id_espacios),
+            'horas_id' => $this->horas_id,
+            'grupo_id' => $this->grupo_id,
+            'profesores_id' => $this->profesores_id
         ]);
         $this->enlazarClasesPruebaPendientes($horario);
 
@@ -901,7 +912,7 @@ class ShowHorarios extends Component
                 if ($horarioActual) {
                     $clasePrueba->horarios_id = $horarioActual->horarios_id;
                     $clasePrueba->profesores_id = $horarioActual->profesores_id;
-                    $clasePrueba->espacios_id = $this->espacios_id;
+                    $clasePrueba->espacios_id = $this->normalizeEspacioId($this->espacios_id);
                     $clasePrueba->horarios_dia = $horarioActual->horarios_dia;
                     $clasePrueba->horas_id = $horarioActual->horas_id;
                     $clasePrueba->grupo_id = $horarioActual->grupo_id;
@@ -919,7 +930,7 @@ class ShowHorarios extends Component
             }
 
             $horario = Horario::find($this->diarios_horarios_id);
-            $horario->espacios_id = $this->espacios_id;
+            $horario->espacios_id = $this->normalizeEspacioId($this->espacios_id);
             $horario->save();
             DB::commit();
         } catch (\Throwable $e) {
@@ -1112,7 +1123,7 @@ class ShowHorarios extends Component
                 return;
             }
 
-            $id_espacios = (int)($espacios_id ?? 0);
+            $id_espacios = $this->normalizeEspacioId($espacios_id);
             $fechaAnterior = $anterior_dia ? Carbon::parse($anterior_dia)->toDateString() : null;
             $horaAnterior = $anterior_hora ? (int) $anterior_hora : null;
             // dd($id_espacios);
@@ -1163,11 +1174,18 @@ class ShowHorarios extends Component
                         ]);
                     }
                 } else {
-                    $cantidad = Horario::where('horarios_dia',$horarios_dia)
-                                      ->where('espacios_id',$id_espacios)
-                                      ->where('horas_id',$horas_id)
-                                      ->where('grupo_id',$grupo_id)
-                                      ->where('profesores_id',$profesores_id)->count();
+                    $queryCantidad = Horario::where('horarios_dia', $horarios_dia)
+                                      ->where('horas_id', $horas_id)
+                                      ->where('grupo_id', $grupo_id)
+                                      ->where('profesores_id', $profesores_id);
+
+                    if (is_null($id_espacios)) {
+                        $queryCantidad->whereNull('espacios_id');
+                    } else {
+                        $queryCantidad->where('espacios_id', $id_espacios);
+                    }
+
+                    $cantidad = $queryCantidad->count();
 
                     if ($cantidad == 0) {
                         Horario::create([
