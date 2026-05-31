@@ -355,13 +355,25 @@ class ShowHorarios extends Component
 
     private function normalizeEspacioId($espaciosId): ?int
     {
-        if (blank($espaciosId) || (int) $espaciosId <= 0) {
-            return null;
+        if (blank($espaciosId)) {
+            return $this->sinAsignarEspacioId();
         }
 
         $espaciosId = (int) $espaciosId;
 
-        return Espacio::whereKey($espaciosId)->exists() ? $espaciosId : null;
+        if (Espacio::whereKey($espaciosId)->exists()) {
+            return $espaciosId;
+        }
+
+        return $this->sinAsignarEspacioId();
+    }
+
+    private function sinAsignarEspacioId(): ?int
+    {
+        return Espacio::where('espacios_nombre', 'Sin asignar')
+            ->orWhere('espacios_descripcion', 'Sin asignar')
+            ->orderBy('espacios_id')
+            ->value('espacios_id');
     }
 
     public function save(){
@@ -438,7 +450,7 @@ class ShowHorarios extends Component
     public function saveClasePrueba(): void
     {
         $this->clase_prueba_profesores_id = $this->clase_prueba_profesores_id ?: null;
-        $this->clase_prueba_espacios_id = $this->clase_prueba_espacios_id ?: null;
+        $this->clase_prueba_espacios_id = $this->normalizeEspacioId($this->clase_prueba_espacios_id);
         $this->clase_prueba_modalidad_id = $this->clase_prueba_modalidad_id ?: null;
 
         $this->clase_prueba_prospectos_ids = collect($this->clase_prueba_prospectos_ids)
