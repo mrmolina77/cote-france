@@ -15,7 +15,12 @@ class Horario extends Model
     */
     protected $table = 'horarios';
 
-    protected $fillable = ['espacios_id','horarios_dia','horas_id','grupo_id','profesores_id'];
+    protected $fillable = ['espacios_id','horarios_dia','horas_id','grupo_id','profesores_id','origen','protegido','protegido_at'];
+
+    protected $casts = [
+        'protegido' => 'boolean',
+        'protegido_at' => 'datetime',
+    ];
 
    /**
     * The primary key associated with the table.

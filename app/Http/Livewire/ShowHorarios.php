@@ -233,6 +233,8 @@ class ShowHorarios extends Component
                             'modalidad' => $horario->espacio ? $horario->espacio->modalidad_id : null,
                             'bgcolor' => $bgColor,
                             'id' => $horario->horarios_id,
+                            'origen' => $horario->origen,
+                            'protegido' => (bool) $horario->protegido,
                             'diario_actualizado' => $horario->diario?->updated_at,
                             'diario_anterior_pendiente' => $pendientesAnteriores[$horario->horarios_id] ?? false,
                             'is_blocked' => false,
@@ -411,7 +413,19 @@ class ShowHorarios extends Component
             'espacios_id' => $this->normalizeEspacioId($this->id_espacios),
             'horas_id' => $this->horas_id,
             'grupo_id' => $this->grupo_id,
-            'profesores_id' => $this->profesores_id
+            'profesores_id' => $this->profesores_id,
+            'origen' => 'manual',
+            'protegido' => true,
+            'protegido_at' => now(),
+        ]);
+
+        Log::info('[HorariosProtegidos] Clase manual creada', [
+            'horarios_id' => $horario->horarios_id ?? null,
+            'grupo_id' => $horario->grupo_id ?? null,
+            'horarios_dia' => $horario->horarios_dia ?? null,
+            'horas_id' => $horario->horas_id ?? null,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
         ]);
         $this->enlazarClasesPruebaPendientes($horario);
 
@@ -539,6 +553,17 @@ class ShowHorarios extends Component
             return;
         }
 
+        if ($horario->protegido || $horario->origen === 'manual') {
+            Log::info('[HorariosProtegidos] Eliminación explícita de horario protegido confirmada por usuario', [
+                'horarios_id' => $horario->horarios_id,
+                'grupo_id' => $horario->grupo_id,
+                'horarios_dia' => $horario->horarios_dia,
+                'horas_id' => $horario->horas_id,
+                'origen' => $horario->origen,
+                'protegido' => $horario->protegido,
+            ]);
+        }
+
         $horario->delete();
         $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
     }
@@ -563,6 +588,13 @@ class ShowHorarios extends Component
         }
 
         GrupoInactivo::create([
+            'grupo_id' => $grupoId,
+            'fecha' => $fechaFormateada,
+            'horas_id' => $horaId,
+            'modalidad_id' => $modalidadId,
+        ]);
+
+        Log::info('[HorariosProtegidos] Grupo inactivo aplicado solo a horarios base', [
             'grupo_id' => $grupoId,
             'fecha' => $fechaFormateada,
             'horas_id' => $horaId,
@@ -1049,6 +1081,12 @@ class ShowHorarios extends Component
             });
 
             if ($estaInactivo) {
+                Log::info('[HorariosProtegidos] Grupo inactivo ocultó horario base', [
+                    'grupo_id' => $item->grupo_id,
+                    'fecha' => $evaluar,
+                    'horas_id' => $item->horas_id,
+                    'modalidad_id' => $modalidad,
+                ]);
                 continue;
             }
 
@@ -1150,13 +1188,50 @@ class ShowHorarios extends Component
                 $fechaAnterior,
                 $horaAnterior
             ) {
-                if ($anterior_id != '0') {
-                    $horarioAnterior = Horario::find($anterior_id);
-                    if ($horarioAnterior) {
+                $horarioAnterior = $anterior_id != '0' ? Horario::find($anterior_id) : null;
+                $origenDragDrop = $horarioAnterior && $horarioAnterior->origen === 'manual'
+                    ? 'manual'
+                    : 'drag_drop';
+                $protegidoAt = $horarioAnterior?->protegido_at ?? now();
+
+                if ($horarioAnterior) {
+                    if ($horarioAnterior->protegido || $horarioAnterior->origen === 'manual') {
+                        Log::info('[HorariosProtegidos] Horario protegido excluido de grupos_inactivos al mover por drag and drop', [
+                            'horarios_id' => $horarioAnterior->horarios_id,
+                            'grupo_id' => $horarioAnterior->grupo_id,
+                            'horarios_dia' => $horarioAnterior->horarios_dia,
+                            'horas_id' => $horarioAnterior->horas_id,
+                            'origen' => $horarioAnterior->origen,
+                            'protegido' => $horarioAnterior->protegido,
+                        ]);
+                    } else {
                         $this->registrarGrupoInactivoPorCambioHorario($horarioAnterior, $horarios_dia, (int) $horas_id);
-                        $horarioAnterior->delete();
                     }
-                } elseif ($fechaAnterior && $horaAnterior && ($fechaAnterior !== Carbon::parse($horarios_dia)->toDateString() || $horaAnterior !== (int) $horas_id)) {
+
+                    $horarioAnterior->update([
+                        'horarios_dia' => $horarios_dia,
+                        'horas_id' => $horas_id,
+                        'grupo_id' => $grupo_id,
+                        'espacios_id' => $id_espacios,
+                        'profesores_id' => $profesores_id,
+                        'origen' => $origenDragDrop,
+                        'protegido' => true,
+                        'protegido_at' => $protegidoAt,
+                    ]);
+
+                    Log::info('[HorariosProtegidos] Horario movido por drag and drop', [
+                        'horarios_id' => $horarioAnterior->horarios_id,
+                        'grupo_id' => $horarioAnterior->grupo_id,
+                        'horarios_dia' => $horarioAnterior->horarios_dia,
+                        'horas_id' => $horarioAnterior->horas_id,
+                        'origen' => $horarioAnterior->origen,
+                        'protegido' => $horarioAnterior->protegido,
+                    ]);
+
+                    return;
+                }
+
+                if ($fechaAnterior && $horaAnterior && ($fechaAnterior !== Carbon::parse($horarios_dia)->toDateString() || $horaAnterior !== (int) $horas_id)) {
                     $modalidadId = $this->modalidad ?? Grupo::where('grupo_id', $grupo_id)->value('modalidad_id');
                     GrupoInactivo::firstOrCreate([
                         'grupo_id' => $grupo_id,
@@ -1169,20 +1244,45 @@ class ShowHorarios extends Component
                 if ($horarios_id != '0') {
                     $horario = Horario::find($horarios_id);
                     if ($horario) {
+                        $origen = $horario->origen === 'manual' ? 'manual' : 'drag_drop';
                         $horario->update([
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
                             'espacios_id' => $id_espacios,
                             'profesores_id' => $profesores_id,
+                            'origen' => $origen,
+                            'protegido' => true,
+                            'protegido_at' => $horario->protegido_at ?? now(),
+                        ]);
+
+                        Log::info('[HorariosProtegidos] Horario destino actualizado por drag and drop', [
+                            'horarios_id' => $horario->horarios_id,
+                            'grupo_id' => $horario->grupo_id,
+                            'horarios_dia' => $horario->horarios_dia,
+                            'horas_id' => $horario->horas_id,
+                            'origen' => $horario->origen,
+                            'protegido' => $horario->protegido,
                         ]);
                     } else {
-                        Horario::create([
+                        $horario = Horario::create([
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
                             'espacios_id' => $id_espacios,
                             'profesores_id' => $profesores_id,
+                            'origen' => 'drag_drop',
+                            'protegido' => true,
+                            'protegido_at' => now(),
+                        ]);
+
+                        Log::info('[HorariosProtegidos] Horario creado por drag and drop', [
+                            'horarios_id' => $horario->horarios_id,
+                            'grupo_id' => $horario->grupo_id,
+                            'horarios_dia' => $horario->horarios_dia,
+                            'horas_id' => $horario->horas_id,
+                            'origen' => $horario->origen,
+                            'protegido' => $horario->protegido,
                         ]);
                     }
                 } else {
@@ -1200,12 +1300,24 @@ class ShowHorarios extends Component
                     $cantidad = $queryCantidad->count();
 
                     if ($cantidad == 0) {
-                        Horario::create([
+                        $horario = Horario::create([
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
                             'espacios_id' => $id_espacios,
                             'profesores_id' => $profesores_id,
+                            'origen' => 'drag_drop',
+                            'protegido' => true,
+                            'protegido_at' => now(),
+                        ]);
+
+                        Log::info('[HorariosProtegidos] Horario creado por drag and drop', [
+                            'horarios_id' => $horario->horarios_id,
+                            'grupo_id' => $horario->grupo_id,
+                            'horarios_dia' => $horario->horarios_dia,
+                            'horas_id' => $horario->horas_id,
+                            'origen' => $horario->origen,
+                            'protegido' => $horario->protegido,
                         ]);
                     }
                 }

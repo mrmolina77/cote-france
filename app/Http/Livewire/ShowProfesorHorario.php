@@ -179,6 +179,8 @@ class ShowProfesorHorario extends Component
                     'modalidad' => $horario->espacio->modalidad_id,
                     'bgcolor' => $color,
                     'id' => $horario->horarios_id,
+                    'origen' => $horario->origen,
+                    'protegido' => (bool) $horario->protegido,
                     'diario_actualizado' => $horario->diario?->updated_at,
                     'diario_anterior_pendiente' => $pendientesAnteriores[$horario->horarios_id] ?? false,
                     'editable' => $horario->profesores_id == $id_relacionado // Add editable flag
@@ -249,6 +251,17 @@ class ShowProfesorHorario extends Component
         if ($horario->profesores_id != $id_relacionado) {
             $this->emit('alert', 'Solo puedes eliminar tu propio horario', 'Advertencia', 'warning');
             return;
+        }
+
+        if ($horario->protegido || $horario->origen === 'manual') {
+            Log::info('[HorariosProtegidos] Eliminación explícita de horario protegido confirmada por profesor', [
+                'horarios_id' => $horario->horarios_id,
+                'grupo_id' => $horario->grupo_id,
+                'horarios_dia' => $horario->horarios_dia,
+                'horas_id' => $horario->horas_id,
+                'origen' => $horario->origen,
+                'protegido' => $horario->protegido,
+            ]);
         }
 
         $horario->delete();
