@@ -910,7 +910,7 @@
     @endif
 
     @if($open_edit_plan)
-    <x-dialog-modal wire:model="open_edit_plan">
+    <x-dialog-modal wire:model="open_edit_plan" maxWidth="3xl">
         <x-slot name="title">
             Actualizar plan - Grupo: {{ $plan_modal_grupo ?? 'Sin cargar' }} - Fecha: {{ $plan_modal_fecha ?? 'Sin cargar' }} - Hora: {{ $plan_modal_hora ?? 'Sin cargar' }}
         </x-slot>
@@ -946,64 +946,114 @@
                             $pruebas = collect($items)->filter(fn($eval) => isset($eval['clase_prueba_id']));
                         @endphp
 
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Profesor:</strong> {{ $profesor ?: 'Sin cargar' }} - <strong>Salón:</strong> {{ $espacio ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Nivel:</strong> {{ $nivel ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Capítulo:</strong> {{ $capitulo ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Temática:</strong> {{ $tematica ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>N° de clases:</strong> {{ $numero_clases_formateado ?? 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Hecho:</strong> {{ $diarios_hecho ?: 'Sin cargar' }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Por hacer:</strong> {{ $diarios_porhacer ?: 'Sin cargar' }}</p>
+                        <div class="space-y-5">
+                            <fieldset class="border border-slate-200 rounded-lg p-3">
+                                <legend class="px-2 font-semibold text-slate-700">Parte 1 — Datos generales</legend>
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-500 dark:text-gray-300">
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Fecha</p>
+                                        <p>{{ $fecha ?: 'Sin cargar' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Profesor</p>
+                                        <p>{{ $profesor ?: 'Sin cargar' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Salón</p>
+                                        <p>{{ $espacio ?: 'Sin cargar' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Nivel</p>
+                                        <p>{{ $nivel ?: 'Sin cargar' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Capítulo</p>
+                                        <p>{{ $capitulo ?: 'Sin cargar' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Temática</p>
+                                        <p>{{ $tematica ?: 'Sin cargar' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">N° de clases</p>
+                                        <p>{{ $numero_clases_formateado ?? 'Sin cargar' }}</p>
+                                    </div>
+                                </div>
+                            </fieldset>
 
-                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
-                                <tr>
-                                    <th class="px-4 py-2">Estudiante</th>
-                                    <th class="px-4 py-2">Asistencia</th>
-                                    <th class="px-4 py-2">Observación</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($regulares as $eval)
-                                        <tr class="bg-white dark:bg-gray-800 border-b">
-                                            <td class="px-4 py-2 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                                <span>
-                                                    {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
-                                                    {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
-                                                </span>
-                                                @if (isset($eval['clase_prueba_id']))
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
-                                                        Prueba
-                                                    </span>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
-                                            <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
-                                        </tr>
-                                @empty
-                                    <tr class="bg-white dark:bg-gray-800 border-b">
-                                        <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">Sin registros de asistencia guardados</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                        @if($pruebas->isNotEmpty())
-                            <h4 class="mt-4 mb-2 text-sm font-bold text-gray-700 dark:text-gray-100">Clases de prueba</h4>
-                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                                <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
-                                <tr><th class="px-4 py-2">Estudiante / Prospecto</th><th class="px-4 py-2">Asistencia</th><th class="px-4 py-2">Observación</th></tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($pruebas as $eval)
-                                    <tr class="bg-white dark:bg-gray-800 border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ ($eval['prospecto']['prospectos_nombres'] ?? 'Sin cargar') . ' ' . ($eval['prospecto']['prospectos_apellidos'] ?? '') }} <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800">Prueba</span></td>
-                                        <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
-                                        <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        @endif
+                            <fieldset class="border border-slate-200 rounded-lg p-3">
+                                <legend class="px-2 font-semibold text-slate-700">Parte 2 — Hecho y Por hacer</legend>
+                                <div class="space-y-4 text-sm text-gray-500 dark:text-gray-300">
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Hecho</p>
+                                        <div class="min-h-[10.5rem] rounded-lg border border-slate-300 bg-white px-3 py-2 whitespace-pre-wrap break-words dark:bg-gray-800 dark:border-gray-600">{{ $diarios_hecho ?: 'Sin cargar' }}</div>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Por hacer</p>
+                                        <div class="min-h-[10.5rem] rounded-lg border border-slate-300 bg-white px-3 py-2 whitespace-pre-wrap break-words dark:bg-gray-800 dark:border-gray-600">{{ $diarios_porhacer ?: 'Sin cargar' }}</div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="border border-slate-200 rounded-lg p-3">
+                                <legend class="px-2 font-semibold text-slate-700">Parte 3 — Estudiantes</legend>
+                                <div class="relative overflow-x-auto">
+                                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                        <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-gray-700/50 dark:text-gray-400 border-b border-slate-200/60">
+                                            <tr>
+                                                <th class="px-4 py-2.5 font-bold w-1/2">Estudiante</th>
+                                                <th class="px-3 py-2.5 text-center font-bold">Asistencia</th>
+                                                <th class="px-3 py-2.5 text-center font-bold">Observación</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            @forelse($regulares as $eval)
+                                                <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
+                                                    <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap dark:text-white w-1/2">
+                                                        {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
+                                                        {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
+                                                    </td>
+                                                    <td class="px-3 py-2.5 text-center">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                                    <td class="px-3 py-2.5 text-center">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
+                                                </tr>
+                                            @empty
+                                                <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
+                                                    <td colspan="3" class="px-4 py-2.5 text-center text-gray-500 italic">Sin registros de asistencia guardados</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </fieldset>
+
+                            @if($pruebas->isNotEmpty())
+                                <fieldset class="border border-slate-200 rounded-lg p-3">
+                                    <legend class="px-2 font-semibold text-slate-700">Parte 4 — Clases de prueba / Prospectos</legend>
+                                    <div class="relative overflow-x-auto">
+                                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                            <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50/50 border-b border-slate-200/60 dark:bg-gray-700/50 dark:text-gray-400">
+                                                <tr>
+                                                    <th class="px-4 py-2.5 font-bold">Prospecto</th>
+                                                    <th class="px-3 py-2.5 text-center font-bold">Asistencia</th>
+                                                    <th class="px-4 py-2.5 font-bold">Observación</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-100">
+                                                @foreach($pruebas as $eval)
+                                                    <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
+                                                        <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap dark:text-white">
+                                                            {{ ($eval['prospecto']['prospectos_nombres'] ?? 'Sin cargar') . ' ' . ($eval['prospecto']['prospectos_apellidos'] ?? '') }}
+                                                        </td>
+                                                        <td class="px-3 py-2.5 text-center">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                                        <td class="px-4 py-2.5">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </fieldset>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             </div>
