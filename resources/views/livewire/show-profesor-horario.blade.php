@@ -132,7 +132,7 @@
                                                 <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                             @endif
                                         </div>
-                                        @if(($horarioItem['origen'] ?? null) === 'manual' || ($horarioItem['protegido'] ?? false))
+                                        @if(($horarioItem['origen'] ?? null) === 'manual')
                                             <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
                                         @endif
                                         @php
@@ -206,7 +206,7 @@
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         </div>
-                                        @if(($horarioItem['origen'] ?? null) === 'manual' || ($horarioItem['protegido'] ?? false))
+                                        @if(($horarioItem['origen'] ?? null) === 'manual')
                                             <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
                                         @endif
                                         @php
@@ -332,7 +332,7 @@
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         @endif
                                     </div>
-                                    @if(($horarioItem['origen'] ?? null) === 'manual' || ($horarioItem['protegido'] ?? false))
+                                    @if(($horarioItem['origen'] ?? null) === 'manual')
                                         <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
                                     @endif
                                     @php
