@@ -471,7 +471,7 @@ class ShowProfesorHorario extends Component
         $this->diarios_hecho = $this->diario?->diarios_hecho ?? "";
         $this->diarios_porhacer = $this->diario?->diarios_porhacer ?? "";
         $this->tematica = $this->diario?->tematica ?? "";
-        $this->numero_clases = $this->diario?->numero_clases ?? 0.5;
+        $this->numero_clases = $this->diario?->numero_clases;
         $nivelesid = $grupo->nivel_id;
         $capitulos_id = $grupo->capitulo_id;
         $this->idnivel = $this->diario?->niveles_id ?? $nivelesid;
@@ -508,6 +508,7 @@ class ShowProfesorHorario extends Component
         try {
             DB::beginTransaction();
             $datosGeneralesValidados = (bool) ($this->validado_datos_generales && $this->idnivel && $this->id_capitulo);
+            $numeroClases = $this->numero_clases === '' ? null : $this->numero_clases;
 
             foreach ($this->estudiantes as $estudiante) {
                 $id = $estudiante->prospectos_id;
@@ -533,7 +534,7 @@ class ShowProfesorHorario extends Component
                 $this->diario->niveles_id = $this->idnivel;
                 $this->diario->capitulos_id = $this->id_capitulo;
                 $this->diario->tematica_id = $this->id_tematica;
-                $this->diario->numero_clases = $this->numero_clases;
+                $this->diario->numero_clases = $numeroClases;
                 $this->diario->validado_datos_generales = $datosGeneralesValidados;
                 $this->diario->validado_contenido_clase = (bool) $this->validado_contenido_clase;
                 $this->diario->validado_estudiantes = (bool) $this->validado_estudiantes;
@@ -547,7 +548,7 @@ class ShowProfesorHorario extends Component
                     'niveles_id' => $this->idnivel,
                     'capitulos_id' => $this->id_capitulo,
                     'tematica_id' => $this->id_tematica,
-                    'numero_clases' => $this->numero_clases,
+                    'numero_clases' => $numeroClases,
                     'validado_datos_generales' => $datosGeneralesValidados,
                     'validado_contenido_clase' => (bool) $this->validado_contenido_clase,
                     'validado_estudiantes' => (bool) $this->validado_estudiantes,
