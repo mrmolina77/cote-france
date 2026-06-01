@@ -132,6 +132,7 @@
                                                 <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                             @endif
                                         </div>
+                                        {{-- DEBUG: Esta condición muestra Manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos Manual. --}}
                                         @if(($horarioItem['origen'] ?? null) === 'manual')
                                             <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
                                         @endif
@@ -206,6 +207,7 @@
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         </div>
+                                        {{-- DEBUG: Esta condición muestra Manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos Manual. --}}
                                         @if(($horarioItem['origen'] ?? null) === 'manual')
                                             <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
                                         @endif
@@ -332,6 +334,7 @@
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         @endif
                                     </div>
+                                    {{-- DEBUG: Esta condición muestra Manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos Manual. --}}
                                     @if(($horarioItem['origen'] ?? null) === 'manual')
                                         <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
                                     @endif
