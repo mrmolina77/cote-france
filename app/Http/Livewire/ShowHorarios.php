@@ -94,6 +94,37 @@ class ShowHorarios extends Component
         $this->dimenciones[]="scale-50 -translate-x-80 -translate-y-80";
     }
 
+
+    private function logHorarioDebug(string $evento, array $data = []): void
+    {
+        Log::info('[HorariosManualDebug] ' . $evento, array_merge([
+            'component' => static::class,
+            'user_id' => optional(auth())->id(),
+            'timestamp' => now()->toDateTimeString(),
+        ], $data));
+    }
+
+    private function horarioDebugSnapshot(?Horario $horario): ?array
+    {
+        if (! $horario) {
+            return null;
+        }
+
+        return [
+            'horarios_id' => $horario->horarios_id,
+            'grupo_id' => $horario->grupo_id,
+            'profesores_id' => $horario->profesores_id,
+            'horarios_dia' => $horario->horarios_dia instanceof Carbon
+                ? $horario->horarios_dia->format('Y-m-d')
+                : $horario->horarios_dia,
+            'horas_id' => $horario->horas_id,
+            'espacios_id' => $horario->espacios_id,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+            'protegido_at' => $horario->protegido_at ?? null,
+        ];
+    }
+
     public function mount($modalidad){
         $this->modalidad = $modalidad;
         $this->estudiantes = collect([]);
@@ -284,6 +315,51 @@ class ShowHorarios extends Component
             })
             ->orderBy('prospectos_nombres')
             ->get();
+        $horariosParaLog = collect($array_horario)
+            ->flatten(3)
+            ->filter(fn ($item) => is_array($item) && isset($item['id']) && ! str_starts_with((string) $item['id'], 'blocked-'));
+        $conteoOrigenes = $horariosParaLog
+            ->groupBy(fn ($item) => $item['origen'] ?? 'sin_origen')
+            ->map->count()
+            ->toArray();
+        $conteoProtegidos = $horariosParaLog
+            ->filter(fn ($item) => ! empty($item['protegido']))
+            ->count();
+        $horariosVisiblesComoManualPorOrigen = $horariosParaLog
+            ->filter(fn ($item) => ($item['origen'] ?? null) === 'manual')
+            ->count();
+        $horariosVisiblesComoManualPorProtegido = $horariosParaLog
+            ->filter(fn ($item) => ($item['origen'] ?? null) !== 'manual' && ! empty($item['protegido']))
+            ->count();
+
+        $this->logHorarioDebug('render:resumen_origenes', [
+            'conteo_origenes' => $conteoOrigenes,
+            'conteo_protegidos' => $conteoProtegidos,
+        ]);
+        $this->logHorarioDebug('render:muestra_horarios', [
+            'sample' => $horariosParaLog
+                ->take(10)
+                ->map(fn ($item) => [
+                    'horarios_id' => $item['id'] ?? null,
+                    'grupo_id' => $item['grupo_id'] ?? null,
+                    'origen' => $item['origen'] ?? null,
+                    'protegido' => $item['protegido'] ?? null,
+                    'manual_visual' => (($item['origen'] ?? null) === 'manual') || (($item['protegido'] ?? false) === true),
+                ])
+                ->values()
+                ->toArray(),
+        ]);
+        $this->logHorarioDebug('render:manual_visual_diagnostico', [
+            'manual_por_origen' => $horariosVisiblesComoManualPorOrigen,
+            'manual_por_protegido_sin_origen_manual' => $horariosVisiblesComoManualPorProtegido,
+            'diagnostico' => $horariosVisiblesComoManualPorProtegido > 0
+                ? 'La vista probablemente está mostrando Manual por protegido=true aunque origen no sea manual.'
+                : 'No se detectan horarios protegidos no manuales en esta muestra.',
+        ]);
+        $this->logHorarioDebug('render:manual_badge_rule', [
+            'rule' => 'Manual badge should depend only on origen=manual, not protegido=true',
+        ]);
+
         // $this->porcentaje = 100 / (count($horas) * count($dias));
         return view('livewire.show-horarios',[
                                             'espacios'=>$espacios
@@ -408,7 +484,8 @@ class ShowHorarios extends Component
 
 
 
-        $horario = Horario::create([
+        $protegidoAtManual = now();
+        $payloadCreateHorario = [
             'horarios_dia' => $this->horarios_dia,
             'espacios_id' => $this->normalizeEspacioId($this->id_espacios),
             'horas_id' => $this->horas_id,
@@ -416,7 +493,25 @@ class ShowHorarios extends Component
             'profesores_id' => $this->profesores_id,
             'origen' => 'manual',
             'protegido' => true,
-            'protegido_at' => now(),
+            'protegido_at' => $protegidoAtManual,
+        ];
+
+        $this->logHorarioDebug('save_manual:before_create', [
+            'payload' => $payloadCreateHorario,
+        ]);
+        Log::info('[HorariosManualDebug] asignacion_manual_detectada', [
+            'file_context' => 'ShowHorarios::save',
+            'motivo_esperado' => 'Solo debe ejecutarse en creación manual desde modal',
+            'payload' => $payloadCreateHorario,
+        ]);
+
+        $horario = Horario::create($payloadCreateHorario);
+
+        $this->logHorarioDebug('save_manual:after_create', [
+            'horario_id' => $horario->horarios_id ?? null,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+            'protegido_at' => $horario->protegido_at ?? null,
         ]);
 
         Log::info('[HorariosProtegidos] Clase manual creada', [
@@ -548,12 +643,26 @@ class ShowHorarios extends Component
         // Verificar si el horario tiene evaluaciones asociadas
         $evaluaciones = Evaluacion::where('horarios_id', $horario->horarios_id)->exists();
 
+        $this->logHorarioDebug('delete:start', [
+            'horario_id' => $horario->horarios_id ?? null,
+            'grupo_id' => $horario->grupo_id ?? null,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+            'has_evaluaciones' => $evaluaciones,
+        ]);
+
         if ($evaluaciones) {
             $this->emit('alert', 'No se puede eliminar el horario porque tiene evaluaciones asociadas', 'Advertencias!', 'warning');
             return;
         }
 
         if ($horario->origen === 'manual') {
+            $this->logHorarioDebug('delete:blocked_manual', [
+                'horario_id' => $horario->horarios_id ?? null,
+                'origen' => $horario->origen ?? null,
+                'protegido' => $horario->protegido ?? null,
+            ]);
+
             Log::info('[HorariosProtegidos] Intento de eliminar clase manual bloqueado', [
                 'horarios_id' => $horario->horarios_id,
                 'grupo_id' => $horario->grupo_id,
@@ -566,6 +675,12 @@ class ShowHorarios extends Component
             $this->emit('alert', 'No se puede eliminar una clase creada manualmente.', 'Advertencias!', 'warning');
             return;
         }
+
+        $this->logHorarioDebug('delete:executed', [
+            'horario_id' => $horario->horarios_id ?? null,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+        ]);
 
         $horario->delete();
         $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
@@ -1142,6 +1257,23 @@ class ShowHorarios extends Component
         $anterior_espacio = null
     )
     {
+        $this->logHorarioDebug('updateGrupoHorario:start', [
+            'params' => [
+                'horarios_id' => $horarios_id ?? null,
+                'anterior_id' => $anterior_id ?? null,
+                'grupo_id' => $grupo_id ?? null,
+                'profesores_id' => $profesores_id ?? null,
+                'horarios_dia' => $horarios_dia ?? null,
+                'horas_id' => $horas_id ?? null,
+                'espacios_id' => $espacios_id ?? null,
+                'modalidad_id' => $this->modalidad ?? null,
+                'anterior_dia' => $anterior_dia ?? null,
+                'anterior_hora' => $anterior_hora ?? null,
+                'anterior_profesor' => $anterior_profesor ?? null,
+                'anterior_espacio' => $anterior_espacio ?? null,
+            ],
+        ]);
+
         // --- INICIO: Validación de datos relacionados ---
         // Si se está moviendo un horario existente (no creando uno nuevo desde un grupo base)
         if ($anterior_id != '0') {
@@ -1180,7 +1312,23 @@ class ShowHorarios extends Component
             $fechaAnterior = $anterior_dia ? Carbon::parse($anterior_dia)->toDateString() : null;
             $horaAnterior = $anterior_hora ? (int) $anterior_hora : null;
 
-            $horarioDestino = $horarios_id != '0' ? Horario::find($horarios_id) : null;
+            $horarioAnteriorDebug = ! empty($anterior_id) && $anterior_id !== '0'
+                ? Horario::find($anterior_id)
+                : null;
+            $horarioDestino = ! empty($horarios_id) && $horarios_id !== '0'
+                ? Horario::find($horarios_id)
+                : null;
+
+            $this->logHorarioDebug('updateGrupoHorario:horario_anterior', [
+                'anterior_id' => $anterior_id ?? null,
+                'horario_anterior_exists' => (bool) $horarioAnteriorDebug,
+                'horario_anterior' => $this->horarioDebugSnapshot($horarioAnteriorDebug),
+            ]);
+            $this->logHorarioDebug('updateGrupoHorario:horario_destino', [
+                'horarios_id_param' => $horarios_id ?? null,
+                'horario_destino_exists' => (bool) $horarioDestino,
+                'horario_destino' => $this->horarioDebugSnapshot($horarioDestino),
+            ]);
 
             if ($horarioDestino && $horarioDestino->origen === 'manual' && (string) $horarioDestino->horarios_id !== (string) $anterior_id) {
                 Log::info('[HorariosProtegidos] Drag and drop bloqueado: destino es clase manual', [
@@ -1236,14 +1384,37 @@ class ShowHorarios extends Component
                 $profesores_id,
                 $horarios_id,
                 $fechaAnterior,
-                $horaAnterior
+                $horaAnterior,
+                $horarioDestino
             ) {
                 $horarioAnterior = $anterior_id != '0' ? Horario::find($anterior_id) : null;
+                $this->logHorarioDebug('updateGrupoHorario:origen_decision_before', [
+                    'anterior_id' => $anterior_id ?? null,
+                    'horarios_id' => $horarios_id ?? null,
+                    'horario_anterior_origen' => $horarioAnterior->origen ?? null,
+                    'horario_anterior_protegido' => $horarioAnterior->protegido ?? null,
+                    'horario_destino_origen' => $horarioDestino->origen ?? null,
+                    'horario_destino_protegido' => $horarioDestino->protegido ?? null,
+                ]);
                 $origenDragDrop = $horarioAnterior && $horarioAnterior->origen === 'manual'
                     ? 'manual'
                     : 'drag_drop';
+                if ($origenDragDrop === 'manual') {
+                    Log::warning('[HorariosManualDebug] POSIBLE_ERROR: updateGrupoHorario intenta asignar origen manual', [
+                        'anterior_id' => $anterior_id ?? null,
+                        'horarios_id' => $horarios_id ?? null,
+                        'grupo_id' => $grupo_id ?? null,
+                        'horario_anterior_origen' => $horarioAnterior->origen ?? null,
+                    ]);
+                }
                 $protegidoDragDrop = $origenDragDrop === 'manual';
                 $protegidoAt = $protegidoDragDrop ? ($horarioAnterior?->protegido_at ?? now()) : null;
+                $this->logHorarioDebug('updateGrupoHorario:origen_decision_after', [
+                    'origen_final' => $origenDragDrop ?? null,
+                    'protegido_final' => $protegidoDragDrop ?? null,
+                    'protegido_at_final' => $protegidoAt ?? null,
+                    'motivo' => 'Registrar si viene de manual, drag_drop, programado o creación nueva',
+                ]);
 
                 if ($horarioAnterior) {
                     if ($horarioAnterior->protegido || $horarioAnterior->origen === 'manual') {
@@ -1259,7 +1430,7 @@ class ShowHorarios extends Component
                         $this->registrarGrupoInactivoPorCambioHorario($horarioAnterior, $horarios_dia, (int) $horas_id);
                     }
 
-                    $horarioAnterior->update([
+                    $payloadUpdateHorario = [
                         'horarios_dia' => $horarios_dia,
                         'horas_id' => $horas_id,
                         'grupo_id' => $grupo_id,
@@ -1268,6 +1439,17 @@ class ShowHorarios extends Component
                         'origen' => $origenDragDrop,
                         'protegido' => $protegidoDragDrop,
                         'protegido_at' => $protegidoAt,
+                    ];
+                    $this->logHorarioDebug('updateGrupoHorario:before_update', [
+                        'horario_id' => $horarioAnterior->horarios_id ?? null,
+                        'before' => $this->horarioDebugSnapshot($horarioAnterior),
+                        'payload_update' => $payloadUpdateHorario,
+                    ]);
+                    $horarioAnterior->update($payloadUpdateHorario);
+                    $horarioAnterior->refresh();
+                    $this->logHorarioDebug('updateGrupoHorario:after_update', [
+                        'horario_id' => $horarioAnterior->horarios_id ?? null,
+                        'after' => $this->horarioDebugSnapshot($horarioAnterior),
                     ]);
 
                     Log::info('[HorariosProtegidos] Horario movido por drag and drop', [
@@ -1300,7 +1482,7 @@ class ShowHorarios extends Component
                             return false;
                         }
 
-                        $horario->update([
+                        $payloadUpdateHorario = [
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
@@ -1309,6 +1491,17 @@ class ShowHorarios extends Component
                             'origen' => 'drag_drop',
                             'protegido' => false,
                             'protegido_at' => null,
+                        ];
+                        $this->logHorarioDebug('updateGrupoHorario:before_update', [
+                            'horario_id' => $horario->horarios_id ?? null,
+                            'before' => $this->horarioDebugSnapshot($horario),
+                            'payload_update' => $payloadUpdateHorario,
+                        ]);
+                        $horario->update($payloadUpdateHorario);
+                        $horario->refresh();
+                        $this->logHorarioDebug('updateGrupoHorario:after_update', [
+                            'horario_id' => $horario->horarios_id ?? null,
+                            'after' => $this->horarioDebugSnapshot($horario),
                         ]);
 
                         Log::info('[HorariosProtegidos] Horario destino actualizado por drag and drop', [
@@ -1322,7 +1515,7 @@ class ShowHorarios extends Component
 
                         return true;
                     } else {
-                        $horario = Horario::create([
+                        $payloadCreateHorario = [
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
@@ -1331,6 +1524,21 @@ class ShowHorarios extends Component
                             'origen' => 'drag_drop',
                             'protegido' => false,
                             'protegido_at' => null,
+                        ];
+                        $this->logHorarioDebug('updateGrupoHorario:before_create', [
+                            'payload_create' => $payloadCreateHorario,
+                            'context' => [
+                                'horarios_id_param' => $horarios_id ?? null,
+                                'anterior_id' => $anterior_id ?? null,
+                                'grupo_id_param' => $grupo_id ?? null,
+                                'horario_anterior_origen' => $horarioAnterior->origen ?? null,
+                                'horario_anterior_protegido' => $horarioAnterior->protegido ?? null,
+                            ],
+                        ]);
+                        $horario = Horario::create($payloadCreateHorario);
+                        $this->logHorarioDebug('updateGrupoHorario:after_create', [
+                            'horario_id' => $horario->horarios_id ?? null,
+                            'created' => $this->horarioDebugSnapshot($horario),
                         ]);
 
                         Log::info('[HorariosProtegidos] Horario creado por drag and drop', [
@@ -1359,7 +1567,7 @@ class ShowHorarios extends Component
                     $cantidad = $queryCantidad->count();
 
                     if ($cantidad == 0) {
-                        $horario = Horario::create([
+                        $payloadCreateHorario = [
                             'horarios_dia' => $horarios_dia,
                             'horas_id' => $horas_id,
                             'grupo_id' => $grupo_id,
@@ -1368,6 +1576,21 @@ class ShowHorarios extends Component
                             'origen' => 'drag_drop',
                             'protegido' => false,
                             'protegido_at' => null,
+                        ];
+                        $this->logHorarioDebug('updateGrupoHorario:before_create', [
+                            'payload_create' => $payloadCreateHorario,
+                            'context' => [
+                                'horarios_id_param' => $horarios_id ?? null,
+                                'anterior_id' => $anterior_id ?? null,
+                                'grupo_id_param' => $grupo_id ?? null,
+                                'horario_anterior_origen' => $horarioAnterior->origen ?? null,
+                                'horario_anterior_protegido' => $horarioAnterior->protegido ?? null,
+                            ],
+                        ]);
+                        $horario = Horario::create($payloadCreateHorario);
+                        $this->logHorarioDebug('updateGrupoHorario:after_create', [
+                            'horario_id' => $horario->horarios_id ?? null,
+                            'created' => $this->horarioDebugSnapshot($horario),
                         ]);
 
                         Log::info('[HorariosProtegidos] Horario creado por drag and drop', [

@@ -88,6 +88,37 @@ class ShowProfesorHorario extends Component
         $this->dimenciones[] = "scale-50 -translate-x-80 -translate-y-80";
     }
 
+
+    private function logHorarioDebug(string $evento, array $data = []): void
+    {
+        Log::info('[HorariosManualDebug] ' . $evento, array_merge([
+            'component' => static::class,
+            'user_id' => optional(auth())->id(),
+            'timestamp' => now()->toDateTimeString(),
+        ], $data));
+    }
+
+    private function horarioDebugSnapshot(?Horario $horario): ?array
+    {
+        if (! $horario) {
+            return null;
+        }
+
+        return [
+            'horarios_id' => $horario->horarios_id,
+            'grupo_id' => $horario->grupo_id,
+            'profesores_id' => $horario->profesores_id,
+            'horarios_dia' => $horario->horarios_dia instanceof Carbon
+                ? $horario->horarios_dia->format('Y-m-d')
+                : $horario->horarios_dia,
+            'horas_id' => $horario->horas_id,
+            'espacios_id' => $horario->espacios_id,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+            'protegido_at' => $horario->protegido_at ?? null,
+        ];
+    }
+
     public function mount($modalidad)
     {
         $this->modalidad = $modalidad;
@@ -202,6 +233,53 @@ class ShowProfesorHorario extends Component
         $dias = Dia::take(5)->get();
         $dias2 = Dia::offset(5)->limit(5)->get();
 
+        $horariosParaLog = collect($array_horario)
+            ->flatten(3)
+            ->filter(fn ($item) => is_array($item) && isset($item['id']));
+        $conteoOrigenes = $horariosParaLog
+            ->groupBy(fn ($item) => $item['origen'] ?? 'sin_origen')
+            ->map->count()
+            ->toArray();
+        $conteoProtegidos = $horariosParaLog
+            ->filter(fn ($item) => ! empty($item['protegido']))
+            ->count();
+        $horariosVisiblesComoManualPorOrigen = $horariosParaLog
+            ->filter(fn ($item) => ($item['origen'] ?? null) === 'manual')
+            ->count();
+        $horariosVisiblesComoManualPorProtegido = $horariosParaLog
+            ->filter(fn ($item) => ($item['origen'] ?? null) !== 'manual' && ! empty($item['protegido']))
+            ->count();
+
+        $this->logHorarioDebug('render:resumen_origenes', [
+            'conteo_origenes' => $conteoOrigenes,
+            'conteo_protegidos' => $conteoProtegidos,
+            'solo_profesor' => $this->solo_profesor,
+            'id_relacionado' => $id_relacionado,
+        ]);
+        $this->logHorarioDebug('render:muestra_horarios', [
+            'sample' => $horariosParaLog
+                ->take(10)
+                ->map(fn ($item) => [
+                    'horarios_id' => $item['id'] ?? null,
+                    'grupo_id' => $item['grupo_id'] ?? null,
+                    'origen' => $item['origen'] ?? null,
+                    'protegido' => $item['protegido'] ?? null,
+                    'manual_visual' => (($item['origen'] ?? null) === 'manual') || (($item['protegido'] ?? false) === true),
+                ])
+                ->values()
+                ->toArray(),
+        ]);
+        $this->logHorarioDebug('render:manual_visual_diagnostico', [
+            'manual_por_origen' => $horariosVisiblesComoManualPorOrigen,
+            'manual_por_protegido_sin_origen_manual' => $horariosVisiblesComoManualPorProtegido,
+            'diagnostico' => $horariosVisiblesComoManualPorProtegido > 0
+                ? 'La vista probablemente está mostrando Manual por protegido=true aunque origen no sea manual.'
+                : 'No se detectan horarios protegidos no manuales en esta muestra.',
+        ]);
+        $this->logHorarioDebug('render:manual_badge_rule', [
+            'rule' => 'Manual badge should depend only on origen=manual, not protegido=true',
+        ]);
+
         return view('livewire.show-profesor-horario', [
             'espacios' => $espacios,
             'horas' => $horas,
@@ -255,12 +333,26 @@ class ShowProfesorHorario extends Component
 
         $evaluaciones = Evaluacion::where('horarios_id', $horario->horarios_id)->exists();
 
+        $this->logHorarioDebug('delete:start', [
+            'horario_id' => $horario->horarios_id ?? null,
+            'grupo_id' => $horario->grupo_id ?? null,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+            'has_evaluaciones' => $evaluaciones,
+        ]);
+
         if ($evaluaciones) {
             $this->emit('alert', 'No se puede eliminar el horario porque tiene evaluaciones asociadas', 'Advertencias!', 'warning');
             return;
         }
 
         if ($horario->origen === 'manual') {
+            $this->logHorarioDebug('delete:blocked_manual', [
+                'horario_id' => $horario->horarios_id ?? null,
+                'origen' => $horario->origen ?? null,
+                'protegido' => $horario->protegido ?? null,
+            ]);
+
             Log::info('[HorariosProtegidos] Intento de eliminar clase manual bloqueado por profesor', [
                 'horarios_id' => $horario->horarios_id,
                 'grupo_id' => $horario->grupo_id,
@@ -273,6 +365,12 @@ class ShowProfesorHorario extends Component
             $this->emit('alert', 'No se puede eliminar una clase creada manualmente.', 'Advertencias!', 'warning');
             return;
         }
+
+        $this->logHorarioDebug('delete:executed', [
+            'horario_id' => $horario->horarios_id ?? null,
+            'origen' => $horario->origen ?? null,
+            'protegido' => $horario->protegido ?? null,
+        ]);
 
         $horario->delete();
         $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
