@@ -132,9 +132,13 @@
                                                 <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                             @endif
                                         </div>
-                                        {{-- DEBUG: Esta condición muestra Manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos Manual. --}}
+                                        {{-- DEBUG: Esta condición muestra el ícono de clase manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos positivos. --}}
                                         @if(($horarioItem['origen'] ?? null) === 'manual')
-                                            <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
+                                            <span class="absolute top-1 right-1 inline-flex items-center justify-center rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] leading-none text-amber-950 shadow"
+                                                  title="Clase creada manualmente"
+                                                  aria-label="Clase creada manualmente">
+                                                <i class="fas fa-lock" aria-hidden="true"></i>
+                                            </span>
                                         @endif
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
@@ -207,9 +211,13 @@
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         </div>
-                                        {{-- DEBUG: Esta condición muestra Manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos Manual. --}}
+                                        {{-- DEBUG: Esta condición muestra el ícono de clase manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos positivos. --}}
                                         @if(($horarioItem['origen'] ?? null) === 'manual')
-                                            <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
+                                            <span class="absolute top-1 right-1 inline-flex items-center justify-center rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] leading-none text-amber-950 shadow"
+                                                  title="Clase creada manualmente"
+                                                  aria-label="Clase creada manualmente">
+                                                <i class="fas fa-lock" aria-hidden="true"></i>
+                                            </span>
                                         @endif
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
@@ -334,9 +342,13 @@
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         @endif
                                     </div>
-                                    {{-- DEBUG: Esta condición muestra Manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos Manual. --}}
+                                    {{-- DEBUG: Esta condición muestra el ícono de clase manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos positivos. --}}
                                     @if(($horarioItem['origen'] ?? null) === 'manual')
-                                        <span class="absolute top-1 right-1 rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] font-bold leading-none text-amber-950 shadow">Manual</span>
+                                        <span class="absolute top-1 right-1 inline-flex items-center justify-center rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] leading-none text-amber-950 shadow"
+                                              title="Clase creada manualmente"
+                                              aria-label="Clase creada manualmente">
+                                            <i class="fas fa-lock" aria-hidden="true"></i>
+                                        </span>
                                     @endif
                                     @php
                                         $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
