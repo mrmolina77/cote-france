@@ -227,7 +227,7 @@
                                             $limiteActualizacion = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde)->addHour();
                                             $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
                                         @endphp
-                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && !($horarioItem['es_evento'] ?? false) && $mostrarEstado)
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
                                             @if($diarioActualizado)
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
@@ -246,10 +246,8 @@
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
-                                                @if(!($horarioItem['es_evento'] ?? false))
-                                                    <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
-                                                    <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
-                                                @endif
+                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                                <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                             </div>
                                         @endif
                                     </div>
@@ -381,7 +379,7 @@
                                                 : null;
                                             $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                         @endphp
-                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && !($horarioItem['es_evento'] ?? false) && $mostrarEstado)
+                                        @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
                                             @if($diarioActualizado)
                                                 <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                             @else
@@ -400,10 +398,8 @@
                                             <div class="flex items-center justify-center">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDateString}}',{{$currentHourId}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
-                                                @if(!($horarioItem['es_evento'] ?? false))
-                                                    <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
-                                                    <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
-                                                @endif
+                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                                <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                             </div>
                                         @endif
                                     </div>
@@ -564,7 +560,7 @@
                                         $limiteActualizacion = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde)->addHour();
                                         $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
                                     @endphp
-                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && !($horarioItem['es_evento'] ?? false) && $mostrarEstado)
+                                    @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO" && $mostrarEstado)
                                         @if($diarioActualizado)
                                             <span class="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-label="Actualizado"></span>
                                         @else
@@ -583,10 +579,8 @@
                                         <div class="flex items-center justify-center">
                                             <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDailyDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
-                                            @if(!($horarioItem['es_evento'] ?? false))
-                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
-                                                <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
-                                            @endif
+                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                         </div>
                                     @endif
                                 </div>
