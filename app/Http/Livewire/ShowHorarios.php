@@ -14,6 +14,7 @@ use App\Models\GrupoInactivo;
 use App\Models\Hora;
 use App\Models\Horario;
 use App\Models\Nivel;
+use App\Models\Plan;
 use App\Models\Profesor;
 use App\Models\Prospecto;
 use App\Models\Tematica;
@@ -21,6 +22,7 @@ use App\Models\BloqueosProfesores;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Livewire\Component;
 
 class ShowHorarios extends Component
@@ -50,7 +52,14 @@ class ShowHorarios extends Component
     public $semana_activa = false;
     // $asistencias;
     // public $estudiantes;
-    protected $listeners = ['render','delete','scrollToBottom','deactivateGrupo'];
+    protected $listeners = [
+        'render',
+        'delete',
+        'scrollToBottom',
+        'deactivateGrupo',
+        'undoHorarioShortcut' => 'undoHorario',
+        'redoHorarioShortcut' => 'redoHorario',
+    ];
     public $estudiantes = [];
     public $asistencias = [];
     public $observaciones = [];
@@ -67,6 +76,8 @@ class ShowHorarios extends Component
     public $plan_modal_grupo = 'Sin cargar';
     public $plan_modal_fecha = 'Sin cargar';
     public $plan_modal_hora = 'Sin cargar';
+    public array $undoStack = [];
+    public array $redoStack = [];
 
     public function boot()
     {
@@ -123,6 +134,340 @@ class ShowHorarios extends Component
             'protegido' => $horario->protegido ?? null,
             'protegido_at' => $horario->protegido_at ?? null,
         ];
+    }
+
+    public function undoHorario(): void
+    {
+        if (empty($this->undoStack)) {
+            $this->emit('alert', 'No hay cambios para deshacer.', 'Información', 'info');
+            return;
+        }
+
+        $action = array_pop($this->undoStack);
+
+        Log::info('[HorarioUndo] Intentando deshacer', [
+            'type' => $action['type'] ?? null,
+            'horario_id' => $action['horario_id'] ?? null,
+            'undo_count' => count($this->undoStack),
+            'redo_count' => count($this->redoStack),
+        ]);
+
+        try {
+            $redoAction = $this->applyHorarioAction($action, 'undo');
+
+            if ($redoAction) {
+                $this->redoStack[] = $redoAction;
+            }
+
+            $this->emitTo('show-horarios', 'render');
+            $this->emitSelf('$refresh');
+            $this->emit('alert', 'Cambio deshecho correctamente');
+
+            Log::info('[HorarioUndo] Undo aplicado', [
+                'type' => $action['type'] ?? null,
+                'horario_id' => $redoAction['horario_id'] ?? $action['horario_id'] ?? null,
+                'undo_count' => count($this->undoStack),
+                'redo_count' => count($this->redoStack),
+            ]);
+        } catch (RuntimeException $e) {
+            $this->undoStack[] = $action;
+            $this->emit('alert', $e->getMessage(), 'Advertencia!', 'warning');
+        } catch (\Throwable $e) {
+            $this->undoStack[] = $action;
+            Log::error('[HorarioUndo] Error', [
+                'action' => $action,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->emit('alert', 'No se pudo deshacer el cambio.', 'Error!', 'error');
+        }
+    }
+
+    public function redoHorario(): void
+    {
+        if (empty($this->redoStack)) {
+            $this->emit('alert', 'No hay cambios para rehacer.', 'Información', 'info');
+            return;
+        }
+
+        $action = array_pop($this->redoStack);
+
+        Log::info('[HorarioRedo] Intentando rehacer', [
+            'type' => $action['type'] ?? null,
+            'horario_id' => $action['horario_id'] ?? null,
+            'undo_count' => count($this->undoStack),
+            'redo_count' => count($this->redoStack),
+        ]);
+
+        try {
+            $undoAction = $this->applyHorarioAction($action, 'redo');
+
+            if ($undoAction) {
+                $this->undoStack[] = $undoAction;
+            }
+
+            $this->emitTo('show-horarios', 'render');
+            $this->emitSelf('$refresh');
+            $this->emit('alert', 'Cambio rehecho correctamente');
+
+            Log::info('[HorarioRedo] Acción aplicada', [
+                'type' => $action['type'] ?? null,
+                'horario_id' => $undoAction['horario_id'] ?? $action['horario_id'] ?? null,
+                'undo_count' => count($this->undoStack),
+                'redo_count' => count($this->redoStack),
+            ]);
+        } catch (RuntimeException $e) {
+            $this->redoStack[] = $action;
+            $this->emit('alert', $e->getMessage(), 'Advertencia!', 'warning');
+        } catch (\Throwable $e) {
+            $this->redoStack[] = $action;
+            Log::error('[HorarioRedo] Error', [
+                'action' => $action,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->emit('alert', 'No se pudo rehacer el cambio.', 'Error!', 'error');
+        }
+    }
+
+    private function pushUndoAction(array $action): void
+    {
+        $this->undoStack[] = $action;
+        $this->redoStack = [];
+
+        if (count($this->undoStack) > 50) {
+            array_shift($this->undoStack);
+        }
+
+        Log::info('[HorarioUndo] Acción registrada', [
+            'type' => $action['type'] ?? null,
+            'horario_id' => $action['horario_id'] ?? null,
+            'undo_count' => count($this->undoStack),
+            'redo_count' => count($this->redoStack),
+        ]);
+    }
+
+    private function snapshotHorario(Horario $horario): array
+    {
+        return [
+            'horarios_dia' => $horario->horarios_dia instanceof Carbon
+                ? $horario->horarios_dia->toDateString()
+                : (string) $horario->horarios_dia,
+            'horas_id' => $horario->horas_id,
+            'grupo_id' => $horario->grupo_id,
+            'profesores_id' => $horario->profesores_id,
+            'espacios_id' => $horario->espacios_id,
+            'origen' => $horario->origen ?? null,
+            'protegido' => (bool) ($horario->protegido ?? false),
+            'protegido_at' => $horario->protegido_at instanceof Carbon
+                ? $horario->protegido_at->toDateTimeString()
+                : ($horario->protegido_at ?? null),
+        ];
+    }
+
+    private function applyHorarioSnapshot(Horario $horario, array $snapshot): void
+    {
+        $horario->horarios_dia = $snapshot['horarios_dia'] ?? $horario->horarios_dia;
+        $horario->horas_id = $snapshot['horas_id'] ?? $horario->horas_id;
+        $horario->grupo_id = $snapshot['grupo_id'] ?? $horario->grupo_id;
+        $horario->profesores_id = $snapshot['profesores_id'] ?? $horario->profesores_id;
+        $horario->espacios_id = $snapshot['espacios_id'] ?? $horario->espacios_id;
+
+        if (array_key_exists('origen', $snapshot)) {
+            $horario->origen = $snapshot['origen'];
+        }
+
+        if (array_key_exists('protegido', $snapshot)) {
+            $horario->protegido = (bool) $snapshot['protegido'];
+        }
+
+        if (array_key_exists('protegido_at', $snapshot)) {
+            $horario->protegido_at = $snapshot['protegido_at'];
+        }
+
+        $horario->save();
+    }
+
+    private function horarioActualCoincideConSnapshot(Horario $horario, array $snapshot): bool
+    {
+        $snapshotEspacio = $snapshot['espacios_id'] ?? null;
+
+        return (string) Carbon::parse($horario->horarios_dia)->toDateString() === (string) Carbon::parse($snapshot['horarios_dia'] ?? now())->toDateString()
+            && (int) $horario->horas_id === (int) ($snapshot['horas_id'] ?? 0)
+            && (int) $horario->grupo_id === (int) ($snapshot['grupo_id'] ?? 0)
+            && (int) $horario->profesores_id === (int) ($snapshot['profesores_id'] ?? 0)
+            && ((is_null($horario->espacios_id) && is_null($snapshotEspacio)) || (int) $horario->espacios_id === (int) $snapshotEspacio);
+    }
+
+    private function horarioTieneDependencias(Horario $horario): bool
+    {
+        $horarioId = $horario->horarios_id;
+
+        return Evaluacion::where('horarios_id', $horarioId)->exists()
+            || Diario::where('horarios_id', $horarioId)->exists()
+            || Plan::where('horarios_id', $horarioId)->exists()
+            || ClasePrueba::where('horarios_id', $horarioId)->exists()
+            || Prospecto::where('horarios_id', $horarioId)->exists();
+    }
+
+    private function existeHorarioManualProtegidoEnSnapshot(array $snapshot, ?int $exceptHorarioId = null): bool
+    {
+        $query = Horario::whereDate('horarios_dia', Carbon::parse($snapshot['horarios_dia'])->toDateString())
+            ->where('horas_id', $snapshot['horas_id'])
+            ->where('profesores_id', $snapshot['profesores_id'])
+            ->where(function ($query) {
+                $query->where('origen', 'manual')
+                    ->orWhere('protegido', true);
+            });
+
+        if (array_key_exists('espacios_id', $snapshot) && is_null($snapshot['espacios_id'])) {
+            $query->whereNull('espacios_id');
+        } else {
+            $query->where('espacios_id', $snapshot['espacios_id'] ?? null);
+        }
+
+        if ($exceptHorarioId) {
+            $query->where('horarios_id', '!=', $exceptHorarioId);
+        }
+
+        return $query->exists();
+    }
+
+    private function applyHorarioAction(array $action, string $direction): ?array
+    {
+        return DB::transaction(function () use ($action, $direction) {
+            $type = $action['type'] ?? null;
+            $horarioId = $action['horario_id'] ?? null;
+
+            if ($type === 'move') {
+                $horario = Horario::find($horarioId);
+
+                if (! $horario) {
+                    throw new RuntimeException('No se puede aplicar la acción porque el horario ya no existe.');
+                }
+
+                $expected = $direction === 'undo' ? ($action['after'] ?? []) : ($action['before'] ?? []);
+                $target = $direction === 'undo' ? ($action['before'] ?? []) : ($action['after'] ?? []);
+
+                if ($this->horarioTieneDependencias($horario)) {
+                    Log::warning($direction === 'undo' ? '[HorarioUndo] No se puede deshacer por dependencias' : '[HorarioRedo] No se puede rehacer por dependencias', [
+                        'horario_id' => $horario->horarios_id,
+                        'type' => $type,
+                    ]);
+
+                    throw new RuntimeException($direction === 'undo'
+                        ? 'No se puede deshacer esta acción porque el horario ya tiene información asociada.'
+                        : 'No se puede rehacer esta acción porque el horario ya tiene información asociada.');
+                }
+
+                if (! $this->horarioActualCoincideConSnapshot($horario, $expected)) {
+                    Log::warning($direction === 'undo' ? '[HorarioUndo] Estado actual no coincide con historial' : '[HorarioRedo] Estado actual no coincide con historial', [
+                        'horario_id' => $horario->horarios_id,
+                        'actual' => $this->snapshotHorario($horario),
+                        'expected' => $expected,
+                    ]);
+
+                    throw new RuntimeException($direction === 'undo'
+                        ? 'No se puede deshacer porque este horario fue modificado después de la acción original.'
+                        : 'No se puede rehacer porque este horario fue modificado después de la acción original.');
+                }
+
+                if ($this->existeHorarioManualProtegidoEnSnapshot($target, (int) $horario->horarios_id)) {
+                    Log::warning($direction === 'undo' ? '[HorarioUndo] Acción bloqueada por horario manual protegido' : '[HorarioRedo] Acción bloqueada por horario manual protegido', [
+                        'horario_id' => $horario->horarios_id,
+                        'target' => $target,
+                    ]);
+
+                    throw new RuntimeException($direction === 'undo'
+                        ? 'No se puede deshacer porque la posición de destino tiene una clase manual protegida.'
+                        : 'No se puede rehacer porque la posición de destino tiene una clase manual protegida.');
+                }
+
+                $this->applyHorarioSnapshot($horario, $target);
+
+                Log::info($direction === 'undo' ? '[HorarioUndo] Movimiento revertido' : '[HorarioRedo] Movimiento reaplicado', [
+                    'horario_id' => $horario->horarios_id,
+                    'direction' => $direction,
+                    'target' => $target,
+                ]);
+
+                return $action;
+            }
+
+            if (in_array($type, ['create', 'manual_create'], true)) {
+                if ($direction === 'undo') {
+                    $horario = Horario::find($horarioId);
+
+                    if (! $horario) {
+                        throw new RuntimeException('No se puede deshacer porque el horario creado ya no existe.');
+                    }
+
+                    if (! $this->horarioActualCoincideConSnapshot($horario, $action['after'] ?? [])) {
+                        Log::warning('[HorarioUndo] Estado actual no coincide con historial', [
+                            'horario_id' => $horario->horarios_id,
+                            'actual' => $this->snapshotHorario($horario),
+                            'expected' => $action['after'] ?? [],
+                        ]);
+
+                        throw new RuntimeException('No se puede deshacer porque este horario fue modificado después de la acción original.');
+                    }
+
+                    if ($this->horarioTieneDependencias($horario)) {
+                        Log::warning('[HorarioUndo] No se puede deshacer por dependencias', [
+                            'horario_id' => $horario->horarios_id,
+                            'type' => $type,
+                        ]);
+
+                        throw new RuntimeException('No se puede deshacer esta acción porque el horario ya tiene información asociada.');
+                    }
+
+                    $horario->delete();
+
+                    Log::info('[HorarioUndo] Horario creado eliminado', [
+                        'horario_id' => $horarioId,
+                        'type' => $type,
+                    ]);
+
+                    return $action;
+                }
+
+                $payload = $action['after'] ?? [];
+                unset($payload['horarios_id']);
+
+                if ($type === 'manual_create') {
+                    $payload['origen'] = 'manual';
+                    $payload['protegido'] = true;
+                    $payload['protegido_at'] = $payload['protegido_at'] ?? now();
+                } else {
+                    $payload['origen'] = $payload['origen'] ?? 'drag_drop';
+                    $payload['protegido'] = (bool) ($payload['protegido'] ?? false);
+                }
+
+                if ($this->existeHorarioManualProtegidoEnSnapshot($payload)) {
+                    Log::warning('[HorarioRedo] Acción bloqueada por horario manual protegido', [
+                        'type' => $type,
+                        'target' => $payload,
+                    ]);
+
+                    throw new RuntimeException('No se puede rehacer porque la posición de destino tiene una clase manual protegida.');
+                }
+
+                $horario = Horario::create($payload);
+                $action['horario_id'] = $horario->horarios_id;
+                $action['after'] = $this->snapshotHorario($horario);
+
+                Log::info('[HorarioRedo] Horario recreado', [
+                    'horario_id' => $horario->horarios_id,
+                    'type' => $type,
+                ]);
+
+                return $action;
+            }
+
+            throw new RuntimeException('No se reconoce la acción de historial del horario.');
+        });
     }
 
     public function mount($modalidad){
@@ -506,6 +851,12 @@ class ShowHorarios extends Component
         ]);
 
         $horario = Horario::create($payloadCreateHorario);
+
+        $this->pushUndoAction([
+            'type' => 'manual_create',
+            'horario_id' => $horario->horarios_id,
+            'after' => $this->snapshotHorario($horario),
+        ]);
 
         $this->logHorarioDebug('save_manual:after_create', [
             'horario_id' => $horario->horarios_id ?? null,
@@ -1440,6 +1791,7 @@ class ShowHorarios extends Component
                         'protegido' => $protegidoDragDrop,
                         'protegido_at' => $protegidoAt,
                     ];
+                    $beforeSnapshot = $this->snapshotHorario($horarioAnterior);
                     $this->logHorarioDebug('updateGrupoHorario:before_update', [
                         'horario_id' => $horarioAnterior->horarios_id ?? null,
                         'before' => $this->horarioDebugSnapshot($horarioAnterior),
@@ -1447,6 +1799,13 @@ class ShowHorarios extends Component
                     ]);
                     $horarioAnterior->update($payloadUpdateHorario);
                     $horarioAnterior->refresh();
+                    $afterSnapshot = $this->snapshotHorario($horarioAnterior);
+                    $this->pushUndoAction([
+                        'type' => 'move',
+                        'horario_id' => $horarioAnterior->horarios_id,
+                        'before' => $beforeSnapshot,
+                        'after' => $afterSnapshot,
+                    ]);
                     $this->logHorarioDebug('updateGrupoHorario:after_update', [
                         'horario_id' => $horarioAnterior->horarios_id ?? null,
                         'after' => $this->horarioDebugSnapshot($horarioAnterior),
@@ -1492,6 +1851,7 @@ class ShowHorarios extends Component
                             'protegido' => false,
                             'protegido_at' => null,
                         ];
+                        $beforeSnapshot = $this->snapshotHorario($horario);
                         $this->logHorarioDebug('updateGrupoHorario:before_update', [
                             'horario_id' => $horario->horarios_id ?? null,
                             'before' => $this->horarioDebugSnapshot($horario),
@@ -1499,6 +1859,13 @@ class ShowHorarios extends Component
                         ]);
                         $horario->update($payloadUpdateHorario);
                         $horario->refresh();
+                        $afterSnapshot = $this->snapshotHorario($horario);
+                        $this->pushUndoAction([
+                            'type' => 'move',
+                            'horario_id' => $horario->horarios_id,
+                            'before' => $beforeSnapshot,
+                            'after' => $afterSnapshot,
+                        ]);
                         $this->logHorarioDebug('updateGrupoHorario:after_update', [
                             'horario_id' => $horario->horarios_id ?? null,
                             'after' => $this->horarioDebugSnapshot($horario),
@@ -1536,6 +1903,11 @@ class ShowHorarios extends Component
                             ],
                         ]);
                         $horario = Horario::create($payloadCreateHorario);
+                        $this->pushUndoAction([
+                            'type' => 'create',
+                            'horario_id' => $horario->horarios_id,
+                            'after' => $this->snapshotHorario($horario),
+                        ]);
                         $this->logHorarioDebug('updateGrupoHorario:after_create', [
                             'horario_id' => $horario->horarios_id ?? null,
                             'created' => $this->horarioDebugSnapshot($horario),
@@ -1588,6 +1960,11 @@ class ShowHorarios extends Component
                             ],
                         ]);
                         $horario = Horario::create($payloadCreateHorario);
+                        $this->pushUndoAction([
+                            'type' => 'create',
+                            'horario_id' => $horario->horarios_id,
+                            'after' => $this->snapshotHorario($horario),
+                        ]);
                         $this->logHorarioDebug('updateGrupoHorario:after_create', [
                             'horario_id' => $horario->horarios_id ?? null,
                             'created' => $this->horarioDebugSnapshot($horario),
