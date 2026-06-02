@@ -11,7 +11,7 @@
         @if ($semanal)
             {{-- Cabecera Fija --}}
             <div class="border p-2 bg-gray-100">
-                <div class="grid h-full max-w-2xl grid-cols-5 gap-2 mx-auto">
+                <div class="grid h-full max-w-4xl grid-cols-7 gap-2 mx-auto">
                     <div class="col-span-full text-center font-bold">
                         <div>Semana # {{$semana}}</div>
                     </div>
@@ -52,6 +52,28 @@
                                 @endif
                                 <span>Semana</span>
                             </span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-center">
+                        <button
+                            type="button"
+                            class="w-full py-2 px-3 text-sm font-medium rounded-lg border focus:outline-none focus:ring-4 {{ empty($undoStack) ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed' : 'text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-gray-100' }}"
+                            wire:click="undoHorario"
+                            title="Deshacer último cambio (Ctrl+Z)"
+                            @if(empty($undoStack)) disabled @endif
+                        >
+                            ↶ Deshacer
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-center">
+                        <button
+                            type="button"
+                            class="w-full py-2 px-3 text-sm font-medium rounded-lg border focus:outline-none focus:ring-4 {{ empty($redoStack) ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed' : 'text-gray-900 bg-white border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:ring-gray-100' }}"
+                            wire:click="redoHorario"
+                            title="Rehacer cambio (Ctrl+Y)"
+                            @if(empty($redoStack)) disabled @endif
+                        >
+                            ↷ Rehacer
                         </button>
                     </div>
                     <div class="flex items-center justify-center">
@@ -1269,6 +1291,31 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (!window.horariosUndoRedoShortcutBound) {
+            window.horariosUndoRedoShortcutBound = true;
+            document.addEventListener('keydown', function (e) {
+                const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+                if (!isCtrlOrCmd) return;
+
+                const target = e.target;
+                const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+
+                if (['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable) {
+                    return;
+                }
+
+                if (e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    Livewire.emit('undoHorarioShortcut');
+                }
+
+                if (e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    Livewire.emit('redoHorarioShortcut');
+                }
+            });
+        }
+
         const getTable = () => document.getElementById('horarios-table');
 
         const refreshDraggableCells = () => {
