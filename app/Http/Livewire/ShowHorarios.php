@@ -612,6 +612,7 @@ class ShowHorarios extends Component
                             'id' => $horario->horarios_id,
                             'origen' => $horario->origen,
                             'protegido' => (bool) $horario->protegido,
+                            'es_evento' => (bool) ($horario->grupo?->es_evento ?? false),
                             'diario_actualizado' => $horario->diario?->updated_at,
                             'diario_anterior_pendiente' => $pendientesAnteriores[$horario->horarios_id] ?? false,
                             'is_blocked' => false,
