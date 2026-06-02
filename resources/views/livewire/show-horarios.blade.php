@@ -897,7 +897,7 @@
                         <x-forms.input-error for="numero_clases" class="mt-1" />
                     </div>
                 </div>
-                <div class='flex justify-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_datos_generales"/> Validado</label></div>
+                <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_datos_generales" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_datos_generales" class="mt-1" /></div>
                 </fieldset>
 
                 <fieldset class='border border-slate-200 rounded-lg p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 2 — Hecho y Por hacer</legend>
@@ -917,7 +917,7 @@
                     <x-forms.input-error for="diarios_porhacer" class="mt-1"/>
                 </div>
                 <x-forms.input-error for="diarios_porhacer"/>
-                <div class='flex justify-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_contenido_clase"/> Validado</label></div>
+                <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_contenido_clase" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_contenido_clase" class="mt-1" /></div>
             </div></fieldset>
             <fieldset class='border border-slate-200 rounded-lg p-3 mt-4'><legend class='px-2 font-semibold text-slate-700'>Parte 3 — Estudiantes</legend>
             <div class="relative overflow-x-auto">
@@ -953,7 +953,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class='flex justify-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_estudiantes"/> Validado</label></div>
+            <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_estudiantes" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_estudiantes" class="mt-1" /></div>
             </fieldset>
 
             {{-- Tabla de Clases de Prueba --}}
@@ -990,7 +990,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class='flex justify-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_prospectos"/> Validado</label></div>
+                <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_prospectos" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_prospectos" class="mt-1" /></div>
             </fieldset>
             @endif
         </x-slot>

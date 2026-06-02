@@ -617,14 +617,7 @@ class ShowProfesorHorario extends Component
 
     public function saveDiario()
     {
-        $validated = $this->validate([
-            'diarios_hecho'=>'required|min:15|max:550',
-            'diarios_porhacer'=>'required|min:15|max:550',
-            'idnivel'=>'required',
-            'id_capitulo'=>'required',
-            'id_tematica'=>'required',
-            'numero_clases'=>'nullable|numeric|min:0.5',
-        ]);
+        $validated = $this->validate($this->diarioValidationRules(), $this->diarioValidationMessages());
 
         try {
             DB::beginTransaction();
@@ -722,6 +715,32 @@ class ShowProfesorHorario extends Component
 
         $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo','id_tematica']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
+    }
+
+    private function diarioValidationRules(): array
+    {
+        return [
+            'diarios_hecho' => 'required|min:15|max:550',
+            'diarios_porhacer' => 'required|min:15|max:550',
+            'idnivel' => 'required',
+            'id_capitulo' => 'required',
+            'id_tematica' => 'required',
+            'numero_clases' => 'nullable|numeric|min:0.5',
+            'validado_datos_generales' => 'accepted',
+            'validado_contenido_clase' => 'accepted',
+            'validado_estudiantes' => 'accepted',
+            'validado_prospectos' => count($this->clasesPrueba) ? 'accepted' : 'nullable',
+        ];
+    }
+
+    private function diarioValidationMessages(): array
+    {
+        return [
+            'validado_datos_generales.accepted' => 'Debes validar los datos generales antes de actualizar el diario.',
+            'validado_contenido_clase.accepted' => 'Debes validar el contenido de la clase antes de actualizar el diario.',
+            'validado_estudiantes.accepted' => 'Debes validar los estudiantes antes de actualizar el diario.',
+            'validado_prospectos.accepted' => 'Debes validar las clases de prueba/prospectos antes de actualizar el diario.',
+        ];
     }
 
     protected function cargaDetalleGrupo()
