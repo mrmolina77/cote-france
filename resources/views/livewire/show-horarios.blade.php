@@ -829,6 +829,17 @@
         </x-slot>
         <x-slot name="content">
             <div class="space-y-5">
+                @if($diario_grupo_es_evento)
+                    <fieldset class="border border-slate-200 rounded-lg p-3">
+                        <legend class="px-2 font-semibold text-slate-700">Hecho del evento</legend>
+                        <div>
+                            <x-forms.label for="diarios_hecho" value="{{__('Done')}}" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                            <x-forms.textarea id="diarios_hecho" rows="7" class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="diarios_hecho" placeholder="¿Qué se logró en el evento?">
+                            </x-forms.textarea>
+                            <x-forms.input-error for="diarios_hecho" class="mt-1"/>
+                        </div>
+                    </fieldset>
+                @else
                 {{-- Info Bar: Profesor y Salón --}}
                 <div class="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
@@ -918,7 +929,7 @@
                 </div>
                 <x-forms.input-error for="diarios_porhacer"/>
                 <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_contenido_clase" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_contenido_clase" class="mt-1" /></div>
-            </div></fieldset>
+            </fieldset>
             <fieldset class='border border-slate-200 rounded-lg p-3 mt-4'><legend class='px-2 font-semibold text-slate-700'>Parte 3 — Estudiantes</legend>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
@@ -993,6 +1004,8 @@
                 <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_prospectos" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_prospectos" class="mt-1" /></div>
             </fieldset>
             @endif
+                @endif
+            </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit_diario',false)">

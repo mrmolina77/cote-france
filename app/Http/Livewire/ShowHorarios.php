@@ -47,6 +47,7 @@ class ShowHorarios extends Component
     public $diarios_profesor = '';
     public $diarios_espacio = '';
     public $diario_contexto = '';
+    public $diario_grupo_es_evento = false;
     public $espacios;
     public $arr_tematicas;
     public $semana_activa = false;
@@ -1007,26 +1008,6 @@ class ShowHorarios extends Component
             return;
         }
 
-        if ($horario->origen === 'manual') {
-            $this->logHorarioDebug('delete:blocked_manual', [
-                'horario_id' => $horario->horarios_id ?? null,
-                'origen' => $horario->origen ?? null,
-                'protegido' => $horario->protegido ?? null,
-            ]);
-
-            Log::info('[HorariosProtegidos] Intento de eliminar clase manual bloqueado', [
-                'horarios_id' => $horario->horarios_id,
-                'grupo_id' => $horario->grupo_id,
-                'horarios_dia' => $horario->horarios_dia,
-                'horas_id' => $horario->horas_id,
-                'origen' => $horario->origen,
-                'protegido' => $horario->protegido,
-            ]);
-
-            $this->emit('alert', 'No se puede eliminar una clase creada manualmente.', 'Advertencias!', 'warning');
-            return;
-        }
-
         $this->logHorarioDebug('delete:executed', [
             'horario_id' => $horario->horarios_id ?? null,
             'origen' => $horario->origen ?? null,
@@ -1221,7 +1202,8 @@ class ShowHorarios extends Component
 
         $this->diario = Diario::where('horarios_id',$id)->first();
 
-        $horario = Horario::where('horarios_id',$id)->first();
+        $horario = Horario::with('grupo')->where('horarios_id',$id)->first();
+        $this->diario_grupo_es_evento = (bool) ($horario->grupo?->es_evento ?? false);
         $this->diarios_profesor = $horario->profesor->profesores_nombres .' '.$horario->profesor->profesores_apellidos;
         $grupoNombre = $horario->grupo?->grupo_nombre ?? 'Sin grupo';
         $fechaClase = Carbon::parse($horario->horarios_dia)->format('d/m/Y');
@@ -1234,16 +1216,18 @@ class ShowHorarios extends Component
 
         $grupo = Grupo::find($grupoId);
 
-        $prospectos = Prospecto::whereHas('inscripciones', function($query) use ($grupoId) {
-            $query->where('grupo_id', $grupoId);
-        })
-        ->with('evaluaciones')
-        ->get();
+        $prospectos = $this->diario_grupo_es_evento
+            ? collect()
+            : Prospecto::whereHas('inscripciones', function($query) use ($grupoId) {
+                $query->where('grupo_id', $grupoId);
+            })
+            ->with('evaluaciones')
+            ->get();
 
         // dd($prospectos);
 
 
-        if ($prospectos->isEmpty()) {
+        if (! $this->diario_grupo_es_evento && $prospectos->isEmpty()) {
             $this->emit('alert', 'No hay estudiantes inscritos en este grupo', 'Advertencias!', 'warning');
         }
 
@@ -1276,21 +1260,25 @@ class ShowHorarios extends Component
         }
 
         $this->diarios_horarios_id = $id;
-        $clasesPruebaConHorario = ClasePrueba::with('prospecto')
-            ->where('horarios_id', $horario->horarios_id)
-            ->where('estado', '!=', 'cancelada')
-            ->get();
-        $clasesPruebaSinHorario = ClasePrueba::with('prospecto')
-            ->whereNull('horarios_id')
-            ->where(function ($query) use ($horario) {
-                $query->where('grupo_id', $horario->grupo_id)
-                      ->orWhere('profesores_id', $horario->profesores_id);
-            })
-            ->whereDate('horarios_dia', $horario->horarios_dia)
-            ->where('horas_id', $horario->horas_id)
-            ->where('estado', '!=', 'cancelada')
-            ->get();
-        $this->clasesPrueba = $clasesPruebaConHorario->merge($clasesPruebaSinHorario)->unique('clase_prueba_id')->values();
+        if ($this->diario_grupo_es_evento) {
+            $this->clasesPrueba = collect();
+        } else {
+            $clasesPruebaConHorario = ClasePrueba::with('prospecto')
+                ->where('horarios_id', $horario->horarios_id)
+                ->where('estado', '!=', 'cancelada')
+                ->get();
+            $clasesPruebaSinHorario = ClasePrueba::with('prospecto')
+                ->whereNull('horarios_id')
+                ->where(function ($query) use ($horario) {
+                    $query->where('grupo_id', $horario->grupo_id)
+                        ->orWhere('profesores_id', $horario->profesores_id);
+                })
+                ->whereDate('horarios_dia', $horario->horarios_dia)
+                ->where('horas_id', $horario->horas_id)
+                ->where('estado', '!=', 'cancelada')
+                ->get();
+            $this->clasesPrueba = $clasesPruebaConHorario->merge($clasesPruebaSinHorario)->unique('clase_prueba_id')->values();
+        }
                 foreach ($this->clasesPrueba as $clasePrueba) {
             Log::info('Clase de prueba cargada en actualizar diario', [
                 'clase_prueba_id' => $clasePrueba->clase_prueba_id,
@@ -1322,6 +1310,14 @@ class ShowHorarios extends Component
         $this->validado_estudiantes = (bool) ($this->diario?->validado_estudiantes ?? false);
         $this->validado_prospectos = (bool) ($this->diario?->validado_prospectos ?? false);
 
+        if ($this->diario_grupo_es_evento) {
+            $this->diarios_porhacer = $this->diarios_porhacer ?: 'No aplica para grupo de tipo evento.';
+            $this->validado_datos_generales = true;
+            $this->validado_contenido_clase = true;
+            $this->validado_estudiantes = true;
+            $this->validado_prospectos = true;
+        }
+
         // dd($this->id_capitulo,$this->idnivel);
 
         $grupoId = $horario->grupo_id;
@@ -1337,8 +1333,20 @@ class ShowHorarios extends Component
 
         try {
             DB::beginTransaction();
-            $datosGeneralesValidados = (bool) ($this->validado_datos_generales && $this->idnivel && $this->id_capitulo);
+            $horarioActual = Horario::with('grupo')->find($this->diarios_horarios_id);
+            $esEvento = (bool) ($horarioActual?->grupo?->es_evento ?? $this->diario_grupo_es_evento);
+            $diariosPorhacer = $esEvento
+                ? ($this->diarios_porhacer ?: 'No aplica para grupo de tipo evento.')
+                : $this->diarios_porhacer;
+            $nivelId = $esEvento ? ($this->idnivel ?: null) : $this->idnivel;
+            $capituloId = $esEvento ? ($this->id_capitulo ?: null) : $this->id_capitulo;
+            $tematicaId = $esEvento ? ($this->id_tematica ?: null) : $this->id_tematica;
+            $datosGeneralesValidados = $esEvento ? true : (bool) ($this->validado_datos_generales && $this->idnivel && $this->id_capitulo);
+            $contenidoClaseValidado = $esEvento ? true : (bool) $this->validado_contenido_clase;
+            $estudiantesValidados = $esEvento ? true : (bool) $this->validado_estudiantes;
+            $prospectosValidados = $esEvento ? true : (bool) $this->validado_prospectos;
             $numeroClases = $this->numero_clases === '' ? null : $this->numero_clases;
+            if (! $esEvento) {
             foreach ($this->estudiantes as $estudiante) {
             $id = $estudiante->prospectos_id; // o $estudiante->prospectos_id si ese es el nombre real
 
@@ -1358,45 +1366,44 @@ class ShowHorarios extends Component
                 ]
                 );
             }
+            }
 
         // Guardar o actualizar el diario
             if($this->diario){
             $this->diario->horarios_id = $this->diarios_horarios_id;
             $this->diario->diarios_hecho = $this->diarios_hecho;
-            $this->diario->diarios_porhacer = $this->diarios_porhacer;
-            $this->diario->niveles_id = $this->idnivel;
-            $this->diario->capitulos_id = $this->id_capitulo;
-            $this->diario->tematica_id = $this->id_tematica;
+            $this->diario->diarios_porhacer = $diariosPorhacer;
+            $this->diario->niveles_id = $nivelId;
+            $this->diario->capitulos_id = $capituloId;
+            $this->diario->tematica_id = $tematicaId;
             $this->diario->numero_clases = $numeroClases;
             $this->diario->validado_datos_generales = $datosGeneralesValidados;
-            $this->diario->validado_contenido_clase = (bool) $this->validado_contenido_clase;
-            $this->diario->validado_estudiantes = (bool) $this->validado_estudiantes;
-            $this->diario->validado_prospectos = (bool) $this->validado_prospectos;
+            $this->diario->validado_contenido_clase = $contenidoClaseValidado;
+            $this->diario->validado_estudiantes = $estudiantesValidados;
+            $this->diario->validado_prospectos = $prospectosValidados;
             $this->diario->save();
             } else {
             $asistencia = Diario::create([
                 'horarios_id' => $this->diarios_horarios_id,
                 'diarios_hecho' => $this->diarios_hecho,
-                'diarios_porhacer' => $this->diarios_porhacer,
-                'niveles_id' => $this->idnivel,
-                'capitulos_id' => $this->id_capitulo,
-                'tematica_id' => $this->id_tematica,
+                'diarios_porhacer' => $diariosPorhacer,
+                'niveles_id' => $nivelId,
+                'capitulos_id' => $capituloId,
+                'tematica_id' => $tematicaId,
                 'numero_clases' => $numeroClases,
                 'validado_datos_generales' => $datosGeneralesValidados,
-                'validado_contenido_clase' => (bool) $this->validado_contenido_clase,
-                'validado_estudiantes' => (bool) $this->validado_estudiantes,
-                'validado_prospectos' => (bool) $this->validado_prospectos
+                'validado_contenido_clase' => $contenidoClaseValidado,
+                'validado_estudiantes' => $estudiantesValidados,
+                'validado_prospectos' => $prospectosValidados
             ]);
             // Guardar el nivel y capítulo en la tabla de grupos
-            $horario = Horario::where('horarios_id', $this->diarios_horarios_id)->first();
-
-            $grupo = Grupo::find($horario->grupo_id);
-            $grupo->nivel_id = $this->idnivel;
-            $grupo->capitulo_id = $this->id_capitulo;
-            $grupo->save();
+            if (! $esEvento && $horarioActual) {
+                $grupo = Grupo::find($horarioActual->grupo_id);
+                $grupo->nivel_id = $this->idnivel;
+                $grupo->capitulo_id = $this->id_capitulo;
+                $grupo->save();
             }
-
-            $horarioActual = Horario::find($this->diarios_horarios_id);
+            }
 
             foreach ($this->clasesPrueba as $clasePrueba) {
                 $asistio = $this->asistenciasPrueba[$clasePrueba->clase_prueba_id] ?? null;
@@ -1426,9 +1433,11 @@ class ShowHorarios extends Component
                 ]);
             }
 
-            $horario = Horario::find($this->diarios_horarios_id);
-            $horario->espacios_id = $this->normalizeEspacioId($this->espacios_id);
-            $horario->save();
+            $horario = $horarioActual;
+            if ($horario) {
+                $horario->espacios_id = $this->normalizeEspacioId($this->espacios_id);
+                $horario->save();
+            }
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -1437,12 +1446,18 @@ class ShowHorarios extends Component
             return;
         }
 
-        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo','id_tematica']);
+        $this->reset(['open_edit_diario','diarios_horarios_id','diarios_hecho','diarios_porhacer','idnivel','id_capitulo','id_tematica','diario_grupo_es_evento']);
         $this->emit('alert','El diario fue actualización satisfactoriamente');
     }
 
     private function diarioValidationRules(): array
     {
+        if ($this->diario_grupo_es_evento) {
+            return [
+                'diarios_hecho' => 'required|min:15|max:550',
+            ];
+        }
+
         return [
             'diarios_hecho' => 'required|min:15|max:550',
             'diarios_porhacer' => 'required|min:15|max:550',
