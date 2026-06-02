@@ -142,8 +142,9 @@
                                         @endif
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $esEvento = (bool) ($horarioItem['es_evento'] ?? false);
                                             $limiteActualizacion = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde)->addHour();
-                                            $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                            $mostrarEstado = ! $esEvento && ($diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
@@ -161,7 +162,9 @@
                                             <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         <div class="flex items-center justify-center">
-                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @unless($esEvento)
+                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @endunless
                                             <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                         </div>
                                     </div>
@@ -221,11 +224,12 @@
                                         @endif
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $esEvento = (bool) ($horarioItem['es_evento'] ?? false);
                                             $horaInicio = $horas2[$pos1]->horas_desde ?? null;
                                             $limiteActualizacion = $horaInicio
                                                 ? \Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio)->addHour()
                                                 : null;
-                                            $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
+                                            $mostrarEstado = ! $esEvento && ($diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion)));
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
@@ -246,7 +250,9 @@
                                             <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         <div class="flex items-center justify-center">
-                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @unless($esEvento)
+                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @endunless
                                             <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                         </div>
                                     </div>
@@ -352,8 +358,9 @@
                                     @endif
                                     @php
                                         $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                        $esEvento = (bool) ($horarioItem['es_evento'] ?? false);
                                         $limiteActualizacion = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde)->addHour();
-                                        $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                        $mostrarEstado = ! $esEvento && ($diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                     @endphp
                                     @if($mostrarEstado)
                                         @if($diarioActualizado)
@@ -366,7 +373,9 @@
                                         <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                     @endif
                                     <div class="flex items-center justify-center">
-                                        <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                        @unless($esEvento)
+                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                        @endunless
                                         <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                     </div>
                                 </div>

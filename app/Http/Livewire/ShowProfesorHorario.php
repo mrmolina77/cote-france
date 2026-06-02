@@ -205,6 +205,7 @@ class ShowProfesorHorario extends Component
                     'color' => $horario->profesor->profesores_color,
                     'espacios_id' => $horario->espacios_id,
                     'grupo_id' => $horario->grupo_id,
+                    'es_evento' => (bool) ($horario->grupo?->es_evento ?? false),
                     'espacio' => $horario->espacio->espacios_nombre,
                     'enlace' => $horario->espacio->espacios_enlace,
                     'modalidad' => $horario->espacio->modalidad_id,
