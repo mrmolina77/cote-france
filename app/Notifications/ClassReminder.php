@@ -11,17 +11,17 @@ class ClassReminder extends Notification
 {
     use Queueable;
 
-    protected $prospecto;
+    protected $clasePrueba;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($prospecto)
+    public function __construct($clasePrueba)
     {
         //
-        $this->prospecto = $prospecto;
+        $this->clasePrueba = $clasePrueba;
     }
 
     /**
@@ -43,11 +43,15 @@ class ClassReminder extends Notification
      */
     public function toMail($notifiable)
     {
+        $prospecto = $this->clasePrueba->prospecto;
+        $fecha = \Carbon\Carbon::parse($this->clasePrueba->horarios_dia)->format('d-m-Y');
+        $hora = $this->clasePrueba->hora ? $this->clasePrueba->hora->horas_desde : 'N/A';
+
         return (new MailMessage)
-                    ->greeting('Hola '.$this->prospecto->prospectos_nombres.' '.$this->prospecto->prospectos_apellidos.':')
+                    ->greeting('Hola '.$prospecto->prospectos_nombres.' '.$prospecto->prospectos_apellidos.':')
                     ->line('Te recordamos que tienes una clase de prueba programada con nosotros el dia '
-                           .\Carbon\Carbon::parse($this->prospecto->horario->horarios_dia)->format('d-m-Y')
-                           .' a las '.$this->prospecto->horario->hora->horas_desde)
+                           .$fecha
+                           .' a las '.$hora)
                     ->line('En esta sesión, tendrás la oportunidad de conocer el contenido y la dinámica de nuestras clases, resolver dudas y confirmar si este es el curso adecuado para ti.')
                     ->line('Por favor, asegúrate de estar listo/a unos minutos antes para aprovechar al máximo el tiempo de la sesión.')
                     ->line('Si tienes alguna pregunta o necesitas reprogramar la clase, no dudes en contactarnos.')

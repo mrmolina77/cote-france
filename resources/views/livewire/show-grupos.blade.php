@@ -216,6 +216,12 @@
                     <x-forms.input-error for="grupo_nombre"/>
             </div>
                 <div>
+                    <div class="mb-4 flex items-center">
+                        <x-forms.label value="Evento: " />
+                        <input type="checkbox" class="ml-4 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" wire:model="grupo.es_evento">
+                    </div>
+                </div>
+                <div @if($grupo?->es_evento) style="display:none;" @endif>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Level')}}: " />
                         <x-select class="flex-1 ml-4" wire:model="nivelid">
@@ -229,7 +235,7 @@
                     </div>
                     <x-forms.input-error for="grupo_nivel"/>
                 </div>
-                <div>
+                <div @if($grupo?->es_evento) style="display:none;" @endif>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Chapter')}}: " />
                         <x-select class="flex-1 ml-4" wire:model="grupo.capitulo_id">
@@ -243,7 +249,7 @@
                     </div>
                     <x-forms.input-error for="grupo_capitulo"/>
                 </div>
-                <div>
+                <div @if($grupo?->es_evento) style="display:none;" @endif>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Master book')}}: " />
                         <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="grupo.grupo_libro_maestro">
@@ -251,7 +257,7 @@
                     </div>
                     <x-forms.input-error for="grupo_libro_maestro"/>
                 </div>
-                <div>
+                <div @if($grupo?->es_evento) style="display:none;" @endif>
                     <div class="mb-4 flex">
                         <x-forms.label value="{{__('Student book')}}: " />
                         <x-forms.textarea rows="4" class="flex-1 ml-4" wire:model="grupo.grupo_libro_alumno">

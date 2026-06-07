@@ -132,10 +132,19 @@
                                                 <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                             @endif
                                         </div>
+                                        {{-- DEBUG: Esta condición muestra el ícono de clase manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos positivos. --}}
+                                        @if(($horarioItem['origen'] ?? null) === 'manual')
+                                            <span class="absolute top-1 right-1 inline-flex items-center justify-center rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] leading-none text-amber-950 shadow"
+                                                  title="Clase creada manualmente"
+                                                  aria-label="Clase creada manualmente">
+                                                <i class="fas fa-lock" aria-hidden="true"></i>
+                                            </span>
+                                        @endif
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $esEvento = (bool) ($horarioItem['es_evento'] ?? false);
                                             $limiteActualizacion = \Carbon\Carbon::parse($currentDateString . ' ' . $hora->horas_desde)->addHour();
-                                            $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                            $mostrarEstado = ! $esEvento && ($diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
@@ -153,7 +162,9 @@
                                             <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         <div class="flex items-center justify-center">
-                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @unless($esEvento)
+                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @endunless
                                             <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                         </div>
                                     </div>
@@ -203,13 +214,22 @@
                                         <div style="color: {{ $horarioItem['color'] }};" class="font-sans text-xs font-extrabold overflow-hidden text-ellipsis whitespace-nowrap w-full text-center uppercase">
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         </div>
+                                        {{-- DEBUG: Esta condición muestra el ícono de clase manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos positivos. --}}
+                                        @if(($horarioItem['origen'] ?? null) === 'manual')
+                                            <span class="absolute top-1 right-1 inline-flex items-center justify-center rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] leading-none text-amber-950 shadow"
+                                                  title="Clase creada manualmente"
+                                                  aria-label="Clase creada manualmente">
+                                                <i class="fas fa-lock" aria-hidden="true"></i>
+                                            </span>
+                                        @endif
                                         @php
                                             $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                            $esEvento = (bool) ($horarioItem['es_evento'] ?? false);
                                             $horaInicio = $horas2[$pos1]->horas_desde ?? null;
                                             $limiteActualizacion = $horaInicio
                                                 ? \Carbon\Carbon::parse($currentDateString . ' ' . $horaInicio)->addHour()
                                                 : null;
-                                            $mostrarEstado = $diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
+                                            $mostrarEstado = ! $esEvento && ($diarioActualizado || ($limiteActualizacion && \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion)));
                                         @endphp
                                         @if($mostrarEstado)
                                             @if($diarioActualizado)
@@ -230,7 +250,9 @@
                                             <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         <div class="flex items-center justify-center">
-                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @unless($esEvento)
+                                                <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                            @endunless
                                             <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                         </div>
                                     </div>
@@ -263,7 +285,7 @@
             @else
             <div class="p-4 mt-4 text-center text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg">
                 Esta semana no está activa.  Espere que sea activida.
-            </div>
+            </fieldset>
             @endif
         @else
             {{-- Cabecera Fija --}}
@@ -326,10 +348,19 @@
                                             <x-group-name :name="$horarioItem['nombre']" :abbreviate="!$solo_profesor" />
                                         @endif
                                     </div>
+                                    {{-- DEBUG: Esta condición muestra el ícono de clase manual únicamente por origen=manual. Revisar logs render:manual_visual_diagnostico si protegido causa falsos positivos. --}}
+                                    @if(($horarioItem['origen'] ?? null) === 'manual')
+                                        <span class="absolute top-1 right-1 inline-flex items-center justify-center rounded bg-amber-400 px-1.5 py-0.5 text-[0.6rem] leading-none text-amber-950 shadow"
+                                              title="Clase creada manualmente"
+                                              aria-label="Clase creada manualmente">
+                                            <i class="fas fa-lock" aria-hidden="true"></i>
+                                        </span>
+                                    @endif
                                     @php
                                         $diarioActualizado = $horarioItem['diario_actualizado'] ?? null;
+                                        $esEvento = (bool) ($horarioItem['es_evento'] ?? false);
                                         $limiteActualizacion = \Carbon\Carbon::parse($currentDailyDateString . ' ' . $hora->horas_desde)->addHour();
-                                        $mostrarEstado = $diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion);
+                                        $mostrarEstado = ! $esEvento && ($diarioActualizado || \Carbon\Carbon::now()->greaterThanOrEqualTo($limiteActualizacion));
                                     @endphp
                                     @if($mostrarEstado)
                                         @if($diarioActualizado)
@@ -342,7 +373,9 @@
                                         <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                     @endif
                                     <div class="flex items-center justify-center">
-                                        <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                        @unless($esEvento)
+                                            <div><i class="fas fa-calendar-check text-green-500 m-1 cursor-pointer" wire:click="editPlan({{ $horarioItem['id'] }})"></i></div>
+                                        @endunless
                                         <div><i class="fas fa-book text-blue-500 m-1 cursor-pointer" wire:click="editDiario({{ $horarioItem['id'] }})"></i></div>
                                     </div>
                                 </div>
@@ -370,101 +403,177 @@
             @else
             <div class="p-4 mt-4 text-center text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg">
                 Esta semana no está activa.  Espere que sea activida.
-            </div>
+            </fieldset>
             @endif
         @endif
     </div>
 
     <!-- Modales (copiados de show-horarios.blade.php con las mismas mejoras) -->
 
+    @if($open_edit_diario)
     <x-dialog-modal wire:model="open_edit_diario">
         <x-slot name="title">
-            Actualizar diario
+            Actualizar diario @if($diario_contexto) — {{ $diario_contexto }} @endif
         </x-slot>
         <x-slot name="content">
+            <div class="space-y-5">
+                {{-- Info Bar: Profesor y Salón (Read-only para profesores) --}}
+                <div class="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-wrap items-center justify-start gap-8">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Profesor</span>
+                        <span class="text-sm font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">{{ $diarios_profesor }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Salón</span>
+                        <span class="text-sm font-bold text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">{{ $diarios_espacio }}</span>
+                    </div>
+                </div>
 
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Teacher')}}: " class="font-bold mr-4"/>
-                    <x-forms.label value="{{ $diarios_profesor}} "/> {{-- Añadido font-bold y margen --}}
-                    <x-forms.label value="{{__('Salon')}}: " class="font-bold"/>
-                    <x-forms.label value="{{ $diarios_espacio}} "/> {{-- Añadido font-bold --}}
+                <fieldset class='border border-slate-200 rounded-lg p-3'>
+                <legend class='px-2 font-semibold text-slate-700'>Parte 1 — Datos generales</legend>
+                {{-- Fila 1: Nivel y Capítulo --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <x-forms.label value="{{__('Level')}}" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="idnivel">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_niveles as $key => $item)
+                            <option value="{{$key}}">{{ucfirst($item)}} </option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                        <x-forms.input-error for="idnivel" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-forms.label value="{{__('Chapter')}}" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="id_capitulo">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_capitulos as $item)
+                            <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                        <x-forms.input-error for="id_capitulo" class="mt-1" />
+                    </div>
                 </div>
-                <div class="mb-4 flex">
-                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}: "/>
-                    <x-forms.textarea id="diarios_hecho" rows="3" class="flex-1 ml-4" wire:model="diarios_hecho">
-                    </x-forms.textarea>
+                {{-- Fila 2: Temática y Número de Clases --}}
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <x-forms.label value="Temática" required class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-select class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="id_tematica">
+                            <option value="">{{__('Select')}}</option>
+                            @forelse ($arr_tematicas as $tematica)
+                            <option value="{{$tematica->tematica_id}}">{{$tematica->tematica_descripcion}}</option>
+                            @empty
+                            <option value="">{{__('No Content')}}</option>
+                            @endforelse
+                        </x-select>
+                        <x-forms.input-error for="id_tematica" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-forms.label value="N° de Clases" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                        <x-input type="number" step="0.5" min="0.5" class="w-full text-sm text-center rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500" wire:model="numero_clases" />
+                        <x-forms.input-error for="numero_clases" class="mt-1" />
+                    </div>
                 </div>
-                <x-forms.input-error for="diarios_hecho"/>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('To do')}}: "/>
-                    <x-forms.textarea id="diarios_porhacer" rows="3" class="flex-1 ml-4" wire:model="diarios_porhacer">
+                <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_datos_generales" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_datos_generales" class="mt-1" /></div>
+                </fieldset>
+
+                <fieldset class='border border-slate-200 rounded-lg p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 2 — Hecho y Por hacer</legend>
+                {{-- Hecho (Done) --}}
+                <div>
+                    <x-forms.label for="diarios_hecho" value="{{__('Done')}}" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                    <x-forms.textarea id="diarios_hecho" rows="7" class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="diarios_hecho" placeholder="¿Qué se logró en la clase?">
                     </x-forms.textarea>
+                    <x-forms.input-error for="diarios_hecho" class="mt-1"/>
+                </div>
+
+                {{-- Por hacer (To do) --}}
+                <div>
+                    <x-forms.label for="diarios_porhacer" value="{{__('To do')}}" class="!w-auto !mt-0 !mb-1 text-xs uppercase tracking-wider font-semibold text-slate-500" />
+                    <x-forms.textarea id="diarios_porhacer" rows="7" class="w-full text-sm rounded-lg shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400" wire:model="diarios_porhacer" placeholder="Tareas o temas pendientes para la siguiente clase">
+                    </x-forms.textarea>
+                    <x-forms.input-error for="diarios_porhacer" class="mt-1"/>
                 </div>
                 <x-forms.input-error for="diarios_porhacer"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Level')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="idnivel">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_niveles as $key => $item)
-                        <option value="{{$key}}">{{ucfirst($item)}} </option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="idnivel"/>
-            </div>
-            <div>
-                <div class="mb-4 flex">
-                    <x-forms.label value="{{__('Chapter')}}: " required/>
-                    <x-select class="flex-1 ml-4" wire:model="id_capitulo">
-                        <option value="">{{__('Select')}}</option>
-                        @forelse ($arr_capitulos as $item)
-                        <option value="{{$item->capitulo_id}}">{{$item->capitulo_descripcion}} - {{$item->capitulo_codigo}}</option>
-                        @empty
-                        <option value="">{{__('No Content')}}</option>
-                        @endforelse
-                    </x-select>
-                </div>
-                <x-forms.input-error for="id_capitulo"/>
-            </div>
+                <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_contenido_clase" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_contenido_clase" class="mt-1" /></div>
+            </div></fieldset>
+            <fieldset class='border border-slate-200 rounded-lg p-3 mt-4'><legend class='px-2 font-semibold text-slate-700'>Parte 3 — Estudiantes</legend>
             <div class="relative overflow-x-auto">
                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                    <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-gray-700/50 dark:text-gray-400 border-b border-slate-200/60">
                         <tr>
-                            <th scope="col" class="px-6 py-3 rounded-s-lg w-1/2">
+                            <th scope="col" class="px-4 py-2.5 font-bold w-1/2">
                                 Estudiante
                             </th>
-                            <th scope="col" class="px-4 py-3 text-center">
+                            <th scope="col" class="px-3 py-2.5 text-center font-bold">
                                 Asistió
                             </th>
-                            <th scope="col" class="px-4 py-3 rounded-e-lg text-center">
+                            <th scope="col" class="px-3 py-2.5 text-center font-bold">
                                 Observación
                             </th>
-                        </tr>
+                                                    </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-slate-100">
                         @foreach ($estudiantes as $estudiante)
-                            <tr class="bg-white dark:bg-gray-800">
-                                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white w-1/2">
+                            <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
+                                <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap dark:text-white w-1/2">
                                     {{ $estudiante->prospectos_nombres }} {{ $estudiante->prospectos_apellidos }}
-                                </th>
-                                <td class="px-4 py-4 text-center">
-                                    <x-checkbox  wire:model="asistencias.{{ $estudiante->prospectos_id }}" />
                                 </td>
-                                <td class="px-4 py-4 text-center">
-                                    <x-input  wire:model="observaciones.{{ $estudiante->prospectos_id }}"
-                                            class="h-10 w-25 text-sm text-center" maxlength="255" />
+                                <td class="px-3 py-2.5 text-center">
+                                    <x-checkbox wire:model="asistencias.{{ $estudiante->prospectos_id }}" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
                                 </td>
-                            </tr>
+                                <td class="px-3 py-2.5 text-center">
+                                    <x-input wire:model="observaciones.{{ $estudiante->prospectos_id }}"
+                                             class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2.5" placeholder="Nota o detalle" maxlength="255" />
+                                </td>
+                                                            </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_estudiantes" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_estudiantes" class="mt-1" /></div>
+            </fieldset>
 
+            {{-- Tabla de Clases de Prueba --}}
+            @if (count($clasesPrueba))
+            <fieldset class='mt-6 border border-slate-100 rounded-xl overflow-hidden p-3'><legend class='px-2 font-semibold text-slate-700'>Parte 4 — Clases de prueba / Prospectos</legend>
+                <div class="bg-slate-50 px-4 py-2 border-b border-slate-200/60">
+                    <h3 class="text-xs uppercase tracking-wider font-bold text-slate-500">Clases de prueba</h3>
+                </div>
+                <div class="relative overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-slate-400 uppercase tracking-wider bg-slate-50/50 border-b border-slate-200/60">
+                            <tr>
+                                <th scope="col" class="px-4 py-2.5 font-bold">Prospecto</th>
+                                <th scope="col" class="px-3 py-2.5 text-center font-bold">Asistió</th>
+                                <th scope="col" class="px-3 py-2.5 text-center font-bold">No asistió</th>
+                                <th scope="col" class="px-3 py-2.5 font-bold">Observación</th>
+                                                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach ($clasesPrueba as $clase)
+                                <tr class="transition-colors duration-200 bg-white hover:bg-slate-50/50 dark:bg-gray-800">
+                                    <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{{ $clase->prospecto?->prospectos_nombres }} {{ $clase->prospecto?->prospectos_apellidos }}</td>
+                                    <td class="px-3 py-2.5 text-center">
+                                        <input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="1" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                    </td>
+                                    <td class="px-3 py-2.5 text-center">
+                                        <input type="radio" wire:model="asistenciasPrueba.{{$clase->clase_prueba_id}}" value="0" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <x-input wire:model="observacionesPrueba.{{$clase->clase_prueba_id}}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2.5" placeholder="Nota de prueba"/>
+                                    </td>
+                                                                    </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class='flex flex-col items-end mt-3'><label class='text-sm flex items-center gap-2'><x-checkbox wire:model="validado_prospectos" required/> Validado <span class="text-red-500">*</span></label><x-forms.input-error for="validado_prospectos" class="mt-1" /></div>
+            </fieldset>
+            @endif
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit_diario',false)">
@@ -476,10 +585,12 @@
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}
         </x-slot>
     </x-dialog-modal>
+    @endif
 
+    @if($open_edit_plan)
     <x-dialog-modal wire:model="open_edit_plan">
         <x-slot name="title">
-            Actualizar plan
+            Actualizar plan - Grupo: {{ $plan_modal_grupo ?? 'Sin cargar' }} - Fecha: {{ $plan_modal_fecha ?? 'Sin cargar' }} - Hora: {{ $plan_modal_hora ?? 'Sin cargar' }}
         </x-slot>
 
         <x-slot name="content">
@@ -491,28 +602,39 @@
                     <div class="mb-6">
                         @php
                             $firstItem = $items[0] ?? null;
-                            $diarios_hecho = $firstItem['horario']['diario']['diarios_hecho'] ?? 'Sin descripción';
-                            $diarios_porhacer = $firstItem['horario']['diario']['diarios_porhacer'] ?? 'Sin descripción';
-                            $fecha = date('d-m-Y', strtotime($firstItem['horario']['horarios_dia']));
-                            $profesor = ($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '');
-                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'];
+                            $diario = $firstItem['horario']['diario'] ?? null;
+                            $diarios_hecho = data_get($diario, 'diarios_hecho');
+                            $diarios_porhacer = data_get($diario, 'diarios_porhacer');
+                            $fecha = isset($firstItem['horario']['horarios_dia']) ? date('d-m-Y', strtotime($firstItem['horario']['horarios_dia'])) : 'Sin cargar';
+                            $profesor = trim(($firstItem['horario']['profesor']['profesores_nombres'] ?? '') .' '.($firstItem['horario']['profesor']['profesores_apellidos'] ?? '')) ?: 'Sin cargar';
+                            $espacio = $firstItem['horario']['espacio']['espacios_nombre'] ?? 'Sin cargar';
+                            $nivel = data_get($diario, 'nivel.nivel_descripcion')
+                                ?? ($diario ? ($arr_niveles[data_get($diario, 'niveles_id')] ?? null) : null);
+                            $capitulo = data_get($diario, 'capitulo.capitulo_descripcion')
+                                ? trim(data_get($diario, 'capitulo.capitulo_descripcion') . ' - ' . data_get($diario, 'capitulo.capitulo_codigo'))
+                                : ($diario ? ($arr_capitulos2[data_get($diario, 'capitulos_id')] ?? null) : null);
+                            $tematicaRelacion = data_get($diario, 'tematica.tematica_descripcion');
+                            $tematicaTexto = is_array(data_get($diario, 'tematica')) ? null : data_get($diario, 'tematica');
+                            $tematica = $tematicaRelacion ?? data_get($diario, 'tematica_descripcion') ?? $tematicaTexto;
+                            $numero_clases = data_get($diario, 'numero_clases');
+                            $numero_clases_formateado = ($numero_clases !== null && $numero_clases !== '')
+                                ? str_replace('.', ',', (string) (floor((float) $numero_clases) == (float) $numero_clases ? (int) $numero_clases : $numero_clases))
+                                : null;
+                            $regulares = collect($items)->filter(fn($eval) => !isset($eval['is_dummy']) && !isset($eval['clase_prueba_id']));
+                            $pruebas = collect($items)->filter(fn($eval) => isset($eval['clase_prueba_id']));
                         @endphp
 
-                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-100">Fecha: {{ $fecha }}</h3>
-                        <p class="text-lg font-bold text-gray-700 dark:text-gray-100">Profesor: {{ $profesor }} - Salón: {{ $espacio }} </p>
-
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Hecho: {{ $diarios_hecho }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Por hacer: {{ $diarios_porhacer }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2">
-                            Nivel: {{ $arr_niveles[$firstItem['horario']['diario']['niveles_id']] ?? '' }} - Capitulo: {{ $arr_capitulos2[$firstItem['horario']['diario']['capitulos_id']] ?? '' }}
-                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Fecha:</strong> {{ $fecha ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Profesor:</strong> {{ $profesor ?: 'Sin cargar' }} - <strong>Salón:</strong> {{ $espacio ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Nivel:</strong> {{ $nivel ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Capítulo:</strong> {{ $capitulo ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Temática:</strong> {{ $tematica ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>N° de clases:</strong> {{ $numero_clases_formateado ?? 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Hecho:</strong> {{ $diarios_hecho ?: 'Sin cargar' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 mb-2"><strong>Por hacer:</strong> {{ $diarios_porhacer ?: 'Sin cargar' }}</p>
 
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="font-mono text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                            <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-4 py-2">Estudiante</th>
                                     <th class="px-4 py-2">Asistencia</th>
@@ -520,18 +642,46 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($items as $eval)
+                                @forelse($regulares as $eval)
+                                        <tr class="bg-white dark:bg-gray-800 border-b">
+                                            <td class="px-4 py-2 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                <span>
+                                                    {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
+                                                    {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
+                                                </span>
+                                                @if (isset($eval['clase_prueba_id']))
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                                        Prueba
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                            <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
+                                        </tr>
+                                @empty
                                     <tr class="bg-white dark:bg-gray-800 border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
-                                            {{ $eval['prospecto']['prospectos_nombres'] ?? '' }}
-                                            {{ $eval['prospecto']['prospectos_apellidos'] ?? '' }}
-                                        </td>
-                                        <td class="px-4 py-2">{{ $eval['asistio'] ? 'Sí' : 'No' }}</td>
-                                        <td class="px-4 py-2">{{ $eval['observacion'] }}</td>
+                                        <td colspan="3" class="px-4 py-2 text-center text-gray-500 italic">Sin registros de asistencia guardados</td>
                                     </tr>
-                                @endforeach
+                                @endforelse
                             </tbody>
                         </table>
+                        @if($pruebas->isNotEmpty())
+                            <h4 class="mt-4 mb-2 text-sm font-bold text-gray-700 dark:text-gray-100">Clases de prueba</h4>
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="font-sans font-extrabold text-sm text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
+                                <tr><th class="px-4 py-2">Estudiante / Prospecto</th><th class="px-4 py-2">Asistencia</th><th class="px-4 py-2">Observación</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($pruebas as $eval)
+                                    <tr class="bg-white dark:bg-gray-800 border-b">
+                                        <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ ($eval['prospecto']['prospectos_nombres'] ?? 'Sin cargar') . ' ' . ($eval['prospecto']['prospectos_apellidos'] ?? '') }} <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800">Prueba</span></td>
+                                        <td class="px-4 py-2">{{ is_null($eval['asistio'] ?? null) ? 'Sin cargar' : ((int) ($eval['asistio'] ?? 0) === 1 ? 'Sí' : 'No') }}</td>
+                                        <td class="px-4 py-2">{{ $eval['observacion'] ?: 'Sin cargar' }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -543,5 +693,21 @@
             </x-forms.red-button>
         </x-slot>
     </x-dialog-modal>
+    @endif
+
+    <script>
+        // Mantiene el mismo comportamiento que la vista administrativa:
+        // al abrir el modal de plan, posiciona el scroll al final del contenido.
+        document.addEventListener('livewire:load', function () {
+            Livewire.on('scrollToBottom', () => {
+                setTimeout(() => {
+                    const container = document.getElementById('scroll-container');
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                }, 50);
+            });
+        });
+    </script>
 
 </div>

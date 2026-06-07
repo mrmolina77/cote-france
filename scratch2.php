@@ -1,0 +1,4 @@
+dump(App\Models\Grupo::whereIn('grupo_id', [35, 100, 101])->pluck('grupo_nombre', 'grupo_id')->toArray()); 
+dump(App\Models\Prospecto::whereHas('inscripciones', fn($q) => $q->where('grupo_id', 101))->pluck('prospectos_nombres')->toArray()); 
+dump(App\Models\Prospecto::whereHas('inscripciones', fn($q) => $q->where('grupo_id', 100))->pluck('prospectos_nombres')->toArray()); 
+dump(App\Models\Prospecto::whereHas('inscripciones', fn($q) => $q->where('grupo_id', 35))->pluck('prospectos_nombres')->toArray());
