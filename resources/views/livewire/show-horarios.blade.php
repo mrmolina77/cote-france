@@ -1313,30 +1313,50 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (!window.horariosUndoRedoShortcutBound) {
-            window.horariosUndoRedoShortcutBound = true;
-            document.addEventListener('keydown', function (e) {
-                const isCtrlOrCmd = e.ctrlKey || e.metaKey;
-                if (!isCtrlOrCmd) return;
+        window.undoLastHorarioAction = function () {
+            Livewire.emit('undoHorarioShortcut');
+        };
 
-                const target = e.target;
-                const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+        window.redoLastHorarioAction = function () {
+            Livewire.emit('redoHorarioShortcut');
+        };
 
-                if (['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable) {
-                    return;
-                }
-
-                if (e.key.toLowerCase() === 'z') {
-                    e.preventDefault();
-                    Livewire.emit('undoHorarioShortcut');
-                }
-
-                if (e.key.toLowerCase() === 'y') {
-                    e.preventDefault();
-                    Livewire.emit('redoHorarioShortcut');
-                }
-            });
+        if (window.horariosUndoRedoKeydownHandler) {
+            document.removeEventListener('keydown', window.horariosUndoRedoKeydownHandler);
         }
+
+        window.horariosUndoRedoKeydownHandler = function (e) {
+            const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+            if (!isCtrlOrCmd) return;
+
+            const target = e.target;
+            const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+
+            if (['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable) {
+                return;
+            }
+
+            const key = e.key.toLowerCase();
+
+            if (e.shiftKey && key === 'z') {
+                e.preventDefault();
+                window.redoLastHorarioAction();
+                return;
+            }
+
+            if (key === 'z') {
+                e.preventDefault();
+                window.undoLastHorarioAction();
+                return;
+            }
+
+            if (key === 'y') {
+                e.preventDefault();
+                window.redoLastHorarioAction();
+            }
+        };
+
+        document.addEventListener('keydown', window.horariosUndoRedoKeydownHandler);
 
         const getTable = () => document.getElementById('horarios-table');
 
