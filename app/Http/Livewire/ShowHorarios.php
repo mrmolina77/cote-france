@@ -369,6 +369,24 @@ class ShowHorarios extends Component
         ];
     }
 
+    private function createHorarioFromSnapshot(array $snapshot, array $overrides = []): Horario
+    {
+        $payload = array_merge($snapshot, $overrides);
+        $horario = new Horario();
+        $primaryKey = $horario->getKeyName();
+
+        if (! empty($payload[$primaryKey])) {
+            $horario->setAttribute($primaryKey, $payload[$primaryKey]);
+        }
+
+        unset($payload[$primaryKey]);
+
+        $horario->fill($payload);
+        $horario->save();
+
+        return $horario;
+    }
+
     private function applyHorarioSnapshot(Horario $horario, array $snapshot): void
     {
         $horario->horarios_dia = $snapshot['horarios_dia'] ?? $horario->horarios_dia;
@@ -578,20 +596,20 @@ class ShowHorarios extends Component
                 }
 
                 $payload = $action['after'] ?? [];
-                unset($payload['horarios_id']);
+                $overrides = [];
 
                 if ($type === 'manual_create') {
-                    $payload['origen'] = 'manual';
-                    $payload['protegido'] = true;
-                    $payload['protegido_at'] = $payload['protegido_at'] ?? now();
+                    $overrides['origen'] = 'manual';
+                    $overrides['protegido'] = true;
+                    $overrides['protegido_at'] = $payload['protegido_at'] ?? now();
                 } else {
-                    $payload['origen'] = $payload['origen'] ?? 'drag_drop';
-                    $payload['protegido'] = (bool) ($payload['protegido'] ?? false);
+                    $overrides['origen'] = $payload['origen'] ?? 'drag_drop';
+                    $overrides['protegido'] = (bool) ($payload['protegido'] ?? false);
                 }
 
-                $this->ensureHorarioSnapshotCanBeApplied($payload, $direction);
+                $this->ensureHorarioSnapshotCanBeApplied(array_merge($payload, $overrides), $direction);
 
-                if ($this->existeHorarioManualProtegidoEnSnapshot($payload)) {
+                if ($this->existeHorarioManualProtegidoEnSnapshot(array_merge($payload, $overrides))) {
                     Log::warning('[HorarioRedo] Acción bloqueada por horario manual protegido', [
                         'type' => $type,
                         'target' => $payload,
@@ -600,7 +618,7 @@ class ShowHorarios extends Component
                     throw new RuntimeException('No se puede rehacer porque la posición de destino tiene una clase manual protegida.');
                 }
 
-                $horario = Horario::create($payload);
+                $horario = $this->createHorarioFromSnapshot($payload, $overrides);
                 $action['horario_id'] = $horario->horarios_id;
                 $action['after'] = $this->snapshotHorario($horario);
 
@@ -615,7 +633,6 @@ class ShowHorarios extends Component
             if ($type === 'delete') {
                 if ($direction === 'undo') {
                     $payload = $action['before'] ?? [];
-                    unset($payload['horarios_id']);
 
                     $this->ensureHorarioSnapshotCanBeApplied($payload, $direction);
 
@@ -623,7 +640,7 @@ class ShowHorarios extends Component
                         throw new RuntimeException('No se puede deshacer la eliminación porque la posición de destino tiene una clase manual protegida.');
                     }
 
-                    $horario = Horario::create($payload);
+                    $horario = $this->createHorarioFromSnapshot($payload);
                     $action['horario_id'] = $horario->horarios_id;
                     $action['before'] = $this->snapshotHorario($horario);
 
@@ -1207,7 +1224,16 @@ class ShowHorarios extends Component
             'protegido' => $horario->protegido ?? null,
         ]);
 
+        $beforeSnapshot = $this->snapshotHorario($horario);
+
         $horario->delete();
+
+        $this->pushUndoAction([
+            'type' => 'delete',
+            'horario_id' => $beforeSnapshot['horarios_id'],
+            'before' => $beforeSnapshot,
+        ]);
+
         $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
     }
 
