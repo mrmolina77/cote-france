@@ -22,6 +22,7 @@ use App\Models\BloqueosProfesores;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use RuntimeException;
 use Livewire\Component;
 
@@ -253,6 +254,7 @@ class ShowHorarios extends Component
     private function snapshotHorario(Horario $horario): array
     {
         return [
+            'horarios_id' => $horario->horarios_id,
             'horarios_dia' => $horario->horarios_dia instanceof Carbon
                 ? $horario->horarios_dia->toDateString()
                 : (string) $horario->horarios_dia,
@@ -306,11 +308,27 @@ class ShowHorarios extends Component
     {
         $horarioId = $horario->horarios_id;
 
-        return Evaluacion::where('horarios_id', $horarioId)->exists()
-            || Diario::where('horarios_id', $horarioId)->exists()
-            || Plan::where('horarios_id', $horarioId)->exists()
-            || ClasePrueba::where('horarios_id', $horarioId)->exists()
-            || Prospecto::where('horarios_id', $horarioId)->exists();
+        return $this->existeDependenciaHorario(Evaluacion::class, $horarioId)
+            || $this->existeDependenciaHorario(Diario::class, $horarioId)
+            || $this->existeDependenciaHorario(Plan::class, $horarioId)
+            || $this->existeDependenciaHorario(ClasePrueba::class, $horarioId)
+            || $this->existeDependenciaHorario(Prospecto::class, $horarioId);
+    }
+
+    private function existeDependenciaHorario(string $modelClass, int $horarioId): bool
+    {
+        $query = $modelClass::query();
+
+        if (in_array(SoftDeletes::class, class_uses_recursive($modelClass), true)) {
+            $query->withTrashed();
+        }
+
+        return $query->where('horarios_id', $horarioId)->exists();
+    }
+
+    private function horarioEsManualOProtegido(Horario $horario): bool
+    {
+        return ($horario->origen ?? null) === 'manual' || (bool) ($horario->protegido ?? false);
     }
 
     private function existeHorarioManualProtegidoEnSnapshot(array $snapshot, ?int $exceptHorarioId = null): bool
@@ -395,6 +413,102 @@ class ShowHorarios extends Component
                 ]);
 
                 return $action;
+            }
+
+            if ($type === 'delete') {
+                if ($direction === 'undo') {
+                    $horario = Horario::withTrashed()->find($horarioId);
+
+                    if (! $horario) {
+                        Log::warning('[HorarioUndoRedoDelete] Registro no encontrado para restaurar', [
+                            'horario_id' => $horarioId,
+                            'type' => $type,
+                        ]);
+
+                        throw new RuntimeException('No se encontró el horario eliminado para restaurar.');
+                    }
+
+                    if (! $horario->trashed()) {
+                        Log::warning('[HorarioUndoRedoDelete] Restauración bloqueada por estado activo', [
+                            'horario_id' => $horario->horarios_id,
+                        ]);
+
+                        throw new RuntimeException('El horario ya está activo, no se puede deshacer la eliminación.');
+                    }
+
+                    $horario->restore();
+                    $horario->refresh();
+                    $this->applyHorarioSnapshot($horario, $action['before'] ?? []);
+                    $horario->refresh();
+
+                    Log::info('[HorarioUndoRedoDelete] Horario restaurado por undo', [
+                        'horario_id' => $horario->horarios_id,
+                        'grupo_id' => $horario->grupo_id,
+                        'horarios_dia' => $horario->horarios_dia,
+                        'horas_id' => $horario->horas_id,
+                    ]);
+
+                    return [
+                        'type' => 'delete',
+                        'horario_id' => $horario->horarios_id,
+                        'before' => $this->snapshotHorario($horario),
+                    ];
+                }
+
+                $horario = Horario::find($horarioId);
+
+                if (! $horario) {
+                    Log::warning('[HorarioUndoRedoDelete] Registro activo no encontrado para rehacer eliminación', [
+                        'horario_id' => $horarioId,
+                        'type' => $type,
+                    ]);
+
+                    throw new RuntimeException('No se encontró el horario activo para volver a eliminar.');
+                }
+
+                if (! $this->horarioActualCoincideConSnapshot($horario, $action['before'] ?? [])) {
+                    Log::warning('[HorarioUndoRedoDelete] Rehacer eliminación bloqueado por estado distinto al historial', [
+                        'horario_id' => $horario->horarios_id,
+                        'actual' => $this->snapshotHorario($horario),
+                        'expected' => $action['before'] ?? [],
+                    ]);
+
+                    throw new RuntimeException('No se puede rehacer la eliminación porque este horario fue modificado después de restaurarse.');
+                }
+
+                if ($this->horarioEsManualOProtegido($horario)) {
+                    Log::warning('[HorarioUndoRedoDelete] Rehacer eliminación bloqueado porque el horario es manual/protegido', [
+                        'horario_id' => $horario->horarios_id,
+                        'origen' => $horario->origen ?? null,
+                        'protegido' => $horario->protegido ?? null,
+                    ]);
+
+                    throw new RuntimeException('No se puede rehacer la eliminación porque el horario ahora es manual o protegido.');
+                }
+
+                if ($this->horarioTieneDependencias($horario)) {
+                    Log::warning('[HorarioUndoRedoDelete] Rehacer eliminación bloqueado por dependencias', [
+                        'horario_id' => $horario->horarios_id,
+                    ]);
+
+                    throw new RuntimeException('No se puede rehacer la eliminación porque el horario tiene información asociada.');
+                }
+
+                $before = $this->snapshotHorario($horario);
+                $horario->delete();
+
+                Log::info('[HorarioUndoRedoDelete] Horario eliminado nuevamente por redo', [
+                    'horario_id' => $horarioId,
+                    'grupo_id' => $before['grupo_id'] ?? null,
+                    'horarios_dia' => $before['horarios_dia'] ?? null,
+                    'horas_id' => $before['horas_id'] ?? null,
+                ]);
+
+                return [
+                    'type' => 'delete',
+                    'horario_id' => $horarioId,
+                    'before' => $before,
+                ];
             }
 
             if (in_array($type, ['create', 'manual_create'], true)) {
@@ -993,31 +1107,82 @@ class ShowHorarios extends Component
         return Carbon::parse($fecha)->toDateString() >= Carbon::parse($grupo->fecha_inicio)->toDateString();
     }
 
-    public function delete(Horario $horario){
-        // Verificar si el horario tiene evaluaciones asociadas
-        $evaluaciones = Evaluacion::where('horarios_id', $horario->horarios_id)->exists();
+    public function delete(Horario $horario)
+    {
+        $horarioId = $horario->horarios_id;
 
-        $this->logHorarioDebug('delete:start', [
-            'horario_id' => $horario->horarios_id ?? null,
+        Log::info('[HorarioUndoRedoDelete] Intentando eliminar horario', [
+            'horario_id' => $horarioId,
             'grupo_id' => $horario->grupo_id ?? null,
             'origen' => $horario->origen ?? null,
             'protegido' => $horario->protegido ?? null,
-            'has_evaluaciones' => $evaluaciones,
         ]);
 
-        if ($evaluaciones) {
-            $this->emit('alert', 'No se puede eliminar el horario porque tiene evaluaciones asociadas', 'Advertencias!', 'warning');
+        $horario = Horario::find($horarioId);
+
+        if (! $horario) {
+            Log::warning('[HorarioUndoRedoDelete] Eliminación bloqueada porque no se encontró el registro', [
+                'horario_id' => $horarioId,
+            ]);
+
+            $this->emit('alert', 'El horario no existe o ya fue eliminado.', 'Error!', 'error');
             return;
         }
 
-        $this->logHorarioDebug('delete:executed', [
-            'horario_id' => $horario->horarios_id ?? null,
-            'origen' => $horario->origen ?? null,
-            'protegido' => $horario->protegido ?? null,
-        ]);
+        if ($this->horarioEsManualOProtegido($horario)) {
+            Log::warning('[HorarioUndoRedoDelete] Eliminación bloqueada porque el horario es manual/protegido', [
+                'horario_id' => $horario->horarios_id,
+                'origen' => $horario->origen ?? null,
+                'protegido' => $horario->protegido ?? null,
+            ]);
 
-        $horario->delete();
-        $this->emit('alert', 'El horario fue eliminado satisfactoriamente');
+            $this->emit('alert', 'No se puede eliminar una clase creada manualmente.', 'Advertencias!', 'warning');
+            return;
+        }
+
+        if ($this->horarioTieneDependencias($horario)) {
+            Log::warning('[HorarioUndoRedoDelete] Eliminación bloqueada por dependencias', [
+                'horario_id' => $horario->horarios_id,
+            ]);
+
+            $this->emit('alert', 'No se puede eliminar este horario porque ya tiene información asociada.', 'Advertencias!', 'warning');
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($horario) {
+                $before = $this->snapshotHorario($horario);
+                $horarioId = $horario->horarios_id;
+
+                $horario->delete();
+
+                $this->pushUndoAction([
+                    'type' => 'delete',
+                    'horario_id' => $horarioId,
+                    'before' => $before,
+                ]);
+
+                Log::info('[HorarioUndoRedoDelete] Acción delete registrada', [
+                    'horario_id' => $horarioId,
+                    'grupo_id' => $before['grupo_id'] ?? null,
+                    'horarios_dia' => $before['horarios_dia'] ?? null,
+                    'horas_id' => $before['horas_id'] ?? null,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Log::error('[HorarioUndoRedoDelete] Error inesperado al eliminar horario', [
+                'horario_id' => $horarioId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->emit('alert', 'No se pudo eliminar el horario.', 'Error!', 'error');
+            return;
+        }
+
+        $this->emitTo('show-horarios', 'render');
+        $this->emitSelf('$refresh');
+        $this->emit('alert', 'Horario eliminado correctamente.');
     }
 
     public function deactivateGrupo(int $grupoId, string $fecha, int $horaId): void
