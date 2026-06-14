@@ -244,7 +244,7 @@
                                             <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
-                                            <div class="flex items-center justify-center">
+                                            <div class="grid grid-cols-2 gap-x-1 gap-y-0 justify-items-center mx-auto w-fit">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
                                                 @unless($esEvento)
@@ -399,7 +399,7 @@
                                             <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                         @endif
                                         @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
-                                            <div class="flex items-center justify-center">
+                                            <div class="grid grid-cols-2 gap-x-1 gap-y-0 justify-items-center mx-auto w-fit">
                                                 <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                                 <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDateString}}',{{$currentHourId}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
                                                 @unless($esEvento)
@@ -583,7 +583,7 @@
                                         <span class="absolute bottom-1 left-1 text-xs font-extrabold text-red-600" aria-label="Clase anterior pendiente">+</span>
                                     @endif
                                     @if(strtoupper(trim($nombreDelHorario)) !== "BLOQUEADO")
-                                        <div class="flex items-center justify-center">
+                                        <div class="grid grid-cols-2 gap-x-1 gap-y-0 justify-items-center mx-auto w-fit">
                                             <div><i class="fas fa-trash text-red-500 m-1 cursor-pointer" wire:click="$emit('deleteHorario',{{ $horarioItem['id'] }})"></i></div>
                                             <div><i class="fas fa-user-plus text-blue-500 m-1 cursor-pointer" wire:click="openCreateClasePrueba('{{$currentDailyDateString}}',{{$hora->horas_id}},{{ $profesor->profesores_id }},{{ $horarioItem['grupo_id'] }})"></i></div>
                                             @unless($esEvento)
