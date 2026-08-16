@@ -26,7 +26,7 @@
                     </div>
                 </div>
             </x-slot>
-            <table class="items-center bg-transparent w-full border-collapse">
+            <div class="overflow-x-auto"><table class="items-center bg-transparent w-full border-collapse">
                 <thead>
                 <tr>
                 <th class="cursor-pointer px-2 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left"
@@ -94,6 +94,9 @@
                         <i class="fas fa-sort float-right mt-1"></i>
                     @endif
                     </th>
+                <th wire:click="order('estatus')" class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Estatus</th>
+                <th wire:click="order('monto_mensualidad')" class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Mensualidad</th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Responsable</th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                     Acción
                     </th>
@@ -119,6 +122,9 @@
                     <td class="border-t-0 px-4 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         {{$item->prospectos_nombres}} {{$item->prospectos_apellidos}}
                     </td>
+                    <td class="px-4 text-xs whitespace-nowrap"><span class="px-2 py-1 rounded {{ ['activa'=>'bg-green-100 text-green-700','suspendida'=>'bg-yellow-100 text-yellow-700','finalizada'=>'bg-blue-100 text-blue-700','cancelada'=>'bg-red-100 text-red-700'][$item->estatus] ?? 'bg-gray-100 text-gray-600' }}">{{ $item->estatus ? ucfirst($item->estatus) : 'Sin configurar' }}</span></td>
+                    <td class="px-4 text-xs whitespace-nowrap">{{ $item->monto_mensualidad === null ? 'Sin configurar' : '$'.number_format($item->monto_mensualidad, 2).' '.($item->moneda ?: 'MXN') }}</td>
+                    <td class="px-4 text-xs whitespace-nowrap">{{ $item->responsable_nombre ?: 'Sin configurar' }}</td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->inscripciones_id }})"></i>
                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteInscripcion',{{$item->inscripciones_id}})"></i>
@@ -176,7 +182,7 @@
 
                 </tbody>
 
-            </table>
+            </table></div>
             @if (count($inscripciones) > 0 and !is_array($inscripciones) and $inscripciones->hasPages())
                 <div class="px-6 py-3">
                     {{$inscripciones->links()}}
@@ -241,6 +247,14 @@
                 </div>
                 <x-forms.input-error for="inscripcion.fecha_inscripcion"/>
            </div>
+           <div class="mt-6 space-y-4"><h3 class="font-semibold text-blue-700">Condiciones económicas</h3><div class="grid md:grid-cols-2 gap-4">
+           <label>Estatus<x-select class="w-full" wire:model.defer="inscripcion.estatus"><option value="">Sin configurar</option>@foreach(['activa','suspendida','finalizada','cancelada'] as $v)<option value="{{$v}}">{{ucfirst($v)}}</option>@endforeach</x-select><x-forms.input-error for="inscripcion.estatus"/></label>
+           <label>Fecha inicio<x-forms.input type="date" class="w-full" wire:model.defer="inscripcion.fecha_inicio"/><x-forms.input-error for="inscripcion.fecha_inicio"/></label>
+           <label>Fecha final<x-forms.input type="date" class="w-full" wire:model.defer="inscripcion.fecha_fin"/><x-forms.input-error for="inscripcion.fecha_fin"/></label>
+           <label>Moneda<x-forms.input value="MXN" class="w-full bg-gray-100" disabled/></label>
+           @foreach(['monto_inscripcion'=>'Monto inscripción','monto_mensualidad'=>'Monto mensualidad','dia_vencimiento'=>'Día vencimiento','numero_mensualidades'=>'Número mensualidades','descuento'=>'Descuento (%)','beca'=>'Beca (%)'] as $field=>$label)<label>{{$label}}<x-forms.input type="number" step="0.01" class="w-full" wire:model.defer="inscripcion.{{$field}}"/><x-forms.input-error for="inscripcion.{{$field}}"/></label>@endforeach
+           <label class="md:col-span-2">Observaciones<textarea class="w-full rounded border-gray-300" wire:model.defer="inscripcion.observaciones_financieras"></textarea><x-forms.input-error for="inscripcion.observaciones_financieras"/></label></div>
+           @include('livewire.partials.responsable-pago-fields', ['permitirConservar' => true])</div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
