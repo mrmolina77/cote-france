@@ -18,9 +18,13 @@ return new class extends Migration
             $table->unique(['grupo_id', 'fecha', 'horas_id', 'modalidad_id']);
         });
 
-        DB::table('grupos_inactivos')
-            ->join('grupos', 'grupos_inactivos.grupo_id', '=', 'grupos.grupo_id')
-            ->update(['grupos_inactivos.modalidad_id' => DB::raw('grupos.modalidad_id')]);
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('UPDATE grupos_inactivos SET modalidad_id = (SELECT g.modalidad_id FROM grupos g WHERE g.grupo_id = grupos_inactivos.grupo_id) WHERE EXISTS (SELECT 1 FROM grupos g WHERE g.grupo_id = grupos_inactivos.grupo_id)');
+        } else {
+            DB::table('grupos_inactivos')
+                ->join('grupos', 'grupos_inactivos.grupo_id', '=', 'grupos.grupo_id')
+                ->update(['grupos_inactivos.modalidad_id' => DB::raw('grupos.modalidad_id')]);
+        }
     }
 
     /**

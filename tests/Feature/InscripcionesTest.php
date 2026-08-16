@@ -33,7 +33,6 @@ class InscripcionesTest extends TestCase
     public function test_admin_can_access_inscripciones_and_other_roles_receive_403(): void
     {
         $this->actingAs($this->user('admin'))->get('/inscripciones')->assertOk();
-        auth()->logout();
         $this->actingAs($this->user('venta'))->get('/inscripciones')->assertForbidden();
     }
 
@@ -232,8 +231,12 @@ class InscripcionesTest extends TestCase
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->unsignedBigInteger('roles_id');
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
             $table->rememberToken();
+            $table->foreignId('current_team_id')->nullable();
+            $table->string('profile_photo_path', 2048)->nullable();
+            $table->unsignedBigInteger('roles_id')->default(1);
             $table->timestamps();
         });
         Schema::create('prospectos', function (Blueprint $table) {

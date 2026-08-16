@@ -20,6 +20,13 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+
+        \Illuminate\Support\Facades\DB::table('roles')->insert([
+            ['roles_id' => 1, 'roles_codigo' => 'admin', 'roles_nombre' => 'Administradores'],
+            ['roles_id' => 2, 'roles_codigo' => 'venta', 'roles_nombre' => 'Ventas'],
+            ['roles_id' => 3, 'roles_codigo' => 'profe', 'roles_nombre' => 'Profesores'],
+            ['roles_id' => 4, 'roles_codigo' => 'alum', 'roles_nombre' => 'Alumnos'],
+        ]);
     }
 
     /**
