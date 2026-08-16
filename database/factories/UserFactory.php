@@ -36,8 +36,8 @@ class UserFactory extends Factory
             'current_team_id' => null,
             'roles_id' => function () {
                 return \App\Models\Role::firstOrCreate(
-                    ['roles_id' => 1],
-                    ['roles_codigo' => 'admin', 'roles_nombre' => 'Administradores']
+                    ['roles_codigo' => 'venta'],
+                    ['roles_nombre' => 'Ventas']
                 )->roles_id;
             },
         ];

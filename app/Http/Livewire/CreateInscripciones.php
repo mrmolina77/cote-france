@@ -48,7 +48,7 @@ class CreateInscripciones extends Component
             'grupo_id' =>$this->grupo_id,
             'fecha_inscripcion' =>$this->fecha_inscripcion
         ]);
-        $this->reset(['open','prospectos_id','cursos_id']);
+        $this->reset(['open','prospectos_id','cursos_id','grupo_id']);
         $this->emitTo('show-inscripciones','render');
         $this->emit('alert','La inscripción fue agregado satifactoriamente');
     }

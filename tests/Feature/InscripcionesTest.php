@@ -12,6 +12,8 @@ use App\Models\Prospecto;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
@@ -33,7 +35,18 @@ class InscripcionesTest extends TestCase
     public function test_admin_can_access_inscripciones_and_other_roles_receive_403(): void
     {
         $this->actingAs($this->user('admin'))->get('/inscripciones')->assertOk();
-        $this->actingAs($this->user('venta'))->get('/inscripciones')->assertForbidden();
+
+        foreach (['venta', 'profe', 'alum'] as $role) {
+            $this->actingAs($this->user($role))->get('/inscripciones')->assertForbidden();
+        }
+    }
+
+    public function test_generic_factory_user_is_not_authorized_to_manage_inscripciones(): void
+    {
+        $user = User::factory()->create();
+
+        $this->assertSame('venta', $user->role->roles_codigo);
+        $this->assertFalse(Gate::forUser($user)->allows('manage-inscripciones'));
     }
 
     public function test_valid_inscripcion_can_be_created(): void
@@ -100,6 +113,26 @@ class InscripcionesTest extends TestCase
         $this->assertDatabaseCount('inscripciones', 1);
     }
 
+    public function test_successful_creation_resets_selected_ids_and_closes_modal(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+
+        Livewire::actingAs($this->user('admin'))
+            ->test(CreateInscripciones::class)
+            ->set('open', true)
+            ->set('fecha_inscripcion', '2026-08-16')
+            ->set('prospectos_id', $prospecto->getKey())
+            ->set('cursos_id', $curso->getKey())
+            ->set('grupo_id', $grupo->getKey())
+            ->call('save')
+            ->assertSet('prospectos_id', null)
+            ->assertSet('cursos_id', null)
+            ->assertSet('grupo_id', null)
+            ->assertSet('open', false);
+
+        $this->assertDatabaseCount('inscripciones', 1);
+    }
+
     public function test_update_validates_and_persists_valid_values(): void
     {
         [$prospecto, $curso, $grupo] = $this->catalogs();
@@ -139,6 +172,32 @@ class InscripcionesTest extends TestCase
         ]);
     }
 
+    public function test_update_rejects_a_prospect_already_assigned_to_another_inscripcion(): void
+    {
+        [$prospectoA, $curso, $grupo] = $this->catalogs();
+        $prospectoB = new Prospecto(['prospectos_nombres' => 'Alumno B', 'prospectos_telefono1' => '5550000001']);
+        $prospectoB->save();
+        $inscripcionA = $this->enroll($prospectoA, $curso, $grupo);
+        $inscripcionB = $this->enroll($prospectoB, $curso, $grupo);
+
+        Livewire::actingAs($this->user('admin'))
+            ->test(ShowInscripciones::class)
+            ->call('edit', $inscripcionB->getKey())
+            ->set('inscripcion.prospectos_id', $prospectoA->getKey())
+            ->call('update')
+            ->assertHasErrors(['inscripcion.prospectos_id']);
+
+        $this->assertDatabaseHas('inscripciones', [
+            'inscripciones_id' => $inscripcionA->getKey(),
+            'prospectos_id' => $prospectoA->getKey(),
+        ]);
+        $this->assertDatabaseHas('inscripciones', [
+            'inscripciones_id' => $inscripcionB->getKey(),
+            'prospectos_id' => $prospectoB->getKey(),
+        ]);
+        $this->assertDatabaseCount('inscripciones', 2);
+    }
+
     public function test_pagination_and_safe_ordering_continue_to_work(): void
     {
         [$prospecto, $curso, $grupo] = $this->catalogs();
@@ -163,6 +222,31 @@ class InscripcionesTest extends TestCase
 
         Livewire::actingAs($user)->test(ShowInscripciones::class)->assertForbidden();
         Livewire::actingAs($user)->test(CreateInscripciones::class)->assertForbidden();
+    }
+
+    /** @dataProvider unauthorizedRolesAndActions */
+    public function test_non_admin_roles_cannot_execute_update_or_delete(string $role, string $action): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $inscripcion = $this->enroll($prospecto, $curso, $grupo);
+        $this->actingAs($this->user($role));
+        $component = app(ShowInscripciones::class);
+        $component->inscripcion = $inscripcion;
+
+        $this->expectException(AuthorizationException::class);
+        $action === 'update' ? $component->update() : $component->delete($inscripcion);
+    }
+
+    public function unauthorizedRolesAndActions(): array
+    {
+        return [
+            'venta update' => ['venta', 'update'],
+            'venta delete' => ['venta', 'delete'],
+            'profe update' => ['profe', 'update'],
+            'profe delete' => ['profe', 'delete'],
+            'alum update' => ['alum', 'update'],
+            'alum delete' => ['alum', 'delete'],
+        ];
     }
 
     public function test_create_prospect_enrollment_flow_remains_compatible(): void
@@ -236,7 +320,7 @@ class InscripcionesTest extends TestCase
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
-            $table->unsignedBigInteger('roles_id')->default(1);
+            $table->unsignedBigInteger('roles_id');
             $table->timestamps();
         });
         Schema::create('prospectos', function (Blueprint $table) {
