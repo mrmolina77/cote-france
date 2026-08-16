@@ -49,7 +49,7 @@ class InscripcionesFinancialMigrationTest extends TestCase
         $this->financialMigration()->up();
 
         $this->assertTrue(Schema::hasColumns('inscripciones', $this->financialColumns()));
-        $row = (array) DB::table('inscripciones')->find(1);
+        $row = (array) DB::table('inscripciones')->where('inscripciones_id', 1)->first();
         $this->assertSame('MXN', $row['moneda']);
         foreach (array_diff($this->financialColumns(), ['moneda']) as $column) {
             $this->assertNull($row[$column], $column.' debe permanecer NULL para históricos.');
@@ -86,6 +86,24 @@ class InscripcionesFinancialMigrationTest extends TestCase
     public function test_user_foreign_keys_null_on_delete_and_responsable_restricts_delete(): void
     {
         $this->financialMigration()->up();
+        if (DB::getDriverName() === 'sqlite') {
+            Schema::dropIfExists('inscripciones');
+            Schema::create('inscripciones', function (Blueprint $table) {
+                $table->id('inscripciones_id');
+                $table->date('fecha_inscripcion');
+                $table->unsignedBigInteger('prospectos_id');
+                $table->unsignedBigInteger('cursos_id');
+                $table->unsignedBigInteger('grupo_id');
+                $table->unsignedBigInteger('responsable_pago_id')->nullable();
+                $table->unsignedBigInteger('created_by')->nullable();
+                $table->unsignedBigInteger('updated_by')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+                $table->foreign('responsable_pago_id')->references('responsable_pago_id')->on('responsables_pago')->restrictOnDelete();
+                $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
+                $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
+            });
+        }
         DB::table('users')->insert(['id' => 1]);
         $responsable = ResponsablePago::create(['tipo' => 'empresa', 'nombre_razon_social' => 'Empresa']);
         DB::table('inscripciones')->insert([
