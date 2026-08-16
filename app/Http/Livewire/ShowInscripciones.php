@@ -23,6 +23,7 @@ class ShowInscripciones extends Component
     public $inscripcion;
     public $cant = 50;
     public $readyToLoad = false;
+    public $filtroFinanciero = 'todas';
     public $prospectos = [];
     public $open_edit = false;
     protected $listeners = ['render', 'delete'];
@@ -39,6 +40,7 @@ class ShowInscripciones extends Component
 
     public function mount() { Gate::authorize('manage-inscripciones'); }
     public function updatingSearch() { $this->resetPage(); }
+    public function updatingFiltroFinanciero() { $this->resetPage(); }
     public function loadPosts() { $this->readyToLoad = true; }
 
     protected function rules(): array
@@ -57,7 +59,7 @@ class ShowInscripciones extends Component
         $inscripciones = [];
         if ($this->readyToLoad) {
             $term = trim($this->search);
-            $inscripciones = DB::table('inscripciones')
+            $inscripciones = Inscripcion::query()
                 ->join('prospectos', 'prospectos.prospectos_id', '=', 'inscripciones.prospectos_id')
                 ->join('cursos', 'cursos.cursos_id', '=', 'inscripciones.cursos_id')
                 ->join('grupos', 'grupos.grupo_id', '=', 'inscripciones.grupo_id')
@@ -71,12 +73,18 @@ class ShowInscripciones extends Component
                         ->orWhere('inscripciones.estatus', 'like', $like)
                         ->orWhere('responsables_pago.nombre_razon_social', 'like', $like);
                 }))
+                ->when($this->filtroFinanciero === 'pendientes', fn ($query) => $query->financieramentePendientes())
+                ->when($this->filtroFinanciero === 'configuradas', fn ($query) => $query->financieramenteConfiguradas())
                 ->select('inscripciones.*', 'prospectos.prospectos_nombres', 'prospectos.prospectos_apellidos',
                     'cursos.cursos_descripcion', 'grupos.grupo_nombre', 'responsables_pago.nombre_razon_social as responsable_nombre')
                 ->orderBy($this->sortColumn(), $this->safeDirection())->paginate($this->cant);
         }
 
+        $total = Inscripcion::query()->count();
+        $configuradas = Inscripcion::query()->financieramenteConfiguradas()->count();
+
         return view('livewire.show-inscripciones', ['inscripciones' => $inscripciones, 'grupos' => Grupo::all(),
+            'contadoresFinancieros' => ['total' => $total, 'pendientes' => $total - $configuradas, 'configuradas' => $configuradas],
             'cursos' => Curso::all(), 'responsables' => ResponsablePago::where('activo', true)->orderBy('nombre_razon_social')->get()]);
     }
 
