@@ -22,4 +22,14 @@ class Role extends Model
      * @var string
      */
     protected $primaryKey = 'roles_id';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'roles_codigo',
+        'roles_nombre',
+    ];
 }

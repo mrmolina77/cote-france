@@ -29,10 +29,16 @@ class CreateNewUser implements CreatesNewUsers
         ])->validate();
 
         return DB::transaction(function () use ($input) {
+            $role = \App\Models\Role::firstOrCreate(
+                ['roles_codigo' => 'venta'],
+                ['roles_nombre' => 'Ventas']
+            );
+
             return tap(User::create([
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => Hash::make($input['password']),
+                'roles_id' => $role->roles_id,
             ]), function (User $user) {
                 $this->createTeam($user);
             });
