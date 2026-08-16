@@ -202,8 +202,10 @@ class ConfigureInscripcionesFinancierasTest extends InscripcionesTestCase
     {
         $admin = $this->commandUser('admin'); [$pending] = $this->commandEnrollments();
         $creator = $this->commandUser('admin');
-        $pending->update(['created_by' => $creator->getKey()]);
+        $pending->forceFill(['created_by' => $creator->getKey()])->save();
         $pending->refresh();
+        $this->assertNotContains('created_by', $pending->getFillable());
+        $this->assertNotContains('updated_by', $pending->getFillable());
         $path = $this->csv([$this->headers(), $this->validRow($pending, 'alumno')]);
         $this->artisan('inscripciones:configurar-finanzas', ['--user' => $admin->getKey(), '--file' => $path, '--apply' => true])
             ->expectsOutputToContain('completamente')->assertExitCode(0);
