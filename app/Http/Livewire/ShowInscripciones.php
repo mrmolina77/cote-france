@@ -126,6 +126,15 @@ class ShowInscripciones extends Component
     public function update(){
         Gate::authorize('manage-inscripciones');
         $this->validate();
+
+        if (Inscripcion::where('prospectos_id', $this->inscripcion->prospectos_id)
+            ->where('inscripciones_id', '<>', $this->inscripcion->inscripciones_id)
+            ->exists()) {
+            $this->addError('inscripcion.prospectos_id', 'El prospecto ya cuenta con una inscripción.');
+
+            return;
+        }
+
         $this->inscripcion->save();
         $this->reset(['open_edit']);
         $this->emit('alert','La inscripción fue modificado satifactoriamente');
