@@ -204,7 +204,7 @@
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="prospectos_id"/>
+                <x-forms.input-error for="inscripcion.prospectos_id"/>
             </div>
             <div>
                 <div class="mb-4 flex">
@@ -218,7 +218,7 @@
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="cursos_id"/>
+                <x-forms.input-error for="inscripcion.cursos_id"/>
             </div>
             <div>
                 <div class="mb-4 flex">
@@ -232,21 +232,21 @@
                         @endforelse
                     </x-select>
                 </div>
-                <x-forms.input-error for="grupo_id"/>
+                <x-forms.input-error for="inscripcion.grupo_id"/>
             </div>
             <div>
                 <div class="mb-4 flex">
                     <x-forms.label value="{{__('Date')}}: " />
                     <x-forms.input type="date" class="flex-1 ml-4" wire:model="inscripcion.fecha_inscripcion"/>
                 </div>
-                <x-forms.input-error for="fecha_inscripcion"/>
+                <x-forms.input-error for="inscripcion.fecha_inscripcion"/>
            </div>
         </x-slot>
         <x-slot name="footer">
             <x-forms.red-button wire:click="$set('open_edit',false)">
                 {{__('Cancel')}}
             </x-forms.red-button>
-            <x-forms.blue-button wire:click="save"  wire:loading.attr="disabled" wire:click="update" class="disabled:opacity-65">
+            <x-forms.blue-button wire:click="update" wire:loading.attr="disabled" wire:target="update" class="disabled:opacity-65">
                 {{__('Modify')}}
             </x-forms.blue-button>
             {{-- <span wire:loading wire:target="save">Cargando...</span> --}}

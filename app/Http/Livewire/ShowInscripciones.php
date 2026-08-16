@@ -7,6 +7,7 @@ use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -25,11 +26,24 @@ class ShowInscripciones extends Component
     protected $listeners = ['render','delete'];
 
     protected $rules = [
-        'inscripcion.prospectos_id'=>'required',
-        'inscripcion.cursos_id'=>'required',
-        'inscripcion.grupo_id'=>'required',
+        'inscripcion.prospectos_id'=>'required|integer|exists:prospectos,prospectos_id',
+        'inscripcion.cursos_id'=>'required|integer|exists:cursos,cursos_id',
+        'inscripcion.grupo_id'=>'required|integer|exists:grupos,grupo_id',
         'inscripcion.fecha_inscripcion'=>'required|date',
     ];
+
+    private const SORT_COLUMNS = [
+        'inscripciones_id' => 'inscripciones.inscripciones_id',
+        'fecha_inscripcion' => 'inscripciones.fecha_inscripcion',
+        'cursos_id' => 'cursos.cursos_descripcion',
+        'grupo_id' => 'grupos.grupo_nombre',
+        'prospectos_id' => 'prospectos.prospectos_nombres',
+    ];
+
+    public function mount()
+    {
+        Gate::authorize('manage-inscripciones');
+    }
 
     public function updatingSearch(){
         $this->resetPage();
@@ -51,6 +65,7 @@ class ShowInscripciones extends Component
             ->select('inscripciones.fecha_inscripcion','prospectos.prospectos_nombres'
             ,'prospectos.prospectos_apellidos','cursos.cursos_descripcion','grupos.grupo_nombre',
             'inscripciones.inscripciones_id')
+            ->orderBy($this->sortColumn(), $this->safeDirection())
             ->paginate($this->cant);
             // $prospectos = Prospecto::where('prospectos_nombres','like','%'.trim($this->search).'%')
             //                        ->orWhere('prospectos_apellidos','like','%'.trim($this->search).'%')
@@ -74,6 +89,13 @@ class ShowInscripciones extends Component
     }
 
     public function order($order){
+        if (! array_key_exists($order, self::SORT_COLUMNS)) {
+            $this->sort = 'inscripciones_id';
+            $this->direction = 'asc';
+
+            return;
+        }
+
         if ($this->sort== $order) {
             if ($this->direction == 'desc') {
                 $this->direction = 'asc';
@@ -87,7 +109,8 @@ class ShowInscripciones extends Component
     }
 
     public function edit($id){
-        $inscripcion = Inscripcion::find($id);
+        Gate::authorize('manage-inscripciones');
+        $inscripcion = Inscripcion::findOrFail($id);
         $id_prospecto = $inscripcion->prospectos_id;
         $this->prospectos = Prospecto::whereNotIn('prospectos_id', function($query) {
             $query->select('prospectos_id')->from('inscripciones');
@@ -101,6 +124,8 @@ class ShowInscripciones extends Component
     }
 
     public function update(){
+        Gate::authorize('manage-inscripciones');
+        $this->validate();
         $this->inscripcion->save();
         $this->reset(['open_edit']);
         $this->emit('alert','La inscripción fue modificado satifactoriamente');
@@ -108,8 +133,19 @@ class ShowInscripciones extends Component
     }
 
     public function delete(Inscripcion $inscripcion){
+        Gate::authorize('manage-inscripciones');
         $inscripcion->delete();
         $this->emit('alert','La inscripción fue eliminado satifactoriamente');
+    }
+
+    private function sortColumn()
+    {
+        return self::SORT_COLUMNS[$this->sort] ?? self::SORT_COLUMNS['inscripciones_id'];
+    }
+
+    private function safeDirection()
+    {
+        return in_array($this->direction, ['asc', 'desc'], true) ? $this->direction : 'asc';
     }
 
 }

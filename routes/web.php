@@ -87,7 +87,8 @@ Route::middleware([
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
-    'verified'
+    'verified',
+    'can:manage-inscripciones',
 ])->get('/inscripciones', ShowInscripciones::class )->name('inscripciones');
 Route::middleware([
     'auth:sanctum',
