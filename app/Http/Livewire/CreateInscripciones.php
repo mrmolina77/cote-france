@@ -6,6 +6,7 @@ use App\Models\Curso;
 use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 
 class CreateInscripciones extends Component
@@ -15,9 +16,9 @@ class CreateInscripciones extends Component
     public $fecha_inscripcion,$prospectos_id, $cursos_id, $grupo_id;
 
     protected $rules = [
-        'prospectos_id'=>'required',
-        'cursos_id'=>'required',
-        'grupo_id'=>'required',
+        'prospectos_id'=>'required|integer|exists:prospectos,prospectos_id',
+        'cursos_id'=>'required|integer|exists:cursos,cursos_id',
+        'grupo_id'=>'required|integer|exists:grupos,grupo_id',
         'fecha_inscripcion'=>'required|date',
     ];
 
@@ -26,8 +27,21 @@ class CreateInscripciones extends Component
         $this->fecha_inscripcion = date('Y-m-d');
     }
 
+    public function mount()
+    {
+        Gate::authorize('manage-inscripciones');
+    }
+
     public function save(){
+        Gate::authorize('manage-inscripciones');
         $this->validate();
+
+        if (Inscripcion::where('prospectos_id', $this->prospectos_id)->exists()) {
+            $this->addError('prospectos_id', 'El prospecto ya cuenta con una inscripción.');
+
+            return;
+        }
+
         Inscripcion::create([
             'prospectos_id' =>$this->prospectos_id,
             'cursos_id' =>$this->cursos_id,
