@@ -16,7 +16,7 @@ trait ManagesEnrollmentFinancialData
     public $responsable_telefono;
     public $responsable_correo;
 
-    protected function financialRules(string $prefix = ''): array
+    protected function financialRules(string $prefix = '', bool $allowConservar = true): array
     {
         return [
             $prefix.'estatus' => 'nullable|in:activa,suspendida,finalizada,cancelada',
@@ -26,17 +26,29 @@ trait ManagesEnrollmentFinancialData
             $prefix.'monto_inscripcion' => 'nullable|numeric|min:0|max:9999999999.99',
             $prefix.'monto_mensualidad' => 'nullable|numeric|min:0|max:9999999999.99',
             $prefix.'dia_vencimiento' => ['nullable', Rule::requiredIf(fn () => (float) data_get($this, $prefix.'monto_mensualidad') > 0), 'integer', 'between:1,31'],
-            $prefix.'numero_mensualidades' => ['nullable', Rule::requiredIf(fn () => (float) data_get($this, $prefix.'monto_mensualidad') > 0), 'integer', 'min:1', 'max:65535'],
+            $prefix.'numero_mensualidades' => ['nullable', Rule::requiredIf(fn () => (float) data_get($this, $prefix.'monto_mensualidad') > 0), 'integer', 'min:1', 'max:120'],
             $prefix.'descuento' => 'nullable|numeric|between:0,100',
             $prefix.'beca' => 'nullable|numeric|between:0,100',
             $prefix.'observaciones_financieras' => 'nullable|string|max:2000',
-            'responsable_opcion' => 'required|in:conservar,alumno,existente,nuevo',
+            'responsable_opcion' => 'required|in:'.($allowConservar ? 'conservar,' : '').'alumno,existente,nuevo',
             'responsable_pago_id' => 'nullable|required_if:responsable_opcion,existente|exists:responsables_pago,responsable_pago_id',
             'responsable_tipo' => 'nullable|required_if:responsable_opcion,nuevo|in:persona,empresa',
             'responsable_nombre' => 'nullable|required_if:responsable_opcion,nuevo|string|max:255',
             'responsable_telefono' => 'nullable|string|max:80',
             'responsable_correo' => 'nullable|email|max:255',
         ];
+    }
+
+    protected function validateFinancialCombination(string $prefix = ''): void
+    {
+        $descuento = $this->blankToNull(data_get($this, $prefix.'descuento')) ?? 0;
+        $beca = $this->blankToNull(data_get($this, $prefix.'beca')) ?? 0;
+
+        if ((float) $descuento + (float) $beca > 100) {
+            throw ValidationException::withMessages([
+                $prefix.'beca' => 'La suma del descuento y la beca no puede ser mayor a 100%.',
+            ]);
+        }
     }
 
     protected function resolveResponsable(int $prospectoId): ?ResponsablePago
@@ -61,16 +73,7 @@ trait ManagesEnrollmentFinancialData
             ]);
         }
 
-        $prospecto = Prospecto::findOrFail($prospectoId);
-        return ResponsablePago::where('prospectos_id', $prospectoId)->where('activo', true)->first()
-            ?: ResponsablePago::create([
-                'tipo' => 'persona',
-                'prospectos_id' => $prospectoId,
-                'nombre_razon_social' => trim($prospecto->prospectos_nombres.' '.$prospecto->prospectos_apellidos),
-                'telefono' => $prospecto->prospectos_telefono1,
-                'correo' => $prospecto->prospectos_correo,
-                'activo' => true,
-            ]);
+        return ResponsablePago::activeForProspect(Prospecto::findOrFail($prospectoId));
     }
 
     protected function blankToNull($value)

@@ -23,6 +23,19 @@ class ResponsablePago extends Model
         'activo' => 'boolean',
     ];
 
+    public static function activeForProspect(Prospecto $prospecto): self
+    {
+        return static::where('prospectos_id', $prospecto->getKey())->where('activo', true)->first()
+            ?: static::create([
+                'tipo' => 'persona',
+                'prospectos_id' => $prospecto->getKey(),
+                'nombre_razon_social' => trim($prospecto->prospectos_nombres.' '.$prospecto->prospectos_apellidos),
+                'telefono' => $prospecto->prospectos_telefono1,
+                'correo' => $prospecto->prospectos_correo,
+                'activo' => true,
+            ]);
+    }
+
     public function prospecto()
     {
         return $this->belongsTo(Prospecto::class, 'prospectos_id', 'prospectos_id');

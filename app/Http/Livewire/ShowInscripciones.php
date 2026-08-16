@@ -104,19 +104,24 @@ class ShowInscripciones extends Component
     public function update()
     {
         Gate::authorize('manage-inscripciones');
-        $this->validate();
+        $validated = $this->validate();
+        $this->validateFinancialCombination('inscripcion.');
         if (Inscripcion::where('prospectos_id', $this->inscripcion->prospectos_id)->where('inscripciones_id', '<>', $this->inscripcion->getKey())->exists()) {
             $this->addError('inscripcion.prospectos_id', 'El prospecto ya cuenta con una inscripción.'); return;
         }
-        DB::transaction(function () {
+        DB::transaction(function () use ($validated) {
+            $inscripcion = Inscripcion::findOrFail($this->inscripcion->getKey());
+            $fields = ['prospectos_id','cursos_id','grupo_id','fecha_inscripcion','estatus','fecha_inicio','fecha_fin',
+                'moneda','monto_inscripcion','monto_mensualidad','dia_vencimiento','numero_mensualidades','descuento',
+                'beca','observaciones_financieras'];
+            foreach ($fields as $field) {
+                $value = data_get($validated, 'inscripcion.'.$field);
+                $inscripcion->{$field} = $field === 'moneda' ? 'MXN' : $this->blankToNull($value);
+            }
             if ($this->responsable_opcion !== 'conservar') {
-                $this->inscripcion->responsable_pago_id = $this->resolveResponsable((int) $this->inscripcion->prospectos_id)->getKey();
+                $inscripcion->responsable_pago_id = $this->resolveResponsable((int) $inscripcion->prospectos_id)->getKey();
             }
-            $this->inscripcion->moneda = 'MXN';
-            foreach (['fecha_fin','monto_inscripcion','monto_mensualidad','dia_vencimiento','numero_mensualidades','descuento','beca','observaciones_financieras'] as $field) {
-                $this->inscripcion->{$field} = $this->blankToNull($this->inscripcion->{$field});
-            }
-            $this->inscripcion->save();
+            $inscripcion->save();
         });
         $this->reset(['open_edit', 'responsable_pago_id', 'responsable_nombre', 'responsable_telefono', 'responsable_correo']);
         $this->emit('alert', 'La inscripción fue modificada satisfactoriamente.');
