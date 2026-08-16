@@ -6,6 +6,14 @@
         <x-table>
             <x-slot:header>
                 <div class="flex flex-wrap items-center">
+                    <div class="flex items-center gap-2 mr-4 text-sm">
+                        <span class="font-semibold">Total: {{ $contadoresFinancieros['total'] }}</span>
+                        <span class="text-yellow-700">Pendientes: {{ $contadoresFinancieros['pendientes'] }}</span>
+                        <span class="text-green-700">Configuradas: {{ $contadoresFinancieros['configuradas'] }}</span>
+                        <x-select wire:model="filtroFinanciero">
+                            <option value="todas">Todas</option><option value="pendientes">Pendientes</option><option value="configuradas">Configuradas</option>
+                        </x-select>
+                    </div>
                     <div class="flex items-center">
                         <span>{{__('Show')}}</span>
                         <x-select class="mx-2" wire:model="cant">
@@ -97,6 +105,7 @@
                 <th wire:click="order('estatus')" class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Estatus</th>
                 <th wire:click="order('monto_mensualidad')" class="cursor-pointer px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Mensualidad</th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Responsable</th>
+                <th class="px-4 bg-blueGray-50 text-blueGray-500 border py-3 text-xs uppercase whitespace-nowrap">Configuración financiera</th>
                 <th class="px-4 bg-blueGray-50 text-blueGray-500 align-middle border border-solid border-blueGray-100 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
                     Acción
                     </th>
@@ -125,6 +134,13 @@
                     <td class="px-4 text-xs whitespace-nowrap"><span class="px-2 py-1 rounded {{ ['activa'=>'bg-green-100 text-green-700','suspendida'=>'bg-yellow-100 text-yellow-700','finalizada'=>'bg-blue-100 text-blue-700','cancelada'=>'bg-red-100 text-red-700'][$item->estatus] ?? 'bg-gray-100 text-gray-600' }}">{{ $item->estatus ? ucfirst($item->estatus) : 'Sin configurar' }}</span></td>
                     <td class="px-4 text-xs whitespace-nowrap">{{ $item->monto_mensualidad === null ? 'Sin configurar' : '$'.number_format($item->monto_mensualidad, 2).' '.($item->moneda ?: 'MXN') }}</td>
                     <td class="px-4 text-xs whitespace-nowrap">{{ $item->responsable_nombre ?: 'Sin configurar' }}</td>
+                    <td class="px-4 text-xs whitespace-nowrap">
+                        @if ($item->financieramente_configurada)
+                            <span class="px-2 py-1 rounded bg-green-100 text-green-700">Configurada</span>
+                        @else
+                            <span class="px-2 py-1 rounded bg-yellow-100 text-yellow-700">Pendiente</span>
+                        @endif
+                    </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->inscripciones_id }})"></i>
                         <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteInscripcion',{{$item->inscripciones_id}})"></i>

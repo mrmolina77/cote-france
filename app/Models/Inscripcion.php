@@ -4,11 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class Inscripcion extends Model
 {
-    // use HasFactory;
+    use SoftDeletes;
     /**
     * The table associated with the model.
     *
@@ -92,6 +95,46 @@ class Inscripcion extends Model
     public function responsablePago()
     {
         return $this->belongsTo(ResponsablePago::class, 'responsable_pago_id', 'responsable_pago_id');
+    }
+
+    /** The canonical, queryable definition of a completed financial setup. */
+    public function scopeFinancieramenteConfiguradas(Builder $query): Builder
+    {
+        return $query->whereNotNull($query->qualifyColumn('estatus'))
+            ->whereNotNull($query->qualifyColumn('fecha_inicio'))
+            ->where($query->qualifyColumn('moneda'), 'MXN')
+            ->whereNotNull($query->qualifyColumn('monto_inscripcion'))
+            ->whereNotNull($query->qualifyColumn('monto_mensualidad'))
+            ->whereNotNull($query->qualifyColumn('descuento'))
+            ->whereNotNull($query->qualifyColumn('beca'))
+            ->whereColumn($query->qualifyColumn('descuento'), '<=', DB::raw('100 - '.$query->qualifyColumn('beca')))
+            ->whereHas('responsablePago', fn (Builder $responsables) => $responsables->where('activo', true))
+            ->where(function (Builder $monthly) use ($query) {
+                $monthly->where($query->qualifyColumn('monto_mensualidad'), '=', 0)
+                    ->orWhere(function (Builder $positive) use ($query) {
+                        $positive->where($query->qualifyColumn('monto_mensualidad'), '>', 0)
+                            ->whereBetween($query->qualifyColumn('numero_mensualidades'), [1, 120])
+                            ->whereBetween($query->qualifyColumn('dia_vencimiento'), [1, 31]);
+                    });
+            });
+    }
+
+    public function scopeFinancieramentePendientes(Builder $query): Builder
+    {
+        return $query->whereNotIn(
+            $query->qualifyColumn($this->getKeyName()),
+            static::query()->financieramenteConfiguradas()->select($this->qualifyColumn($this->getKeyName()))
+        );
+    }
+
+    public function getFinancieramenteConfiguradaAttribute(): bool
+    {
+        return static::query()->whereKey($this->getKey())->financieramenteConfiguradas()->exists();
+    }
+
+    public function getEstadoConfiguracionFinancieraAttribute(): string
+    {
+        return $this->financieramente_configurada ? 'configurada' : 'pendiente';
     }
 
     public function createdBy()

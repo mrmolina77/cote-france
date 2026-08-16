@@ -458,6 +458,43 @@ class InscripcionesTest extends TestCase
         $this->assertSame('alumno@example.com',$responsable->correo);
     }
 
+    public function test_financial_configuration_scopes_distinguish_null_zero_and_positive_monthly_amounts(): void
+    {
+        [$pendingProspect, $curso, $grupo] = $this->catalogs();
+        $pending = $this->enroll($pendingProspect, $curso, $grupo);
+        $configuredProspect = Prospecto::create(['prospectos_nombres' => 'Configurado', 'prospectos_telefono1' => '1']);
+        $responsable = ResponsablePago::activeForProspect($configuredProspect);
+        $configured = Inscripcion::create([
+            'fecha_inscripcion' => '2026-08-16', 'prospectos_id' => $configuredProspect->getKey(),
+            'cursos_id' => $curso->getKey(), 'grupo_id' => $grupo->getKey(), 'estatus' => 'activa',
+            'fecha_inicio' => '2026-08-16', 'moneda' => 'MXN', 'monto_inscripcion' => '0.00',
+            'monto_mensualidad' => '0.00', 'descuento' => '0.00', 'beca' => '0.00',
+            'responsable_pago_id' => $responsable->getKey(),
+        ]);
+
+        $this->assertTrue($configured->financieramente_configurada);
+        $this->assertSame('configurada', $configured->estado_configuracion_financiera);
+        $this->assertFalse($pending->financieramente_configurada);
+        $this->assertEquals([$configured->getKey()], Inscripcion::financieramenteConfiguradas()->pluck('inscripciones_id')->all());
+        $this->assertEquals([$pending->getKey()], Inscripcion::financieramentePendientes()->pluck('inscripciones_id')->all());
+
+        $configured->update(['monto_mensualidad' => '100.00']);
+        $this->assertFalse($configured->fresh()->financieramente_configurada);
+        $configured->update(['dia_vencimiento' => 15, 'numero_mensualidades' => 120]);
+        $this->assertTrue($configured->fresh()->financieramente_configurada);
+    }
+
+    public function test_financial_filter_and_counters_are_rendered_server_side(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $pending = $this->enroll($prospecto, $curso, $grupo);
+
+        Livewire::actingAs($this->user('admin'))->test(ShowInscripciones::class)
+            ->call('loadPosts')->set('filtroFinanciero', 'pendientes')
+            ->assertSee((string) $pending->getKey())->assertSee('Pendientes: 1')->assertSee('Configuradas: 0')
+            ->set('filtroFinanciero', 'configuradas')->assertDontSee('Alumno');
+    }
+
     private function user(string $code): User
     {
         $role = new Role();
