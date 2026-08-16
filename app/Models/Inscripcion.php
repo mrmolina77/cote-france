@@ -47,12 +47,16 @@ class Inscripcion extends Model
        'numero_mensualidades' => 'integer',
    ];
 
-   /**
-    * The primary key associated with the table.
-    *
-    * @var string
-    */
    protected $primaryKey = 'inscripciones_id';
+
+    public function setAttribute($key, $value)
+    {
+        if (is_string($value) && trim($value) === '' && $key !== 'moneda') {
+            $value = null;
+        }
+
+        return parent::setAttribute($key, $value);
+    }
 
     protected static function booted()
     {

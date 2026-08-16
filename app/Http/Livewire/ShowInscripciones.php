@@ -48,6 +48,7 @@ class ShowInscripciones extends Component
             'inscripcion.cursos_id' => 'required|integer|exists:cursos,cursos_id',
             'inscripcion.grupo_id' => 'required|integer|exists:grupos,grupo_id',
             'inscripcion.fecha_inscripcion' => 'required|date',
+            'inscripcion.created_by' => 'nullable',
         ], $this->financialRules('inscripcion.'));
     }
 
