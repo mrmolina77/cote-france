@@ -566,10 +566,13 @@ class InscripcionesTest extends InscripcionesTestCase
 
         $this->assertLessThanOrEqual($smallQueryCount + 3, $largeQueryCount,
             "Las consultas crecieron de {$smallQueryCount} a {$largeQueryCount}; posible regresión N+1.");
+        $pendingRow = 'wire:click="edit('.$pending->getKey().')"';
+        $configuredRow = 'wire:click="edit('.$configured->getKey().')"';
+
         $listing->assertSee('Configurada')->assertSee('Pendiente')
             ->assertSee('Total: 25')->assertSee('Pendientes: 24')->assertSee('Configuradas: 1')
-            ->set('filtroFinanciero', 'pendientes')->assertSee((string) $pending->getKey())->assertDontSee((string) $configured->getKey())
-            ->set('filtroFinanciero', 'configuradas')->assertSee((string) $configured->getKey())->assertDontSee((string) $pending->getKey());
+            ->set('filtroFinanciero', 'pendientes')->assertSeeHtml($pendingRow)->assertDontSeeHtml($configuredRow)
+            ->set('filtroFinanciero', 'configuradas')->assertSeeHtml($configuredRow)->assertDontSeeHtml($pendingRow);
     }
 
 }
