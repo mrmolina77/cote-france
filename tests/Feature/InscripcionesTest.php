@@ -9,30 +9,15 @@ use App\Models\Curso;
 use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
-use App\Models\Role;
 use App\Models\ResponsablePago;
 use App\Models\User;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
-use Tests\TestCase;
 
-class InscripcionesTest extends TestCase
+class InscripcionesTest extends InscripcionesTestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config()->set('database.default', 'sqlite');
-        config()->set('database.connections.sqlite.database', ':memory:');
-        DB::purge('sqlite');
-
-        $this->createSchema();
-    }
-
     public function test_admin_can_access_inscripciones_and_other_roles_receive_403(): void
     {
         $this->actingAs($this->user('admin'))->get('/inscripciones')->assertOk();
@@ -550,138 +535,41 @@ class InscripcionesTest extends TestCase
 
     public function test_listing_loads_financial_state_in_a_constant_number_of_queries(): void
     {
-        [$prospecto, $curso, $grupo] = $this->catalogs();
-        for ($i = 0; $i < 12; $i++) {
-            $student = $i === 0 ? $prospecto : Prospecto::create(['prospectos_nombres' => 'Alumno '.$i, 'prospectos_telefono1' => '1']);
+        [$pendingProspect, $curso, $grupo] = $this->catalogs();
+        $pending = $this->enroll($pendingProspect, $curso, $grupo);
+        $configuredProspect = Prospecto::create(['prospectos_nombres' => 'Configurado', 'prospectos_telefono1' => '2']);
+        $responsable = ResponsablePago::activeForProspect($configuredProspect);
+        $configured = Inscripcion::create([
+            'fecha_inscripcion' => '2026-08-16', 'prospectos_id' => $configuredProspect->getKey(),
+            'cursos_id' => $curso->getKey(), 'grupo_id' => $grupo->getKey(), 'estatus' => 'activa',
+            'fecha_inicio' => '2026-08-16', 'moneda' => 'MXN', 'monto_inscripcion' => '0.00',
+            'monto_mensualidad' => '0.00', 'descuento' => '0.00', 'beca' => '0.00',
+            'responsable_pago_id' => $responsable->getKey(),
+        ]);
+        $admin = $this->user('admin');
+
+        DB::enableQueryLog();
+        Livewire::actingAs($admin)->test(ShowInscripciones::class)->set('cant', 50)->call('loadPosts')->html();
+        $smallQueryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        for ($i = 2; $i < 25; $i++) {
+            $student = Prospecto::create(['prospectos_nombres' => 'Pendiente '.$i, 'prospectos_telefono1' => (string) $i]);
             $this->enroll($student, $curso, $grupo);
         }
-        DB::flushQueryLog(); DB::enableQueryLog();
-        Livewire::actingAs($this->user('admin'))->test(ShowInscripciones::class)->call('loadPosts')->html();
-        $queries = count(DB::getQueryLog());
+
         DB::flushQueryLog();
-        Livewire::actingAs(User::whereHas('role', fn ($q) => $q->where('roles_codigo', 'admin'))->first())
-            ->test(ShowInscripciones::class)->set('cant', 1)->call('loadPosts')->html();
-        $this->assertLessThanOrEqual($queries + 2, count(DB::getQueryLog()));
+        DB::enableQueryLog();
+        $listing = Livewire::actingAs($admin)->test(ShowInscripciones::class)->set('cant', 50)->call('loadPosts');
+        $largeQueryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertLessThanOrEqual($smallQueryCount + 3, $largeQueryCount,
+            "Las consultas crecieron de {$smallQueryCount} a {$largeQueryCount}; posible regresión N+1.");
+        $listing->assertSee('Configurada')->assertSee('Pendiente')
+            ->assertSee('Total: 25')->assertSee('Pendientes: 24')->assertSee('Configuradas: 1')
+            ->set('filtroFinanciero', 'pendientes')->assertSee((string) $pending->getKey())->assertDontSee((string) $configured->getKey())
+            ->set('filtroFinanciero', 'configuradas')->assertSee((string) $configured->getKey())->assertDontSee((string) $pending->getKey());
     }
 
-    private function user(string $code): User
-    {
-        $role = new Role();
-        $role->roles_codigo = $code;
-        $role->roles_nombre = ucfirst($code);
-        $role->save();
-
-        return User::factory()->create(['roles_id' => $role->getKey()]);
-    }
-
-    private function catalogs(): array
-    {
-        $prospecto = new Prospecto(['prospectos_nombres' => 'Alumno', 'prospectos_telefono1' => '5550000000']);
-        $prospecto->save();
-        $curso = new Curso();
-        $curso->cursos_descripcion = 'Francés';
-        $curso->cursos_fecha_creacion = '2026-08-16';
-        $curso->save();
-        $grupo = new Grupo(['grupo_nombre' => 'A1', 'modalidad_id' => 1]);
-        $grupo->save();
-
-        return [$prospecto, $curso, $grupo];
-    }
-
-    private function enroll(Prospecto $prospecto, Curso $curso, Grupo $grupo): Inscripcion
-    {
-        return Inscripcion::create([
-            'fecha_inscripcion' => '2026-08-16',
-            'prospectos_id' => $prospecto->getKey(),
-            'cursos_id' => $curso->getKey(),
-            'grupo_id' => $grupo->getKey(),
-        ]);
-    }
-
-    private function createSchema(): void
-    {
-        Schema::create('roles', function (Blueprint $table) {
-            $table->id('roles_id');
-            $table->string('roles_codigo');
-            $table->string('roles_nombre');
-            $table->timestamps();
-        });
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->text('two_factor_secret')->nullable();
-            $table->text('two_factor_recovery_codes')->nullable();
-            $table->rememberToken();
-            $table->foreignId('current_team_id')->nullable();
-            $table->string('profile_photo_path', 2048)->nullable();
-            $table->unsignedBigInteger('roles_id');
-            $table->timestamps();
-        });
-        Schema::create('prospectos', function (Blueprint $table) {
-            $table->id('prospectos_id');
-            $table->string('prospectos_nombres');
-            $table->string('prospectos_apellidos')->nullable();
-            $table->string('prospectos_telefono1');
-            $table->string('prospectos_telefono2')->nullable();
-            $table->string('prospectos_correo')->nullable();
-            $table->unsignedBigInteger('origenes_id')->nullable();
-            $table->unsignedBigInteger('seguimientos_id')->nullable();
-            $table->unsignedBigInteger('estatus_id')->nullable();
-            $table->unsignedBigInteger('modalidad_id')->nullable();
-            $table->unsignedBigInteger('cursos_id')->nullable();
-            $table->text('prospectos_comentarios')->nullable();
-            $table->date('prospectos_fecha')->nullable();
-            $table->unsignedBigInteger('grupo_id')->nullable();
-            $table->unsignedBigInteger('horarios_id')->nullable();
-            $table->timestamps();
-        });
-        Schema::create('cursos', function (Blueprint $table) {
-            $table->id('cursos_id');
-            $table->string('cursos_descripcion');
-            $table->date('cursos_fecha_creacion');
-            $table->timestamps();
-        });
-        Schema::create('grupos', function (Blueprint $table) {
-            $table->id('grupo_id');
-            $table->string('grupo_nombre');
-            $table->unsignedBigInteger('modalidad_id');
-            $table->timestamps();
-        });
-        Schema::create('responsables_pago', function (Blueprint $table) {
-            $table->id('responsable_pago_id');
-            $table->string('tipo', 20);
-            $table->unsignedBigInteger('prospectos_id')->nullable();
-            $table->string('nombre_razon_social');
-            $table->string('telefono', 80)->nullable();
-            $table->string('correo')->nullable();
-            $table->boolean('activo')->default(true);
-            $table->timestamps();
-        });
-        Schema::create('inscripciones', function (Blueprint $table) {
-            $table->id('inscripciones_id');
-            $table->date('fecha_inscripcion');
-            $table->unsignedBigInteger('prospectos_id');
-            $table->unsignedBigInteger('cursos_id');
-            $table->unsignedBigInteger('grupo_id');
-            $table->string('estatus', 20)->nullable();
-            $table->date('fecha_inicio')->nullable();
-            $table->date('fecha_fin')->nullable();
-            $table->char('moneda', 3)->default('MXN');
-            $table->decimal('monto_inscripcion', 12, 2)->nullable();
-            $table->decimal('monto_mensualidad', 12, 2)->nullable();
-            $table->unsignedTinyInteger('dia_vencimiento')->nullable();
-            $table->unsignedSmallInteger('numero_mensualidades')->nullable();
-            $table->decimal('descuento', 5, 2)->nullable();
-            $table->decimal('beca', 5, 2)->nullable();
-            $table->text('observaciones_financieras')->nullable();
-            $table->unsignedBigInteger('responsable_pago_id')->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
-    }
 }
