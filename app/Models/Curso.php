@@ -15,6 +15,12 @@ class Curso extends Model
     */
    protected $table = 'cursos';
 
+   protected $fillable = [
+       'cursos_descripcion',
+       'cursos_fecha_creacion',
+       'cursos_activo',
+   ];
+
    /**
     * The primary key associated with the table.
     *

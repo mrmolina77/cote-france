@@ -549,7 +549,7 @@ class InscripcionesTest extends InscripcionesTestCase
         $admin = $this->user('admin');
 
         DB::enableQueryLog();
-        Livewire::actingAs($admin)->test(ShowInscripciones::class)->set('cant', 50)->call('loadPosts')->html();
+        Livewire::actingAs($admin)->test(ShowInscripciones::class)->set('cant', 50)->call('loadPosts');
         $smallQueryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 

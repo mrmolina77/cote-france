@@ -35,6 +35,8 @@ class Inscripcion extends Model
        'beca',
        'observaciones_financieras',
        'responsable_pago_id',
+       'created_by',
+       'updated_by',
    ];
 
    protected $casts = [

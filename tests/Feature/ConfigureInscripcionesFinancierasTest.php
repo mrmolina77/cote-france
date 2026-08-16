@@ -236,7 +236,8 @@ class ConfigureInscripcionesFinancierasTest extends InscripcionesTestCase
     {
         $admin = $this->commandUser('admin'); [$pending] = $this->commandEnrollments();
         $row = $this->validRow($pending, 'alumno');
-        $pending->update(['observaciones_financieras' => 'cambio posterior', 'updated_at' => now()->addMinute()]);
+        $pending->timestamps = false;
+        $pending->forceFill(['observaciones_financieras' => 'cambio posterior', 'updated_at' => now()->addMinute()])->save();
         $this->artisan('inscripciones:configurar-finanzas', ['--user' => $admin->getKey(), '--file' => $this->csv([$this->headers(), $row]), '--apply' => true])
             ->expectsOutputToContain('conflicto')->assertExitCode(1);
         $this->assertSame('cambio posterior', $pending->fresh()->observaciones_financieras);
