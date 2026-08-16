@@ -10,6 +10,7 @@ use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
 use App\Models\Role;
+use App\Models\ResponsablePago;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -63,6 +64,42 @@ class InscripcionesTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('inscripciones', ['prospectos_id' => $prospecto->getKey()]);
+    }
+
+    public function test_financial_enrollment_creates_student_responsible_and_audit_data(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $user = $this->user('admin');
+
+        Livewire::actingAs($user)->test(CreateInscripciones::class)
+            ->set('prospectos_id', $prospecto->getKey())->set('cursos_id', $curso->getKey())->set('grupo_id', $grupo->getKey())
+            ->set('monto_inscripcion', '1250.50')->set('monto_mensualidad', '2500')
+            ->set('dia_vencimiento', 10)->set('numero_mensualidades', 6)->set('descuento', '5.25')->set('beca', '10.00')
+            ->call('save')->assertHasNoErrors()->assertSet('open', false);
+
+        $responsable = ResponsablePago::where('prospectos_id', $prospecto->getKey())->firstOrFail();
+        $this->assertDatabaseHas('inscripciones', ['moneda' => 'MXN', 'estatus' => 'activa', 'monto_inscripcion' => 1250.50,
+            'monto_mensualidad' => 2500.00, 'responsable_pago_id' => $responsable->getKey(), 'created_by' => $user->getKey(), 'updated_by' => $user->getKey()]);
+    }
+
+    public function test_existing_inactive_responsible_is_rejected(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $responsable = ResponsablePago::create(['tipo'=>'persona','nombre_razon_social'=>'Inactivo','activo'=>false]);
+        Livewire::actingAs($this->user('admin'))->test(CreateInscripciones::class)
+            ->set('prospectos_id',$prospecto->getKey())->set('cursos_id',$curso->getKey())->set('grupo_id',$grupo->getKey())
+            ->set('responsable_opcion','existente')->set('responsable_pago_id',$responsable->getKey())->call('save')
+            ->assertHasErrors(['responsable_pago_id']);
+        $this->assertDatabaseCount('inscripciones', 0);
+    }
+
+    public function test_monthly_amount_requires_due_day_and_installment_count(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        Livewire::actingAs($this->user('admin'))->test(CreateInscripciones::class)
+            ->set('prospectos_id',$prospecto->getKey())->set('cursos_id',$curso->getKey())->set('grupo_id',$grupo->getKey())
+            ->set('monto_mensualidad','100.00')->call('save')
+            ->assertHasErrors(['dia_vencimiento'=>'required','numero_mensualidades'=>'required']);
     }
 
     /** @dataProvider invalidCreationData */
@@ -353,12 +390,36 @@ class InscripcionesTest extends TestCase
             $table->unsignedBigInteger('modalidad_id');
             $table->timestamps();
         });
+        Schema::create('responsables_pago', function (Blueprint $table) {
+            $table->id('responsable_pago_id');
+            $table->string('tipo', 20);
+            $table->unsignedBigInteger('prospectos_id')->nullable();
+            $table->string('nombre_razon_social');
+            $table->string('telefono', 80)->nullable();
+            $table->string('correo')->nullable();
+            $table->boolean('activo')->default(true);
+            $table->timestamps();
+        });
         Schema::create('inscripciones', function (Blueprint $table) {
             $table->id('inscripciones_id');
             $table->date('fecha_inscripcion');
             $table->unsignedBigInteger('prospectos_id');
             $table->unsignedBigInteger('cursos_id');
             $table->unsignedBigInteger('grupo_id');
+            $table->string('estatus', 20)->nullable();
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_fin')->nullable();
+            $table->char('moneda', 3)->default('MXN');
+            $table->decimal('monto_inscripcion', 12, 2)->nullable();
+            $table->decimal('monto_mensualidad', 12, 2)->nullable();
+            $table->unsignedTinyInteger('dia_vencimiento')->nullable();
+            $table->unsignedSmallInteger('numero_mensualidades')->nullable();
+            $table->decimal('descuento', 5, 2)->nullable();
+            $table->decimal('beca', 5, 2)->nullable();
+            $table->text('observaciones_financieras')->nullable();
+            $table->unsignedBigInteger('responsable_pago_id')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

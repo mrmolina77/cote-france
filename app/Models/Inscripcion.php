@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Inscripcion extends Model
 {
@@ -52,6 +53,22 @@ class Inscripcion extends Model
     * @var string
     */
    protected $primaryKey = 'inscripciones_id';
+
+    protected static function booted()
+    {
+        static::creating(function (Inscripcion $inscripcion) {
+            if (Auth::check()) {
+                $inscripcion->created_by = Auth::id();
+                $inscripcion->updated_by = Auth::id();
+            }
+        });
+
+        static::updating(function (Inscripcion $inscripcion) {
+            if (Auth::check()) {
+                $inscripcion->updated_by = Auth::id();
+            }
+        });
+    }
 
     public function prospecto()
     {
