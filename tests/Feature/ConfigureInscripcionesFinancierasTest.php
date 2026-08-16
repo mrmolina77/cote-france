@@ -108,6 +108,7 @@ class ConfigureInscripcionesFinancierasTest extends InscripcionesTestCase
         return [
             'unknown status' => [[5 => 'bad']], 'end before start' => [[7 => '2020-01-01']],
             'negative enrollment amount' => [[9 => '-1']], 'amount too large' => [[9 => '10000000000.00']],
+            'monthly amount too large' => [[10 => '10000000000.00']],
             'enrollment amount scale' => [[9 => '1.001']], 'monthly amount scale' => [[10 => '1.001']],
             'negative monthly amount' => [[10 => '-1']], 'monthly missing day' => [[11 => '']],
             'monthly missing installments' => [[12 => '']], 'day zero' => [[11 => '0']], 'day 32' => [[11 => '32']],
