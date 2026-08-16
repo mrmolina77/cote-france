@@ -495,6 +495,75 @@ class InscripcionesTest extends TestCase
             ->set('filtroFinanciero', 'configuradas')->assertDontSee('Alumno');
     }
 
+    /** @dataProvider invalidFinancialConfigurations */
+    public function test_canonical_financial_scope_rejects_every_invalid_configuration(array $invalid): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $responsable = ResponsablePago::activeForProspect($prospecto);
+        $values = array_merge([
+            'fecha_inscripcion' => '2026-08-16', 'prospectos_id' => $prospecto->getKey(),
+            'cursos_id' => $curso->getKey(), 'grupo_id' => $grupo->getKey(), 'estatus' => 'activa',
+            'fecha_inicio' => '2026-08-16', 'fecha_fin' => null, 'moneda' => 'MXN',
+            'monto_inscripcion' => '100.00', 'monto_mensualidad' => '100.00',
+            'dia_vencimiento' => 15, 'numero_mensualidades' => 12, 'descuento' => '0.00',
+            'beca' => '0.00', 'responsable_pago_id' => $responsable->getKey(),
+        ], $invalid);
+        $id = DB::table('inscripciones')->insertGetId($values);
+
+        $this->assertFalse(Inscripcion::findOrFail($id)->financieramente_configurada);
+        $this->assertTrue(Inscripcion::financieramentePendientes()->whereKey($id)->exists());
+    }
+
+    public function invalidFinancialConfigurations(): array
+    {
+        return [
+            'invalid status' => [['estatus' => 'otra']], 'end before start' => [['fecha_fin' => '2026-08-15']],
+            'negative enrollment' => [['monto_inscripcion' => -1]], 'negative monthly' => [['monto_mensualidad' => -1]],
+            'negative discount' => [['descuento' => -1]], 'negative scholarship' => [['beca' => -1]],
+            'discount over 100' => [['descuento' => 101]], 'scholarship over 100' => [['beca' => 101]],
+            'sum over 100' => [['descuento' => 60, 'beca' => 41]], 'missing responsible' => [['responsable_pago_id' => null]],
+            'unknown responsible' => [['responsable_pago_id' => 99999]],
+            'positive monthly missing day' => [['dia_vencimiento' => null]],
+            'positive monthly missing count' => [['numero_mensualidades' => null]],
+            'day too low' => [['dia_vencimiento' => 0]], 'day too high' => [['dia_vencimiento' => 32]],
+            'count too low' => [['numero_mensualidades' => 0]], 'count too high' => [['numero_mensualidades' => 121]],
+        ];
+    }
+
+    public function test_canonical_financial_scope_accepts_boundary_cases_and_rejects_inactive_responsible(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $responsable = ResponsablePago::activeForProspect($prospecto);
+        $configured = Inscripcion::create([
+            'fecha_inscripcion' => '2026-08-16', 'prospectos_id' => $prospecto->getKey(), 'cursos_id' => $curso->getKey(),
+            'grupo_id' => $grupo->getKey(), 'estatus' => 'finalizada', 'fecha_inicio' => '2026-08-16',
+            'fecha_fin' => null, 'moneda' => 'MXN', 'monto_inscripcion' => '9999999999.99',
+            'monto_mensualidad' => '0.00', 'dia_vencimiento' => null, 'numero_mensualidades' => null,
+            'descuento' => '40.00', 'beca' => '60.00', 'responsable_pago_id' => $responsable->getKey(),
+        ]);
+        $this->assertTrue($configured->financieramente_configurada);
+        $configured->update(['monto_mensualidad' => '1.00', 'dia_vencimiento' => 31, 'numero_mensualidades' => 120]);
+        $this->assertTrue($configured->fresh()->financieramente_configurada);
+        $responsable->update(['activo' => false]);
+        $this->assertFalse($configured->fresh()->financieramente_configurada);
+    }
+
+    public function test_listing_loads_financial_state_in_a_constant_number_of_queries(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        for ($i = 0; $i < 12; $i++) {
+            $student = $i === 0 ? $prospecto : Prospecto::create(['prospectos_nombres' => 'Alumno '.$i, 'prospectos_telefono1' => '1']);
+            $this->enroll($student, $curso, $grupo);
+        }
+        DB::flushQueryLog(); DB::enableQueryLog();
+        Livewire::actingAs($this->user('admin'))->test(ShowInscripciones::class)->call('loadPosts')->html();
+        $queries = count(DB::getQueryLog());
+        DB::flushQueryLog();
+        Livewire::actingAs(User::whereHas('role', fn ($q) => $q->where('roles_codigo', 'admin'))->first())
+            ->test(ShowInscripciones::class)->set('cant', 1)->call('loadPosts')->html();
+        $this->assertLessThanOrEqual($queries + 2, count(DB::getQueryLog()));
+    }
+
     private function user(string $code): User
     {
         $role = new Role();

@@ -112,27 +112,32 @@ class ConfigureInscripcionesFinancieras extends Command
             return self::SUCCESS;
         }
 
-        DB::transaction(function () use ($rows, $user) {
-            $changes = [];
-            foreach ($rows as $row) {
-                $inscripcion = Inscripcion::query()->whereKey($row['inscripciones_id'])->lockForUpdate()->firstOrFail();
-                [$values, $responsableId] = $this->desiredValues($row, $inscripcion, true);
-                if ($this->same($inscripcion, $values, $responsableId)) continue;
-                if ($this->timestamp($inscripcion) !== $row['updated_at_original']) {
-                    throw new \RuntimeException('Se detectó una modificación posterior mientras se obtenían los bloqueos.');
+        try {
+            DB::transaction(function () use ($rows, $user) {
+                $changes = [];
+                foreach ($rows as $row) {
+                    $inscripcion = Inscripcion::query()->whereKey($row['inscripciones_id'])->lockForUpdate()->firstOrFail();
+                    [$values, $responsableId] = $this->desiredValues($row, $inscripcion, true);
+                    if ($this->same($inscripcion, $values, $responsableId)) continue;
+                    if ($this->timestamp($inscripcion) !== $row['updated_at_original']) {
+                        throw new \RuntimeException('Se detectó una modificación posterior mientras se obtenían los bloqueos.');
+                    }
+                    $changes[] = [$inscripcion, $values, $responsableId];
                 }
-                $changes[] = [$inscripcion, $values, $responsableId];
-            }
-            foreach ($changes as [$inscripcion, $values, $responsableId]) {
-                foreach ($values as $field => $value) $inscripcion->{$field} = $value;
-                $inscripcion->responsable_pago_id = $responsableId;
-                $inscripcion->updated_by = $user->getKey();
-                $inscripcion->save();
-                if (! $inscripcion->fresh()->financieramente_configurada) {
-                    throw new \RuntimeException('La fila aplicada continuaría pendiente.');
+                foreach ($changes as [$inscripcion, $values, $responsableId]) {
+                    foreach ($values as $field => $value) $inscripcion->{$field} = $value;
+                    $inscripcion->responsable_pago_id = $responsableId;
+                    $inscripcion->updated_by = $user->getKey();
+                    $inscripcion->save();
+                    if (! $inscripcion->fresh()->financieramente_configurada) {
+                        throw new \RuntimeException('La fila aplicada continuaría pendiente.');
+                    }
                 }
-            }
-        });
+            });
+        } catch (\Throwable $exception) {
+            $this->error('No fue posible aplicar el archivo: '.$exception->getMessage());
+            return self::FAILURE;
+        }
         $this->info('Archivo aplicado completamente.');
         Log::info('Configuración financiera de inscripciones aplicada', ['registros' => count($rows), 'usuario_id' => $user->getKey()]);
         return self::SUCCESS;
@@ -187,15 +192,16 @@ class ConfigureInscripcionesFinancieras extends Command
     private function rules(array $row): array
     {
         $positive = is_numeric($row['monto_mensualidad']) && (float) $row['monto_mensualidad'] > 0;
-        $decimal = ['required', 'regex:/^\d{1,10}(?:\.\d{1,2})?$/'];
+        $money = ['required', 'regex:/^(?:\d{1,9}|\d{10}(?:\.\d{1,2})?|\d{1,9}\.\d{1,2})$/', 'numeric', 'between:0,9999999999.99'];
+        $percentage = ['required', 'regex:/^\d{1,3}(?:\.\d{1,2})?$/', 'numeric', 'between:0,100'];
         return [
             'inscripciones_id' => 'required|integer|min:1', 'prospectos_id' => 'required|integer',
             'updated_at_original' => 'nullable|date_format:Y-m-d H:i:s', 'estatus' => 'required|in:activa,suspendida,finalizada,cancelada',
             'fecha_inicio' => 'required|date_format:Y-m-d', 'fecha_fin' => 'nullable|date_format:Y-m-d|after_or_equal:fecha_inicio',
-            'moneda' => 'required|in:MXN', 'monto_inscripcion' => $decimal, 'monto_mensualidad' => $decimal,
+            'moneda' => 'required|in:MXN', 'monto_inscripcion' => $money, 'monto_mensualidad' => $money,
             'dia_vencimiento' => ($positive ? 'required' : 'nullable').'|integer|between:1,31',
             'numero_mensualidades' => ($positive ? 'required' : 'nullable').'|integer|between:1,120',
-            'descuento' => $decimal, 'beca' => $decimal, 'observaciones_financieras' => 'nullable|string|max:2000',
+            'descuento' => $percentage, 'beca' => $percentage, 'observaciones_financieras' => 'nullable|string|max:2000',
             'responsable_opcion' => 'required|in:alumno,existente,conservar',
             'responsable_pago_id' => 'nullable|required_if:responsable_opcion,existente|integer',
         ];

@@ -6,7 +6,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class Inscripcion extends Model
@@ -100,17 +99,31 @@ class Inscripcion extends Model
     /** The canonical, queryable definition of a completed financial setup. */
     public function scopeFinancieramenteConfiguradas(Builder $query): Builder
     {
-        return $query->whereNotNull($query->qualifyColumn('estatus'))
+        return $query->whereIn($query->qualifyColumn('estatus'), ['activa', 'suspendida', 'finalizada', 'cancelada'])
             ->whereNotNull($query->qualifyColumn('fecha_inicio'))
+            ->where(function (Builder $dates) use ($query) {
+                $dates->whereNull($query->qualifyColumn('fecha_fin'))
+                    ->orWhereColumn($query->qualifyColumn('fecha_fin'), '>=', $query->qualifyColumn('fecha_inicio'));
+            })
             ->where($query->qualifyColumn('moneda'), 'MXN')
-            ->whereNotNull($query->qualifyColumn('monto_inscripcion'))
-            ->whereNotNull($query->qualifyColumn('monto_mensualidad'))
-            ->whereNotNull($query->qualifyColumn('descuento'))
-            ->whereNotNull($query->qualifyColumn('beca'))
-            ->whereColumn($query->qualifyColumn('descuento'), '<=', DB::raw('100 - '.$query->qualifyColumn('beca')))
+            ->whereBetween($query->qualifyColumn('monto_inscripcion'), [0, '9999999999.99'])
+            ->whereBetween($query->qualifyColumn('monto_mensualidad'), [0, '9999999999.99'])
+            ->whereBetween($query->qualifyColumn('descuento'), [0, 100])
+            ->whereBetween($query->qualifyColumn('beca'), [0, 100])
+            ->whereRaw($query->qualifyColumn('descuento').' + '.$query->qualifyColumn('beca').' <= ?', [100])
             ->whereHas('responsablePago', fn (Builder $responsables) => $responsables->where('activo', true))
             ->where(function (Builder $monthly) use ($query) {
-                $monthly->where($query->qualifyColumn('monto_mensualidad'), '=', 0)
+                $monthly->where(function (Builder $zero) use ($query) {
+                    $zero->where($query->qualifyColumn('monto_mensualidad'), '=', 0)
+                        ->where(function (Builder $day) use ($query) {
+                            $day->whereNull($query->qualifyColumn('dia_vencimiento'))
+                                ->orWhereBetween($query->qualifyColumn('dia_vencimiento'), [1, 31]);
+                        })
+                        ->where(function (Builder $number) use ($query) {
+                            $number->whereNull($query->qualifyColumn('numero_mensualidades'))
+                                ->orWhereBetween($query->qualifyColumn('numero_mensualidades'), [1, 120]);
+                        });
+                })
                     ->orWhere(function (Builder $positive) use ($query) {
                         $positive->where($query->qualifyColumn('monto_mensualidad'), '>', 0)
                             ->whereBetween($query->qualifyColumn('numero_mensualidades'), [1, 120])
@@ -129,6 +142,10 @@ class Inscripcion extends Model
 
     public function getFinancieramenteConfiguradaAttribute(): bool
     {
+        if (array_key_exists('financieramente_configurada', $this->attributes)) {
+            return (bool) $this->attributes['financieramente_configurada'];
+        }
+
         return static::query()->whereKey($this->getKey())->financieramenteConfiguradas()->exists();
     }
 

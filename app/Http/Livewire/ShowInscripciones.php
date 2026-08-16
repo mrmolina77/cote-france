@@ -78,6 +78,14 @@ class ShowInscripciones extends Component
                 ->select('inscripciones.*', 'prospectos.prospectos_nombres', 'prospectos.prospectos_apellidos',
                     'cursos.cursos_descripcion', 'grupos.grupo_nombre', 'responsables_pago.nombre_razon_social as responsable_nombre')
                 ->orderBy($this->sortColumn(), $this->safeDirection())->paginate($this->cant);
+
+            // Resolve the canonical state once for the current page instead of once per row.
+            $configuredIds = Inscripcion::query()->financieramenteConfiguradas()
+                ->whereKey($inscripciones->getCollection()->modelKeys())
+                ->pluck('inscripciones_id')->flip();
+            $inscripciones->getCollection()->each(function (Inscripcion $inscripcion) use ($configuredIds) {
+                $inscripcion->setAttribute('financieramente_configurada', $configuredIds->has($inscripcion->getKey()));
+            });
         }
 
         $total = Inscripcion::query()->count();
