@@ -35,9 +35,9 @@ class Inscripcion extends Model
    ];
 
    protected $casts = [
-       'fecha_inscripcion' => 'date',
-       'fecha_inicio' => 'date',
-       'fecha_fin' => 'date',
+       'fecha_inscripcion' => 'date:Y-m-d',
+       'fecha_inicio' => 'date:Y-m-d',
+       'fecha_fin' => 'date:Y-m-d',
        'monto_inscripcion' => 'decimal:2',
        'monto_mensualidad' => 'decimal:2',
        'descuento' => 'decimal:2',
