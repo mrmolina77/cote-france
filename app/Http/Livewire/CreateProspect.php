@@ -13,6 +13,7 @@ use App\Models\Inscripcion;
 use App\Models\Modalidad;
 use App\Models\Profesor;
 use App\Models\Prospecto;
+use App\Models\ResponsablePago;
 use App\Models\User;
 use App\Notifications\ClassCreated;
 use Illuminate\Support\Facades\DB;
@@ -143,11 +144,19 @@ class CreateProspect extends Component
 
                 if ($this->seguimientos_id == 8 and $this->grupoid != null){
 
+                    $responsable = ResponsablePago::activeForProspect($prospecto);
+
                     Inscripcion::create([
                         'prospectos_id' =>$prospecto->prospectos_id,
                         'cursos_id' =>$this->cursos_id,
                         'grupo_id' =>$this->grupoid,
                         'fecha_inscripcion' =>$this->prospectos_fecha,
+                        'estatus' => 'activa',
+                        'fecha_inicio' => $this->prospectos_fecha,
+                        'moneda' => 'MXN',
+                        'descuento' => '0.00',
+                        'beca' => '0.00',
+                        'responsable_pago_id' => $responsable->getKey(),
                     ]);
 
                 }

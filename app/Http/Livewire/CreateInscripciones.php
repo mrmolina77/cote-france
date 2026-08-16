@@ -41,7 +41,7 @@ class CreateInscripciones extends Component
 
     protected function rules(): array
     {
-        return array_merge($this->financialRules(), [
+        return array_merge($this->financialRules('', false), [
             'prospectos_id' => 'required|integer|exists:prospectos,prospectos_id',
             'cursos_id' => 'required|integer|exists:cursos,cursos_id',
             'grupo_id' => 'required|integer|exists:grupos,grupo_id',
@@ -61,6 +61,7 @@ class CreateInscripciones extends Component
     {
         Gate::authorize('manage-inscripciones');
         $this->validate();
+        $this->validateFinancialCombination();
         if (Inscripcion::where('prospectos_id', $this->prospectos_id)->exists()) {
             $this->addError('prospectos_id', 'El prospecto ya cuenta con una inscripción.');
             return;
