@@ -15,7 +15,36 @@ class Inscripcion extends Model
     */
    protected $table = 'inscripciones';
 
-   protected $fillable = ['fecha_inscripcion','prospectos_id','cursos_id','grupo_id'];
+   protected $fillable = [
+       'fecha_inscripcion',
+       'prospectos_id',
+       'cursos_id',
+       'grupo_id',
+       'estatus',
+       'fecha_inicio',
+       'fecha_fin',
+       'moneda',
+       'monto_inscripcion',
+       'monto_mensualidad',
+       'dia_vencimiento',
+       'numero_mensualidades',
+       'descuento',
+       'beca',
+       'observaciones_financieras',
+       'responsable_pago_id',
+   ];
+
+   protected $casts = [
+       'fecha_inscripcion' => 'date',
+       'fecha_inicio' => 'date',
+       'fecha_fin' => 'date',
+       'monto_inscripcion' => 'decimal:2',
+       'monto_mensualidad' => 'decimal:2',
+       'descuento' => 'decimal:2',
+       'beca' => 'decimal:2',
+       'dia_vencimiento' => 'integer',
+       'numero_mensualidades' => 'integer',
+   ];
 
    /**
     * The primary key associated with the table.
@@ -37,6 +66,21 @@ class Inscripcion extends Model
     public function grupo()
     {
         return $this->belongsTo(Grupo::class,'grupo_id','grupo_id');
+    }
+
+    public function responsablePago()
+    {
+        return $this->belongsTo(ResponsablePago::class, 'responsable_pago_id', 'responsable_pago_id');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by', 'id');
     }
 
 }
