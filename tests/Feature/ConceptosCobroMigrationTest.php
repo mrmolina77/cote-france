@@ -61,14 +61,27 @@ class ConceptosCobroMigrationTest extends TestCase
         }
     }
 
-    public function test_decimal_rate_is_declared_with_six_decimals_and_cast_without_float(): void
+    public function test_decimal_rate_accepts_null_and_is_returned_as_a_six_decimal_string(): void
     {
         $this->migration()->up();
-        $column = collect(DB::select("PRAGMA table_info('conceptos_cobro')"))->firstWhere('name', 'tasa_iva');
-        $this->assertSame('decimal(8, 6)', strtolower($column->type));
 
-        ConceptoCobro::create(['clave' => 'IVA_TEMPORAL', 'nombre' => 'IVA temporal', 'tasa_iva' => '0.160000']);
-        $rate = ConceptoCobro::where('clave', 'IVA_TEMPORAL')->firstOrFail()->tasa_iva;
+        $withoutRate = ConceptoCobro::create([
+            'clave' => 'SIN_IVA',
+            'nombre' => 'Sin IVA',
+            'tasa_iva' => null,
+        ]);
+        $this->assertNull($withoutRate->fresh()->tasa_iva);
+
+        ConceptoCobro::create([
+            'clave' => 'IVA_TEMPORAL',
+            'nombre' => 'IVA temporal',
+            'tasa_iva' => '0.160000',
+        ]);
+        $concepto = ConceptoCobro::where('clave', 'IVA_TEMPORAL')->firstOrFail();
+        $rate = $concepto->tasa_iva;
+
+        $this->assertSame('decimal:6', $concepto->getCasts()['tasa_iva']);
+        $this->assertNotSame('float', $concepto->getCasts()['tasa_iva']);
         $this->assertIsString($rate);
         $this->assertSame('0.160000', $rate);
     }
