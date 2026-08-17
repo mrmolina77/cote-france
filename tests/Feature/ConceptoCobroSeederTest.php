@@ -106,7 +106,7 @@ class ConceptoCobroSeederTest extends TestCase
             'orden' => 5,
             'activo' => false,
             'tasa_iva' => '0.080000',
-        ]);
+        ])->fresh();
 
         $this->seed(ConceptoCobroSeeder::class);
 
