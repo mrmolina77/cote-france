@@ -123,5 +123,14 @@
                 {{ __('Users') }}
             </x-layout.aside-link>
         @endif
+
+        @can('manage-conceptos-cobro')
+            <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Configuración</div>
+            <x-layout.aside-link href="{{ route('configuracion.conceptos-cobro') }}"
+                                 :active="request()->routeIs('configuracion.conceptos-cobro')"
+                                 icon="fas fa-file-invoice-dollar text-teal-400 hover:text-teal-200">
+                Conceptos de cobro
+            </x-layout.aside-link>
+        @endcan
     </nav>
 </aside>

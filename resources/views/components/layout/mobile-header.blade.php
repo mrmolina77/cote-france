@@ -42,6 +42,12 @@
                 <i class="fas fa-user-alt mr-3"></i>
                 {{ __('Users') }}
             </a>
+            @can('manage-conceptos-cobro')
+                <div class="text-gray-300 text-xs uppercase tracking-wider pt-4 pl-4">Configuración</div>
+                <a href="{{ route('configuracion.conceptos-cobro') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('configuracion.conceptos-cobro') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
+                    <i class="fas fa-file-invoice-dollar mr-3"></i>Conceptos de cobro
+                </a>
+            @endcan
             <form method="POST" action="{{ route('logout') }}" x-data>
                 @csrf
 
