@@ -22,12 +22,13 @@ class ConceptoCobroSeeder extends Seeder
         ];
 
         foreach ($conceptos as $concepto) {
-            ConceptoCobro::updateOrCreate(
+            ConceptoCobro::firstOrCreate(
                 ['clave' => $concepto['clave']],
                 [
                     'nombre' => $concepto['nombre'],
                     'descripcion' => $concepto['descripcion'],
                     'orden' => $concepto['orden'],
+                    'activo' => true,
                 ]
             );
         }

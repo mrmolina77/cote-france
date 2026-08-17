@@ -63,10 +63,13 @@ class ConceptoCobroSeederTest extends TestCase
         $this->assertGreaterThan(1, ConceptoCobro::where('clave', 'INSCRIPCION')->value('concepto_cobro_id'));
     }
 
-    public function test_repeated_run_preserves_manual_inactivation_and_fiscal_configuration(): void
+    public function test_repeated_run_preserves_all_manual_configuration(): void
     {
         $this->seed(ConceptoCobroSeeder::class);
         ConceptoCobro::where('clave', 'MENSUALIDAD')->update([
+            'nombre' => 'Mensualidad personalizada',
+            'descripcion' => 'Descripción personalizada',
+            'orden' => 777,
             'activo' => false,
             'clave_producto_servicio_sat' => 'CONFIGURADA',
             'clave_unidad_sat' => 'UNIDAD',
@@ -77,12 +80,46 @@ class ConceptoCobroSeederTest extends TestCase
         $this->seed(ConceptoCobroSeeder::class);
         $concepto = ConceptoCobro::where('clave', 'MENSUALIDAD')->firstOrFail();
 
+        $this->assertSame('Mensualidad personalizada', $concepto->nombre);
+        $this->assertSame('Descripción personalizada', $concepto->descripcion);
+        $this->assertSame(777, $concepto->orden);
         $this->assertFalse($concepto->activo);
         $this->assertSame('CONFIGURADA', $concepto->clave_producto_servicio_sat);
         $this->assertSame('UNIDAD', $concepto->clave_unidad_sat);
         $this->assertSame('OBJETO', $concepto->objeto_impuesto_sat);
         $this->assertSame('0.160000', $concepto->tasa_iva);
         $this->assertSame(9, ConceptoCobro::count());
+    }
+
+    public function test_user_concept_is_preserved_and_missing_initial_concepts_are_created(): void
+    {
+        $existing = ConceptoCobro::create([
+            'clave' => 'INSCRIPCION',
+            'nombre' => 'Inscripción configurada',
+            'orden' => 999,
+            'activo' => false,
+        ]);
+        $userConcept = ConceptoCobro::create([
+            'clave' => 'ASESORIA_USUARIO',
+            'nombre' => 'Asesoría del usuario',
+            'descripcion' => 'No debe alterarse',
+            'orden' => 5,
+            'activo' => false,
+            'tasa_iva' => '0.080000',
+        ]);
+
+        $this->seed(ConceptoCobroSeeder::class);
+
+        $this->assertSame(10, ConceptoCobro::count());
+        $this->assertSame($existing->concepto_cobro_id, ConceptoCobro::where('clave', 'INSCRIPCION')->value('concepto_cobro_id'));
+        $this->assertDatabaseHas('conceptos_cobro', [
+            'clave' => 'INSCRIPCION',
+            'nombre' => 'Inscripción configurada',
+            'orden' => 999,
+            'activo' => false,
+        ]);
+        $this->assertSame($userConcept->getAttributes(), $userConcept->fresh()->getAttributes());
+        $this->assertSame(9, ConceptoCobro::whereIn('clave', array_keys(self::CONCEPTOS))->count());
     }
 
     private function migration()
