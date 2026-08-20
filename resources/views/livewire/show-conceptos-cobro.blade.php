@@ -43,7 +43,7 @@
                             <td class="px-4 py-3 border-t text-sm"><span class="px-2 py-1 rounded {{ $concepto->activo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600' }}">{{ $concepto->activo ? 'Activo' : 'Inactivo' }}</span></td>
                             <td class="px-4 py-3 border-t text-sm whitespace-nowrap">
                                 <button type="button" wire:click="edit({{ $concepto->concepto_cobro_id }})" wire:loading.attr="disabled" class="text-emerald-600 mr-3"><i class="fas fa-pen"></i> Editar</button>
-                                <button type="button" onclick="confirm('¿Desea {{ $concepto->activo ? 'desactivar' : 'activar' }} este concepto?') || event.stopImmediatePropagation()" wire:click="{{ $concepto->activo ? 'desactivar' : 'activar' }}({{ $concepto->concepto_cobro_id }})" wire:loading.attr="disabled" class="{{ $concepto->activo ? 'text-red-600' : 'text-green-600' }}">
+                                <button type="button" onclick="confirmarEstadoConcepto({{ $concepto->concepto_cobro_id }}, {{ $concepto->activo ? 'true' : 'false' }})" wire:loading.attr="disabled" wire:target="activar,desactivar" class="{{ $concepto->activo ? 'text-red-600' : 'text-green-600' }} disabled:opacity-50">
                                     {{ $concepto->activo ? 'Desactivar' : 'Activar' }}
                                 </button>
                             </td>
@@ -82,3 +82,31 @@
         </x-slot>
     </x-dialog-modal>
 </div>
+
+@push('js')
+    <script>
+        window.confirmarEstadoConcepto = function (id, activo) {
+            const desactivar = activo === true;
+
+            Swal.fire({
+                title: desactivar ? '¿Desactivar concepto?' : '¿Activar concepto?',
+                text: desactivar
+                    ? 'El concepto dejará de estar disponible para nuevas operaciones.'
+                    : 'El concepto volverá a estar disponible para nuevas operaciones.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: desactivar ? '#dc2626' : '#16a34a',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: desactivar ? 'Sí, desactivar' : 'Sí, activar',
+                cancelButtonText: 'Cancelar',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.emit(
+                        desactivar ? 'desactivarConceptoConfirmado' : 'activarConceptoConfirmado',
+                        Number(id)
+                    );
+                }
+            });
+        };
+    </script>
+@endpush

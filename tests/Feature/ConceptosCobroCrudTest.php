@@ -12,6 +12,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -94,7 +95,9 @@ class ConceptosCobroCrudTest extends TestCase
             ->set('objeto_impuesto_sat', '')->set('tasa_iva', '')->set('orden', 12)->call('store')->assertHasNoErrors();
         $concepto = ConceptoCobro::first();
         $this->assertSame('CURSO_ESPECIAL_2', $concepto->clave); $this->assertSame('Curso dos', $concepto->nombre);
-        $this->assertNull($concepto->descripcion); $this->assertNull($concepto->tasa_iva); $this->assertNull($concepto->clave_unidad_sat);
+        foreach (['descripcion', 'clave_producto_servicio_sat', 'clave_unidad_sat', 'objeto_impuesto_sat', 'tasa_iva'] as $field) {
+            $this->assertNull($concepto->{$field}, "{$field} should be stored as null");
+        }
     }
 
     public function test_creation_validation_rejects_duplicate_invalid_and_required_values(): void
@@ -117,6 +120,51 @@ class ConceptosCobroCrudTest extends TestCase
         return [['orden', -1], ['orden', 1.5], ['orden', 65536], ['tasa_iva', -0.1], ['tasa_iva', 1.1], ['tasa_iva', 'texto']];
     }
 
+    /** @dataProvider valuesOverMaximumLength */
+    public function test_string_maximum_lengths_are_enforced(string $field, string $value): void
+    {
+        $this->actingAs($this->user('admin'));
+        Livewire::test(ShowConceptosCobro::class)
+            ->set('clave', 'CLAVE_VALIDA')->set('nombre', 'Nombre válido')
+            ->set('clave_producto_servicio_sat', '84111506')->set('clave_unidad_sat', 'E48')
+            ->set('objeto_impuesto_sat', '02')->set($field, $value)->call('store')
+            ->assertHasErrors([$field => 'max']);
+        $this->assertDatabaseCount('conceptos_cobro', 0);
+    }
+
+    public static function valuesOverMaximumLength(): array
+    {
+        return [
+            ['clave', str_repeat('A', 51)],
+            ['nombre', str_repeat('n', 121)],
+            ['clave_producto_servicio_sat', str_repeat('1', 21)],
+            ['clave_unidad_sat', str_repeat('U', 11)],
+            ['objeto_impuesto_sat', str_repeat('0', 11)],
+        ];
+    }
+
+    /** @dataProvider valuesAtMaximumLength */
+    public function test_string_maximum_length_boundaries_are_accepted(string $field, string $value): void
+    {
+        $this->actingAs($this->user('admin'));
+        Livewire::test(ShowConceptosCobro::class)
+            ->set('clave', 'CLAVE_VALIDA')->set('nombre', 'Nombre válido')
+            ->set($field, $value)->call('store')->assertHasNoErrors();
+        $this->assertDatabaseCount('conceptos_cobro', 1);
+        $this->assertSame($value, ConceptoCobro::first()->{$field});
+    }
+
+    public static function valuesAtMaximumLength(): array
+    {
+        return [
+            ['clave', str_repeat('A', 50)],
+            ['nombre', str_repeat('n', 120)],
+            ['clave_producto_servicio_sat', str_repeat('1', 20)],
+            ['clave_unidad_sat', str_repeat('U', 10)],
+            ['objeto_impuesto_sat', str_repeat('0', 10)],
+        ];
+    }
+
     /** @dataProvider validTaxRates */
     public function test_valid_tax_rates_are_accepted($rate): void
     {
@@ -129,21 +177,52 @@ class ConceptosCobroCrudTest extends TestCase
     public function test_edit_updates_allowed_fields_but_never_key(): void
     {
         $this->actingAs($this->user('admin')); $concepto = ConceptoCobro::create(['clave' => 'FIJA', 'nombre' => 'Antes', 'orden' => 1]);
+        $concepto->timestamps = false;
+        $concepto->created_at = '2025-01-01 00:00:00';
+        $concepto->updated_at = '2025-01-01 00:00:00';
+        $concepto->save();
+        $concepto->timestamps = true;
         Livewire::test(ShowConceptosCobro::class)->call('edit', $concepto->getKey())->set('clave', 'MANIPULADA')->set('nombre', ' Después ')
             ->set('descripcion', 'Texto')->set('clave_producto_servicio_sat', '86121500')->set('clave_unidad_sat', 'E48')
             ->set('objeto_impuesto_sat', '02')->set('tasa_iva', '0.160000')->set('orden', 20)->set('activo', false)->call('update')->assertHasNoErrors();
-        $concepto->refresh(); $this->assertSame('FIJA', $concepto->clave); $this->assertSame('Después', $concepto->nombre); $this->assertFalse($concepto->activo);
+        $concepto->refresh();
+        $this->assertSame('FIJA', $concepto->clave);
+        $this->assertSame('Después', $concepto->nombre);
+        $this->assertSame('Texto', $concepto->descripcion);
+        $this->assertSame('86121500', $concepto->clave_producto_servicio_sat);
+        $this->assertSame('E48', $concepto->clave_unidad_sat);
+        $this->assertSame('02', $concepto->objeto_impuesto_sat);
         $this->assertSame('0.160000', $concepto->tasa_iva);
+        $this->assertSame(20, $concepto->orden);
+        $this->assertFalse($concepto->activo);
+        $this->assertSame('2025-01-01 00:00:00', $concepto->created_at->format('Y-m-d H:i:s'));
+        $this->assertNotSame('2025-01-01 00:00:00', $concepto->updated_at->format('Y-m-d H:i:s'));
     }
 
     public function test_activation_only_changes_status_and_no_delete_operation_exists(): void
     {
-        $this->actingAs($this->user('admin')); $concepto = ConceptoCobro::create(['clave' => 'ESTADO', 'nombre' => 'Conservar', 'descripcion' => 'dato', 'activo' => true, 'orden' => 9]);
-        $before = $concepto->only(['clave', 'nombre', 'descripcion', 'orden']);
+        $this->actingAs($this->user('admin')); $concepto = ConceptoCobro::create([
+            'clave' => 'ESTADO', 'nombre' => 'Conservar', 'descripcion' => 'dato',
+            'clave_producto_servicio_sat' => '84111506', 'clave_unidad_sat' => 'E48',
+            'objeto_impuesto_sat' => '02', 'tasa_iva' => '0.160000', 'activo' => true, 'orden' => 9,
+        ]);
+        $unchangedFields = ['clave', 'nombre', 'descripcion', 'clave_producto_servicio_sat', 'clave_unidad_sat', 'objeto_impuesto_sat', 'tasa_iva', 'orden'];
+        $before = $concepto->only($unchangedFields);
         Livewire::test(ShowConceptosCobro::class)->call('desactivar', $concepto->getKey());
         $this->assertFalse($concepto->refresh()->activo); $this->assertSame($before, $concepto->only(array_keys($before)));
-        Livewire::test(ShowConceptosCobro::class)->call('activar', $concepto->getKey()); $this->assertTrue($concepto->refresh()->activo);
+        Livewire::test(ShowConceptosCobro::class)->call('activar', $concepto->getKey());
+        $this->assertTrue($concepto->refresh()->activo); $this->assertSame($before, $concepto->only($unchangedFields));
         $this->assertFalse(method_exists(ShowConceptosCobro::class, 'delete')); $this->assertDatabaseHas('conceptos_cobro', ['clave' => 'ESTADO']);
+    }
+
+    public function test_confirmed_events_invoke_only_the_explicit_status_actions(): void
+    {
+        $this->actingAs($this->user('admin'));
+        $concepto = ConceptoCobro::create(['clave' => 'EVENTO', 'nombre' => 'Evento', 'activo' => true]);
+        Livewire::test(ShowConceptosCobro::class)->emit('desactivarConceptoConfirmado', $concepto->getKey());
+        $this->assertFalse($concepto->refresh()->activo);
+        Livewire::test(ShowConceptosCobro::class)->emit('activarConceptoConfirmado', $concepto->getKey());
+        $this->assertTrue($concepto->refresh()->activo);
     }
 
     public function test_search_filters_pagination_and_safe_sorting(): void
@@ -159,11 +238,43 @@ class ConceptosCobroCrudTest extends TestCase
         $this->assertTrue(Schema::hasTable('users'));
     }
 
-    public function test_menu_is_visible_only_to_authorized_users_and_seeded_keys_remain_editable(): void
+    /** @dataProvider menuViews */
+    public function test_admin_sees_concept_link_in_each_menu(string $view): void
+    {
+        $this->actingAs($this->user('admin'));
+        $menu = View::make($view)->render();
+        $this->assertStringContainsString('Configuración', $menu);
+        $this->assertStringContainsString('Conceptos de cobro', $menu);
+        $this->assertStringContainsString(route('configuracion.conceptos-cobro'), $menu);
+    }
+
+    /** @dataProvider deniedMenuCases */
+    public function test_unauthorized_roles_do_not_see_concept_link_in_each_menu(string $role, string $view): void
+    {
+        $this->actingAs($this->user($role));
+        $menu = View::make($view)->render();
+        $this->assertStringNotContainsString('Conceptos de cobro', $menu);
+        $this->assertStringNotContainsString(route('configuracion.conceptos-cobro'), $menu);
+    }
+
+    public static function menuViews(): array
+    {
+        return [['components.layout.aside'], ['components.layout.mobile-header']];
+    }
+
+    public static function deniedMenuCases(): array
+    {
+        $cases = [];
+        foreach (['venta', 'profe', 'alum'] as $role) {
+            foreach (self::menuViews() as [$view]) $cases[] = [$role, $view];
+        }
+        return $cases;
+    }
+
+    public function test_seeded_keys_remain_unchanged_after_editing(): void
     {
         $this->seed(ConceptoCobroSeeder::class); $this->assertCount(9, ConceptoCobro::all());
-        $adminResponse = $this->actingAs($this->user('admin'))->get('/configuracion/conceptos-cobro');
-        $adminResponse->assertSee('Conceptos de cobro')->assertSee(route('configuracion.conceptos-cobro'));
+        $this->actingAs($this->user('admin'));
         $keys = ConceptoCobro::pluck('clave')->all(); $first = ConceptoCobro::first();
         Livewire::test(ShowConceptosCobro::class)->call('edit', $first->getKey())->set('nombre', 'Nombre editado')->call('update');
         $this->assertSame($keys, ConceptoCobro::pluck('clave')->all());
