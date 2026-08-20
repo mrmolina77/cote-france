@@ -12,6 +12,11 @@ class ShowConceptosCobro extends Component
 {
     use WithPagination;
 
+    protected $listeners = [
+        'activarConceptoConfirmado' => 'activar',
+        'desactivarConceptoConfirmado' => 'desactivar',
+    ];
+
     private const SORT_COLUMNS = [
         'concepto_cobro_id', 'clave', 'nombre', 'activo', 'orden',
     ];
