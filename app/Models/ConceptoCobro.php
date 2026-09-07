@@ -29,6 +29,11 @@ class ConceptoCobro extends Model
         'orden' => 'integer',
     ];
 
+    public function cargos()
+    {
+        return $this->hasMany(Cargo::class, 'concepto_cobro_id', 'concepto_cobro_id');
+    }
+
     public function scopeActivos(Builder $query): Builder
     {
         return $query->where('activo', true);
