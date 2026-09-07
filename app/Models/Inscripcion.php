@@ -111,15 +111,24 @@ class Inscripcion extends Model
                     ->orWhereColumn($query->qualifyColumn('fecha_fin'), '>=', $query->qualifyColumn('fecha_inicio'));
             })
             ->where($query->qualifyColumn('moneda'), 'MXN')
-            ->whereBetween($query->qualifyColumn('monto_inscripcion'), [0, '9999999999.99'])
-            ->whereBetween($query->qualifyColumn('monto_mensualidad'), [0, '9999999999.99'])
+            ->where(function (Builder $amount) use ($query) {
+                $amount->whereNull($query->qualifyColumn('monto_inscripcion'))
+                    ->orWhereBetween($query->qualifyColumn('monto_inscripcion'), [0, '9999999999.99']);
+            })
+            ->where(function (Builder $amount) use ($query) {
+                $amount->whereNull($query->qualifyColumn('monto_mensualidad'))
+                    ->orWhereBetween($query->qualifyColumn('monto_mensualidad'), [0, '9999999999.99']);
+            })
             ->whereBetween($query->qualifyColumn('descuento'), [0, 100])
             ->whereBetween($query->qualifyColumn('beca'), [0, 100])
             ->whereRaw($query->qualifyColumn('descuento').' + '.$query->qualifyColumn('beca').' <= ?', [100])
             ->whereHas('responsablePago', fn (Builder $responsables) => $responsables->where('activo', true))
             ->where(function (Builder $monthly) use ($query) {
                 $monthly->where(function (Builder $zero) use ($query) {
-                    $zero->where($query->qualifyColumn('monto_mensualidad'), '=', 0)
+                    $zero->where(function (Builder $emptyAmount) use ($query) {
+                        $emptyAmount->whereNull($query->qualifyColumn('monto_mensualidad'))
+                            ->orWhere($query->qualifyColumn('monto_mensualidad'), '=', 0);
+                    })
                         ->where(function (Builder $day) use ($query) {
                             $day->whereNull($query->qualifyColumn('dia_vencimiento'))
                                 ->orWhereBetween($query->qualifyColumn('dia_vencimiento'), [1, 31]);

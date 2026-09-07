@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Curso;
+use App\Models\ConceptoCobro;
 use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
@@ -24,6 +25,8 @@ abstract class InscripcionesTestCase extends TestCase
         DB::purge('sqlite');
 
         $this->createSchema();
+        ConceptoCobro::create(['clave' => 'INSCRIPCION', 'nombre' => 'Inscripción', 'activo' => true]);
+        ConceptoCobro::create(['clave' => 'MENSUALIDAD', 'nombre' => 'Mensualidad', 'activo' => true]);
     }
 
     protected function user(string $code): User
@@ -137,5 +140,7 @@ abstract class InscripcionesTestCase extends TestCase
             $table->timestamps();
             $table->softDeletes();
         });
+        (require database_path('migrations/2026_08_17_000001_create_conceptos_cobro_table.php'))->up();
+        (require database_path('migrations/2026_09_07_000001_create_cargos_table.php'))->up();
     }
 }

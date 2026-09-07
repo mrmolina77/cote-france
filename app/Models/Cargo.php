@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cargo extends Model
 {
+    public const ORIGEN_MANUAL = 'manual';
+    public const ORIGEN_AUTOMATICO = 'automatico';
+
+    public const ORIGENES = [
+        self::ORIGEN_MANUAL,
+        self::ORIGEN_AUTOMATICO,
+    ];
+
     public const ESTADO_PENDIENTE = 'pendiente';
     public const ESTADO_PARCIAL = 'parcial';
     public const ESTADO_PAGADO = 'pagado';
