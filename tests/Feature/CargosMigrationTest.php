@@ -41,7 +41,7 @@ class CargosMigrationTest extends TestCase
             'total' => '100.00',
             'saldo_pendiente' => '100.00',
         ]);
-        $cargo = DB::table('cargos')->find($id);
+        $cargo = DB::table('cargos')->where('cargo_id', $id)->first();
 
         $this->assertSame('MXN', $cargo->moneda);
         $this->assertSame('pendiente', $cargo->estado);

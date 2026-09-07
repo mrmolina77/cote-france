@@ -50,7 +50,7 @@ class ConceptosCobroCrudTest extends TestCase
     public function test_admin_can_access_and_guest_is_redirected(): void
     {
         $this->actingAs($this->user('admin'))->get('/configuracion/conceptos-cobro')->assertOk()->assertSee('Conceptos de cobro');
-        auth()->logout();
+        $this->app['auth']->forgetGuards();
         $this->get('/configuracion/conceptos-cobro')->assertRedirect('/login');
     }
 
@@ -67,8 +67,7 @@ class ConceptosCobroCrudTest extends TestCase
     public function test_unauthorized_user_cannot_mount_component(): void
     {
         $this->actingAs($this->user('venta'));
-        $this->expectException(AuthorizationException::class);
-        Livewire::test(ShowConceptosCobro::class);
+        Livewire::test(ShowConceptosCobro::class)->assertForbidden();
     }
 
     /** @dataProvider protectedMutations */
