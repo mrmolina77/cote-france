@@ -8,6 +8,8 @@ use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
 use App\Models\ResponsablePago;
+use App\Services\Facturacion\GeneradorCargosService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
@@ -69,7 +71,11 @@ class CreateInscripciones extends Component
 
         DB::transaction(function () {
             $responsable = $this->resolveResponsable((int) $this->prospectos_id);
-            Inscripcion::create($this->enrollmentData() + ['responsable_pago_id' => $responsable->getKey()]);
+            $inscripcion = Inscripcion::create($this->enrollmentData() + ['responsable_pago_id' => $responsable->getKey()]);
+
+            if (Inscripcion::query()->whereKey($inscripcion->getKey())->financieramenteConfiguradas()->exists()) {
+                app(GeneradorCargosService::class)->generarParaInscripcion($inscripcion, Auth::id());
+            }
         });
 
         $this->reset();

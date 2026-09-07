@@ -16,6 +16,8 @@ use App\Models\Prospecto;
 use App\Models\ResponsablePago;
 use App\Models\User;
 use App\Notifications\ClassCreated;
+use App\Services\Facturacion\GeneradorCargosService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CreateProspect extends Component
@@ -146,7 +148,7 @@ class CreateProspect extends Component
 
                     $responsable = ResponsablePago::activeForProspect($prospecto);
 
-                    Inscripcion::create([
+                    $inscripcion = Inscripcion::create([
                         'prospectos_id' =>$prospecto->prospectos_id,
                         'cursos_id' =>$this->cursos_id,
                         'grupo_id' =>$this->grupoid,
@@ -158,6 +160,10 @@ class CreateProspect extends Component
                         'beca' => '0.00',
                         'responsable_pago_id' => $responsable->getKey(),
                     ]);
+
+                    if (Inscripcion::query()->whereKey($inscripcion->getKey())->financieramenteConfiguradas()->exists()) {
+                        app(GeneradorCargosService::class)->generarParaInscripcion($inscripcion, Auth::id());
+                    }
 
                 }
 

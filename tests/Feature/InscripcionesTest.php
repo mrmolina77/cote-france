@@ -6,6 +6,8 @@ use App\Http\Livewire\CreateInscripciones;
 use App\Http\Livewire\CreateProspect;
 use App\Http\Livewire\ShowInscripciones;
 use App\Models\Curso;
+use App\Models\Cargo;
+use App\Models\ConceptoCobro;
 use App\Models\Grupo;
 use App\Models\Inscripcion;
 use App\Models\Prospecto;
@@ -65,6 +67,8 @@ class InscripcionesTest extends InscripcionesTestCase
         $responsable = ResponsablePago::where('prospectos_id', $prospecto->getKey())->firstOrFail();
         $this->assertDatabaseHas('inscripciones', ['moneda' => 'MXN', 'estatus' => 'activa', 'monto_inscripcion' => 1250.50,
             'monto_mensualidad' => 2500.00, 'responsable_pago_id' => $responsable->getKey(), 'created_by' => $user->getKey(), 'updated_by' => $user->getKey()]);
+        $this->assertSame(7, Cargo::count());
+        $this->assertSame(7, Cargo::where('created_by', $user->getKey())->count());
     }
 
     public function test_existing_inactive_responsible_is_rejected(): void
@@ -174,6 +178,27 @@ class InscripcionesTest extends InscripcionesTestCase
 
         $this->assertDatabaseCount('responsables_pago', 0);
         $this->assertDatabaseCount('inscripciones', 0);
+    }
+
+    public function test_charge_generation_failure_rolls_back_enrollment_and_new_responsible(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        ConceptoCobro::where('clave', 'MENSUALIDAD')->update(['activo' => false]);
+
+        try {
+            Livewire::actingAs($this->user('admin'))->test(CreateInscripciones::class)
+                ->set('prospectos_id', $prospecto->getKey())->set('cursos_id', $curso->getKey())->set('grupo_id', $grupo->getKey())
+                ->set('responsable_opcion', 'nuevo')->set('responsable_nombre', 'Tutor temporal')
+                ->set('monto_inscripcion', '100.00')->set('monto_mensualidad', '200.00')
+                ->set('dia_vencimiento', 10)->set('numero_mensualidades', 2)->call('save');
+            $this->fail('Expected charge generation to fail.');
+        } catch (\Throwable $exception) {
+            $this->assertStringContainsString('MENSUALIDAD', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('inscripciones', 0);
+        $this->assertDatabaseCount('responsables_pago', 0);
+        $this->assertDatabaseCount('cargos', 0);
     }
 
     /** @dataProvider invalidCreationData */
