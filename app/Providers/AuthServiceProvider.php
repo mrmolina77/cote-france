@@ -32,5 +32,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-conceptos-cobro', function ($user) {
             return optional($user->role)->roles_codigo === 'admin';
         });
+
+        Gate::define('manage-cargos', function ($user) {
+            return optional($user->role)->roles_codigo === 'admin';
+        });
     }
 }
