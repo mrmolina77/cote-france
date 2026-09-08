@@ -7,12 +7,20 @@ use App\Models\Cargo;
 use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class GeneradorCargosService
 {
+    private CalculadorDescuentosCargoService $calculador;
+
+    public function __construct(?CalculadorDescuentosCargoService $calculador = null)
+    {
+        $this->calculador = $calculador ?? new CalculadorDescuentosCargoService();
+    }
+
     /**
      * Genera idempotentemente la inscripción y todo su calendario en una operación atómica.
      *
@@ -91,24 +99,22 @@ class GeneradorCargosService
         $concepto = $this->conceptoActivo('INSCRIPCION');
         $importe = $inscripcion->monto_inscripcion;
 
-        return $this->primeroOCrear('INSCRIPCION:'.$inscripcion->getKey(), [
-            'inscripciones_id' => $inscripcion->getKey(),
-            'concepto_cobro_id' => $concepto->getKey(),
-            'periodo_anio' => null,
-            'periodo_mes' => null,
-            'fecha_emision' => $inscripcion->fecha_inscripcion->format('Y-m-d'),
-            'fecha_vencimiento' => $inscripcion->fecha_inicio->format('Y-m-d'),
-            'moneda' => $inscripcion->moneda,
-            'subtotal' => $importe,
-            'descuento' => '0.00',
-            'recargo' => '0.00',
-            'impuestos' => '0.00',
-            'total' => $importe,
-            'saldo_pendiente' => $importe,
-            'estado' => Cargo::ESTADO_PENDIENTE,
-            'origen' => Cargo::ORIGEN_AUTOMATICO,
-            'observaciones' => 'Cargo generado desde la inscripción '.$inscripcion->getKey().'.',
-        ], $usuarioId);
+        return $this->primeroOCrear('INSCRIPCION:'.$inscripcion->getKey(), function () use ($inscripcion, $concepto, $importe) {
+            $importes = $this->calculador->calcular($importe, $inscripcion->descuento, $inscripcion->beca);
+
+            return array_merge($importes, [
+                'inscripciones_id' => $inscripcion->getKey(),
+                'concepto_cobro_id' => $concepto->getKey(),
+                'periodo_anio' => null,
+                'periodo_mes' => null,
+                'fecha_emision' => $inscripcion->fecha_inscripcion->format('Y-m-d'),
+                'fecha_vencimiento' => $inscripcion->fecha_inicio->format('Y-m-d'),
+                'moneda' => $inscripcion->moneda,
+                'estado' => $importes['total'] === '0.00' ? Cargo::ESTADO_PAGADO : Cargo::ESTADO_PENDIENTE,
+                'origen' => Cargo::ORIGEN_AUTOMATICO,
+                'observaciones' => 'Cargo generado desde la inscripción '.$inscripcion->getKey().'.',
+            ]);
+        }, $usuarioId);
     }
 
     private function crearMensualidades(Inscripcion $inscripcion, ?int $usuarioId): Collection
@@ -131,24 +137,22 @@ class GeneradorCargosService
 
             $vencimiento = $periodo->day(min($inscripcion->dia_vencimiento, $periodo->daysInMonth));
             $periodoTexto = $periodo->format('Y-m');
-            $cargos->push($this->primeroOCrear('MENSUALIDAD:'.$inscripcion->getKey().':'.$periodoTexto, [
-                'inscripciones_id' => $inscripcion->getKey(),
-                'concepto_cobro_id' => $concepto->getKey(),
-                'periodo_anio' => (int) $periodo->format('Y'),
-                'periodo_mes' => (int) $periodo->format('n'),
-                'fecha_emision' => $periodo->format('Y-m-d'),
-                'fecha_vencimiento' => $vencimiento->format('Y-m-d'),
-                'moneda' => $inscripcion->moneda,
-                'subtotal' => $importe,
-                'descuento' => '0.00',
-                'recargo' => '0.00',
-                'impuestos' => '0.00',
-                'total' => $importe,
-                'saldo_pendiente' => $importe,
-                'estado' => Cargo::ESTADO_PENDIENTE,
-                'origen' => Cargo::ORIGEN_AUTOMATICO,
-                'observaciones' => 'Mensualidad del periodo '.$periodoTexto.'.',
-            ], $usuarioId));
+            $cargos->push($this->primeroOCrear('MENSUALIDAD:'.$inscripcion->getKey().':'.$periodoTexto, function () use ($inscripcion, $concepto, $importe, $periodo, $vencimiento, $periodoTexto) {
+                $importes = $this->calculador->calcular($importe, $inscripcion->descuento, $inscripcion->beca);
+
+                return array_merge($importes, [
+                    'inscripciones_id' => $inscripcion->getKey(),
+                    'concepto_cobro_id' => $concepto->getKey(),
+                    'periodo_anio' => (int) $periodo->format('Y'),
+                    'periodo_mes' => (int) $periodo->format('n'),
+                    'fecha_emision' => $periodo->format('Y-m-d'),
+                    'fecha_vencimiento' => $vencimiento->format('Y-m-d'),
+                    'moneda' => $inscripcion->moneda,
+                    'estado' => $importes['total'] === '0.00' ? Cargo::ESTADO_PAGADO : Cargo::ESTADO_PENDIENTE,
+                    'origen' => Cargo::ORIGEN_AUTOMATICO,
+                    'observaciones' => 'Mensualidad del periodo '.$periodoTexto.'.',
+                ]);
+            }, $usuarioId));
         }
 
         return $cargos;
@@ -164,14 +168,14 @@ class GeneradorCargosService
         return $concepto;
     }
 
-    private function primeroOCrear(string $clave, array $atributos, ?int $usuarioId): Cargo
+    private function primeroOCrear(string $clave, Closure $crearAtributos, ?int $usuarioId): Cargo
     {
         $existente = Cargo::query()->where('clave_idempotencia', $clave)->first();
         if ($existente !== null) {
             return $existente;
         }
 
-        $cargo = new Cargo($atributos + ['clave_idempotencia' => $clave]);
+        $cargo = new Cargo($crearAtributos() + ['clave_idempotencia' => $clave]);
         $cargo->created_by = $usuarioId;
 
         try {

@@ -226,7 +226,7 @@ class GeneradorCargosServiceTest extends InscripcionesTestCase
         $this->assertSame('2027-02-28', $this->service->generarMensualidades($nonLeap)->first()->fecha_vencimiento->format('Y-m-d'));
     }
 
-    public function test_generation_does_not_modify_enrollment_and_amounts_are_exact_decimals_without_applying_discounts(): void
+    public function test_generation_applies_combined_adjustments_without_modifying_enrollment(): void
     {
         $inscripcion = $this->financialEnrollment([
             'fecha_inicio' => '2020-01-10', 'monto_inscripcion' => '1234.56', 'monto_mensualidad' => '987.65',
@@ -236,18 +236,55 @@ class GeneradorCargosServiceTest extends InscripcionesTestCase
         $charges = $this->service->generarParaInscripcion($inscripcion);
 
         $this->assertSame($original, $inscripcion->fresh()->getRawOriginal());
+        $this->assertSame([
+            ['1234.56', '617.28', '617.28', '617.28'],
+            ['987.65', '493.83', '493.82', '493.82'],
+        ], $charges->map(fn (Cargo $cargo) => [$cargo->subtotal, $cargo->descuento, $cargo->total, $cargo->saldo_pendiente])->all());
         foreach ($charges as $charge) {
-            $fresh = $charge->fresh();
-            $expected = $fresh->periodo_mes === null ? '1234.56' : '987.65';
-            $this->assertSame([$expected, $expected, $expected], [$fresh->subtotal, $fresh->total, $fresh->saldo_pendiente]);
-            $this->assertSame(['0.00', '0.00', '0.00'], [$fresh->descuento, $fresh->recargo, $fresh->impuestos]);
-            $this->assertIsString($fresh->total);
-            $this->assertSame(Cargo::ESTADO_PENDIENTE, $fresh->estado);
-            $this->assertSame(Cargo::ORIGEN_AUTOMATICO, $fresh->origen);
+            $this->assertSame(['0.00', '0.00', Cargo::ESTADO_PENDIENTE, Cargo::ORIGEN_AUTOMATICO],
+                [$charge->recargo, $charge->impuestos, $charge->estado, $charge->origen]);
+            foreach (['subtotal', 'descuento', 'recargo', 'impuestos', 'total', 'saldo_pendiente'] as $attribute) {
+                $this->assertIsString($charge->{$attribute});
+                $this->assertMatchesRegularExpression('/^\d+\.\d{2}$/', $charge->{$attribute});
+            }
         }
-        $this->assertStringNotContainsString('float', strtolower(json_encode((new Cargo())->getCasts())));
-        $this->assertStringNotContainsString('double', strtolower(json_encode((new Cargo())->getCasts())));
-        $this->assertStringNotContainsString('real', strtolower(json_encode((new Cargo())->getCasts())));
+        $source = file_get_contents(app_path('Services/Facturacion/CalculadorDescuentosCargoService.php'));
+        $this->assertStringNotContainsString('(float)', strtolower($source));
+        $this->assertStringNotContainsString('(double)', strtolower($source));
+    }
+
+    public function test_full_adjustment_creates_paid_charges_with_zero_balance(): void
+    {
+        $charges = $this->service->generarParaInscripcion($this->financialEnrollment([
+            'numero_mensualidades' => 1, 'descuento' => '25.00', 'beca' => '75.00',
+        ]));
+
+        $this->assertCount(2, $charges);
+        foreach ($charges as $charge) {
+            $this->assertSame($charge->subtotal, $charge->descuento);
+            $this->assertSame(['0.00', '0.00', Cargo::ESTADO_PAGADO],
+                [$charge->total, $charge->saldo_pendiente, $charge->estado]);
+        }
+    }
+
+    public function test_percentage_changes_do_not_recalculate_existing_automatic_charges(): void
+    {
+        $creator = $this->user('admin');
+        $inscripcion = $this->financialEnrollment([
+            'numero_mensualidades' => 2, 'descuento' => '10.00', 'beca' => '20.00',
+        ]);
+        $original = $this->service->generarParaInscripcion($inscripcion, $creator->getKey());
+        $snapshots = $original->mapWithKeys(fn (Cargo $cargo) => [$cargo->getKey() => $cargo->fresh()->getRawOriginal()]);
+
+        $inscripcion->update(['descuento' => '5.00', 'beca' => '5.00']);
+        $regenerated = $this->service->generarParaInscripcion($inscripcion, $this->user('venta')->getKey());
+
+        $this->assertSame($original->pluck('cargo_id')->all(), $regenerated->pluck('cargo_id')->all());
+        $this->assertSame($original->pluck('clave_idempotencia')->all(), $regenerated->pluck('clave_idempotencia')->all());
+        $this->assertDatabaseCount('cargos', 3);
+        foreach ($snapshots as $id => $snapshot) {
+            $this->assertSame($snapshot, Cargo::findOrFail($id)->getRawOriginal());
+        }
     }
 
     public function test_relations_are_available_and_generation_is_isolated(): void

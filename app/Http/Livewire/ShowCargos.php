@@ -19,7 +19,7 @@ class ShowCargos extends Component
 {
     use WithPagination;
 
-    private const SORT_COLUMNS = ['cargo_id', 'fecha_emision', 'fecha_vencimiento', 'periodo_anio', 'periodo_mes', 'total', 'saldo_pendiente', 'estado', 'origen'];
+    private const SORT_COLUMNS = ['cargo_id', 'fecha_emision', 'fecha_vencimiento', 'periodo_anio', 'periodo_mes', 'subtotal', 'descuento', 'total', 'saldo_pendiente', 'estado', 'origen'];
 
     public $search = '';
     public $estado = 'todos';
