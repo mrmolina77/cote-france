@@ -36,7 +36,7 @@
         </x-layout.aside-link>
 
         <!-- Prospectos y Programadas -->
-        @if(auth()->user()->role->roles_codigo == 'admin' || auth()->user()->role->roles_codigo == 'venta')
+        @if(optional(auth()->user()->role)->roles_codigo == 'admin' || optional(auth()->user()->role)->roles_codigo == 'venta')
             <x-layout.aside-link href="{{ route('prospectos') }}"
                                  :active="request()->routeIs('prospectos')"
                                  icon="fas fa-user-plus text-green-400 hover:text-green-200">
@@ -51,7 +51,7 @@
         @endif
 
         <!-- Horarios (admin) -->
-        @if(auth()->user()->role->roles_codigo == 'admin')
+        @if(optional(auth()->user()->role)->roles_codigo == 'admin')
             <x-layout.aside-link href="{{ route('horarios',['modalidad' => 1]) }}"
                                  :active="request()->routeIs('horarios') && request()->route('modalidad') == 1"
                                  icon="fas fa-chalkboard-teacher text-yellow-400 hover:text-yellow-200">
@@ -66,7 +66,7 @@
         @endif
 
         <!-- Horarios (profesor) -->
-        @if(auth()->user()->role->roles_codigo == 'profe')
+        @if(optional(auth()->user()->role)->roles_codigo == 'profe')
             <x-layout.aside-link href="{{ route('horario_profesor',['modalidad' => 1]) }}"
                                  :active="request()->routeIs('horario_profesor') && request()->route('modalidad') == 1"
                                  icon="fas fa-chalkboard-teacher text-yellow-400 hover:text-yellow-200">
@@ -81,7 +81,7 @@
         @endif
 
         <!-- Tareas -->
-        @if(auth()->user()->role->roles_codigo == 'admin' || auth()->user()->role->roles_codigo == 'venta')
+        @if(optional(auth()->user()->role)->roles_codigo == 'admin' || optional(auth()->user()->role)->roles_codigo == 'venta')
             <x-layout.aside-link href="{{ route('tareas') }}"
                                  :active="request()->routeIs('tareas')"
                                  icon="fas fa-tasks text-pink-400 hover:text-pink-200">
@@ -92,7 +92,7 @@
         @endif
 
         <!-- Grupos -->
-        @if(auth()->user()->role->roles_codigo == 'admin')
+        @if(optional(auth()->user()->role)->roles_codigo == 'admin')
             <x-layout.aside-link href="{{ route('grupos') }}"
                                  :active="request()->routeIs('grupos')"
                                  icon="fas fa-users-cog text-blue-400 hover:text-blue-200">
@@ -130,6 +130,15 @@
                                  :active="request()->routeIs('configuracion.conceptos-cobro')"
                                  icon="fas fa-file-invoice-dollar text-teal-400 hover:text-teal-200">
                 Conceptos de cobro
+            </x-layout.aside-link>
+        @endcan
+
+        @can('manage-cargos')
+            <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Facturación</div>
+            <x-layout.aside-link href="{{ route('facturacion.cargos') }}"
+                                 :active="request()->routeIs('facturacion.cargos')"
+                                 icon="fas fa-receipt text-emerald-400 hover:text-emerald-200">
+                Cargos
             </x-layout.aside-link>
         @endcan
     </nav>

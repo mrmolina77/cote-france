@@ -48,6 +48,12 @@
                     <i class="fas fa-file-invoice-dollar mr-3"></i>Conceptos de cobro
                 </a>
             @endcan
+            @can('manage-cargos')
+                <div class="text-gray-300 text-xs uppercase tracking-wider pt-4 pl-4">Facturación</div>
+                <a href="{{ route('facturacion.cargos') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.cargos') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
+                    <i class="fas fa-receipt mr-3"></i>Cargos
+                </a>
+            @endcan
             <form method="POST" action="{{ route('logout') }}" x-data>
                 @csrf
 
