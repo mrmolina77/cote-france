@@ -31,6 +31,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('profesores:diarios-pendientes')->dailyAt('06:00');
         $schedule->command('prospectos:inasistencias-notify')->dailyAt('07:00');
         $schedule->command('clases-prueba:notify')->dailyAt('08:00');
+        $schedule->command('cargos:marcar-vencidos')
+            ->dailyAt('00:10')
+            ->timezone(config('app.timezone'))
+            ->withoutOverlapping();
     }
 
     /**

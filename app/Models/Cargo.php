@@ -99,4 +99,12 @@ class Cargo extends Model
             self::ESTADO_VENCIDO,
         ]);
     }
+
+    public function scopeElegiblesParaVencimiento(Builder $query, string $fechaCorte): Builder
+    {
+        return $query
+            ->where('fecha_vencimiento', '<', $fechaCorte)
+            ->whereIn('estado', [self::ESTADO_PENDIENTE, self::ESTADO_PARCIAL])
+            ->where('saldo_pendiente', '>', '0.00');
+    }
 }
