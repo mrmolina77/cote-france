@@ -202,7 +202,7 @@ class GeneradorCargosServiceTest extends InscripcionesTestCase
             'fecha_inicio' => '2020-01-10', 'monto_inscripcion' => '1234.56', 'monto_mensualidad' => '987.65',
             'numero_mensualidades' => 1, 'descuento' => '20.00', 'beca' => '30.00',
         ]);
-        $original = $inscripcion->getRawOriginal();
+        $original = $inscripcion->fresh()->getRawOriginal();
         $charges = $this->service->generarParaInscripcion($inscripcion);
 
         $this->assertSame($original, $inscripcion->fresh()->getRawOriginal());
