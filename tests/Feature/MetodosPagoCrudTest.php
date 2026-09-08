@@ -6,6 +6,7 @@ use App\Http\Livewire\ShowMetodosPago;
 use App\Models\MetodoPago;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\MetodoPagoSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -118,6 +119,216 @@ class MetodosPagoCrudTest extends TestCase
         $admin = $this->actingAs($this->user('admin')); foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $admin->view($view)->assertSee('Métodos de pago')->assertSee(route('configuracion.metodos-pago'));
         $other = $this->actingAs($this->user('venta')); foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $other->view($view)->assertDontSee('Métodos de pago');
     }
+
+    public function test_create_and_close_restore_the_complete_pristine_form(): void
+    {
+        $this->actingAs($this->user('admin'));
+        $component = Livewire::test(ShowMetodosPago::class)
+            ->set('clave', 'MALA CLAVE')->set('nombre', '')->call('store')->assertHasErrors(['clave', 'nombre'])
+            ->call('create')->assertSet('open_form', true);
+        $this->assertPristineForm($component);
+
+        $before = MetodoPago::count();
+        $component->set('clave', 'TEMPORAL')->set('nombre', 'Temporal')->call('closeForm')->assertSet('open_form', false);
+        $this->assertPristineForm($component);
+        $this->assertSame($before, MetodoPago::count());
+    }
+
+    /** @dataProvider requirementFields */
+    public function test_each_requirement_is_created_loaded_unchecked_and_rejected_atomically(string $field): void
+    {
+        $this->actingAs($this->user('admin'));
+        $create = Livewire::test(ShowMetodosPago::class)->set('clave', 'ALTA_'.$this->fieldSuffix($field))->set('nombre', 'Alta')->set($field, true)->call('store')->assertHasNoErrors();
+        $method = MetodoPago::first();
+        $this->assertTrue($method->{$field});
+        $this->assertPristineForm($create);
+        Livewire::test(ShowMetodosPago::class)->set('clave', 'BAJA_'.$this->fieldSuffix($field))->set('nombre', 'Baja')->set($field, false)->call('store')->assertHasNoErrors();
+        $this->assertFalse(MetodoPago::where('clave', 'BAJA_'.$this->fieldSuffix($field))->firstOrFail()->{$field});
+
+        Livewire::test(ShowMetodosPago::class)->call('edit', $method->getKey())->assertSet($field, true)->set($field, false)->call('update')->assertHasNoErrors();
+        $this->assertFalse($method->refresh()->{$field});
+
+        $snapshot = $method->getAttributes();
+        Livewire::test(ShowMetodosPago::class)->call('edit', $method->getKey())->set('nombre', 'No debe persistir')->set($field, 'no-booleano')->call('update')->assertHasErrors([$field => 'boolean']);
+        $this->assertSame($snapshot, $method->fresh()->getAttributes());
+
+        $count = MetodoPago::count();
+        Livewire::test(ShowMetodosPago::class)->set('clave', 'INVALIDA_'.$this->fieldSuffix($field))->set('nombre', 'Inválida')->set($field, 'no-booleano')->call('store')->assertHasErrors([$field => 'boolean']);
+        $this->assertSame($count, MetodoPago::count());
+    }
+
+    public static function requirementFields(): array
+    {
+        return array_map(static fn ($field) => [$field], array_keys(ShowMetodosPago::REQUIREMENT_LABELS));
+    }
+
+    public function test_complete_update_changes_only_selected_record_and_cleans_form(): void
+    {
+        $this->actingAs($this->user('admin'));
+        $selected = $this->method(['clave' => 'INMUTABLE', 'nombre' => 'Anterior']);
+        $other = $this->method(['clave' => 'OTRO', 'nombre' => 'Intacto']);
+        $component = Livewire::test(ShowMetodosPago::class)->call('edit', $selected->getKey())->set('clave', 'ALTERADA')
+            ->set('nombre', ' Nuevo ')->set('descripcion', ' ')->set('clave_forma_pago_sat', ' ')->set('orden', 65535)->set('activo', false);
+        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $index => $field) $component->set($field, $index % 2 === 0);
+        $component->call('update')->assertHasNoErrors()->assertEmitted('alert', 'El método de pago fue actualizado satisfactoriamente.')->assertSet('open_form', false);
+        $selected->refresh();
+        $this->assertSame('INMUTABLE', $selected->clave); $this->assertSame('Nuevo', $selected->nombre); $this->assertNull($selected->descripcion); $this->assertNull($selected->clave_forma_pago_sat); $this->assertSame(65535, $selected->orden); $this->assertFalse($selected->activo);
+        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $index => $field) $this->assertSame($index % 2 === 0, $selected->{$field});
+        $this->assertSame('Intacto', $other->fresh()->nombre); $this->assertDatabaseCount('metodos_pago', 2); $this->assertPristineForm($component);
+    }
+
+    /** @dataProvider nonexistentActions */
+    public function test_nonexistent_identifiers_return_404_without_writes(string $action): void
+    {
+        $this->actingAs($this->user('admin')); $method = $this->method(); $snapshot = $method->getAttributes();
+        $component = Livewire::test(ShowMetodosPago::class);
+        if ($action === 'update') $component->set('editingId', 999999)->set('editingSignature', 'x')->call($action)->assertStatus(404);
+        else $component->call($action, 999999)->assertStatus(404);
+        $this->assertSame($snapshot, $method->fresh()->getAttributes()); $this->assertDatabaseCount('metodos_pago', 1);
+    }
+
+    public static function nonexistentActions(): array { return [['edit'], ['update'], ['activar'], ['desactivar'], ['toggleEstado']]; }
+
+    /** @dataProvider invalidSignatures */
+    public function test_invalid_or_mismatched_edit_signatures_return_404(string $kind): void
+    {
+        $this->actingAs($this->user('admin')); $one = $this->method(['clave' => 'UNO']); $two = $this->method(['clave' => 'DOS']); $before = $two->getAttributes();
+        $component = Livewire::test(ShowMetodosPago::class)->call('edit', $one->getKey());
+        if ($kind === 'other-id') $component->set('editingId', $two->getKey());
+        elseif ($kind === 'empty') $component->set('editingSignature', '');
+        else $component->set('editingSignature', 'firma-alterada');
+        $component->set('nombre', 'Hack')->call('update')->assertStatus(404);
+        $this->assertSame($before, $two->fresh()->getAttributes()); $this->assertSame('Método', $one->fresh()->nombre);
+    }
+
+    public static function invalidSignatures(): array { return [['other-id'], ['empty'], ['altered']]; }
+
+    public function test_repeated_activation_events_are_idempotent_and_only_change_status(): void
+    {
+        $this->actingAs($this->user('admin')); $method = $this->method(['activo' => true, 'descripcion' => 'Conservar', 'orden' => 9, 'requiere_comprobante' => true]); $immutable = $method->only(array_diff($method->getFillable(), ['activo'])); $count = MetodoPago::count();
+        Livewire::test(ShowMetodosPago::class)->emit('desactivarMetodoPagoConfirmado', $method->getKey())->assertEmitted('alert', 'El método de pago fue desactivado.')->emit('desactivarMetodoPagoConfirmado', $method->getKey());
+        $this->assertFalse($method->refresh()->activo); $this->assertSame($immutable, $method->only(array_keys($immutable)));
+        Livewire::test(ShowMetodosPago::class)->emit('activarMetodoPagoConfirmado', $method->getKey())->assertEmitted('alert', 'El método de pago fue activado.')->emit('activarMetodoPagoConfirmado', $method->getKey());
+        $this->assertTrue($method->refresh()->activo); $this->assertSame($immutable, $method->only(array_keys($immutable))); $this->assertSame($count, MetodoPago::count());
+    }
+
+    public function test_seeded_catalog_can_be_toggled_and_rendering_is_read_only(): void
+    {
+        $this->actingAs($this->user('admin')); $this->seed(MetodoPagoSeeder::class);
+        $catalogFields = array_merge(['clave', 'nombre', 'descripcion', 'clave_forma_pago_sat', 'activo', 'orden'], array_keys(ShowMetodosPago::REQUIREMENT_LABELS));
+        $before = MetodoPago::orderBy('metodo_pago_id')->get()->map->only($catalogFields)->all(); $method = MetodoPago::first(); $count = count($before);
+        Livewire::test(ShowMetodosPago::class)->assertSee($method->clave)->call('desactivar', $method->getKey());
+        $changed = $method->fresh(); $this->assertSame($method->clave, $changed->clave); $this->assertFalse($changed->activo); $this->assertDatabaseCount('metodos_pago', $count);
+        Livewire::test(ShowMetodosPago::class)->call('activar', $method->getKey()); $this->assertDatabaseCount('metodos_pago', $count);
+        Livewire::test(ShowMetodosPago::class)->assertSee($method->clave);
+        $this->assertSame($before, MetodoPago::orderBy('metodo_pago_id')->get()->map->only($catalogFields)->all());
+    }
+
+    /** @dataProvider searchTerms */
+    public function test_search_fields_partial_whitespace_and_empty_results_are_read_only(string $term, bool $finds): void
+    {
+        $this->actingAs($this->user('admin')); $match = $this->method(['clave' => 'TRANSFERENCIA', 'nombre' => 'Pago bancario', 'descripcion' => 'Referencia especial', 'clave_forma_pago_sat' => '03']); $other = $this->method(['clave' => 'EFECTIVO', 'nombre' => 'Caja']); $before = MetodoPago::orderBy('metodo_pago_id')->get()->map->getAttributes()->all();
+        $test = Livewire::test(ShowMetodosPago::class)->set('page', 2)->set('search', $term)->assertSet('page', 1);
+        $finds ? $test->assertSee($match->clave)->assertDontSee($other->clave) : $test->assertSee('No se encontraron métodos de pago.');
+        $this->assertSame($before, MetodoPago::orderBy('metodo_pago_id')->get()->map->getAttributes()->all());
+    }
+
+    public static function searchTerms(): array { return [['TRANSFER', true], ['bancario', true], ['especial', true], [' 03 ', true], ['inexistente', false]]; }
+
+    public function test_empty_search_returns_all_records(): void
+    {
+        $this->actingAs($this->user('admin')); $this->method(['clave' => 'UNO']); $this->method(['clave' => 'DOS']); Livewire::test(ShowMetodosPago::class)->set('search', '   ')->assertSee('UNO')->assertSee('DOS');
+    }
+
+    /** @dataProvider statusFilters */
+    public function test_each_status_filter_is_correct_and_read_only(string $filter, bool $seesActive, bool $seesInactive): void
+    {
+        $this->actingAs($this->user('admin')); $this->method(['clave' => 'ACTIVO_UNICO', 'activo' => true]); $this->method(['clave' => 'INACTIVO_UNICO', 'activo' => false]); $before = MetodoPago::all()->map->getAttributes()->all();
+        $test = Livewire::test(ShowMetodosPago::class)->set('page', 2)->set('estado', $filter)->assertSet('page', 1);
+        $seesActive ? $test->assertSee('ACTIVO_UNICO') : $test->assertDontSee('ACTIVO_UNICO'); $seesInactive ? $test->assertSee('INACTIVO_UNICO') : $test->assertDontSee('INACTIVO_UNICO');
+        $this->assertSame($before, MetodoPago::all()->map->getAttributes()->all());
+    }
+
+    public static function statusFilters(): array { return [['todos', true, true], ['activos', true, false], ['inactivos', false, true], ['manipulado', true, true]]; }
+
+    /** @dataProvider allowedPageSizes */
+    public function test_allowed_page_sizes_apply_exactly_and_reset_page($size): void
+    {
+        $this->actingAs($this->user('admin')); $this->method(); Livewire::test(ShowMetodosPago::class)->assertSet('cant', 25)->set('page', 2)->set('cant', $size)->assertSet('page', 1)->assertViewHas('metodos', fn ($items) => $items->perPage() === (int) $size); $this->assertDatabaseCount('metodos_pago', 1);
+    }
+    public static function allowedPageSizes(): array { return [[10], [25], [50], [100]]; }
+
+    /** @dataProvider invalidPageSizes */
+    public function test_manipulated_page_sizes_fall_back_to_25($size): void
+    {
+        $this->actingAs($this->user('admin')); Livewire::test(ShowMetodosPago::class)->set('cant', $size)->assertViewHas('metodos', fn ($items) => $items->perPage() === 25);
+    }
+    public static function invalidPageSizes(): array { return [[0], [-1], [11], [1000], ['arbitrario'], [null]]; }
+
+    /** @dataProvider sortableColumns */
+    public function test_every_whitelisted_column_sorts_and_toggles_safely(string $column): void
+    {
+        $this->actingAs($this->user('admin')); $this->method(['clave' => 'B', 'nombre' => 'Beta', 'orden' => 2]); $this->method(['clave' => 'A', 'nombre' => 'Alfa', 'orden' => 1]);
+        $test = Livewire::test(ShowMetodosPago::class)->call('order', $column)->assertSet('sort', $column);
+        $first = $test->get('direction'); $this->assertContains($first, ['asc', 'desc']);
+        $test->call('order', $column); $this->assertNotSame($first, $test->get('direction')); $this->assertContains($test->get('direction'), ['asc', 'desc']);
+    }
+    public static function sortableColumns(): array { return array_map(static fn ($v) => [$v], ['metodo_pago_id', 'clave', 'nombre', 'clave_forma_pago_sat', 'activo', 'orden']); }
+
+    public function test_default_order_uses_name_as_tie_breaker(): void
+    {
+        $this->actingAs($this->user('admin')); $this->method(['clave' => 'Z', 'nombre' => 'Zeta', 'orden' => 1]); $this->method(['clave' => 'A', 'nombre' => 'Alfa', 'orden' => 1]); $this->method(['clave' => 'M', 'nombre' => 'Primero', 'orden' => 0]);
+        Livewire::test(ShowMetodosPago::class)->assertViewHas('metodos', fn ($items) => $items->pluck('clave')->all() === ['M', 'A', 'Z']);
+    }
+
+    /** @dataProvider unsafeSortValues */
+    public function test_manipulated_sorting_falls_back_without_schema_or_data_damage($column, $direction): void
+    {
+        $this->actingAs($this->user('admin')); $method = $this->method(); $before = $method->getAttributes();
+        Livewire::test(ShowMetodosPago::class)->set('sort', $column)->set('direction', $direction)->assertSet('sort', 'orden')->assertSet('direction', 'asc');
+        $this->assertTrue(Schema::hasTable('users')); $this->assertTrue(Schema::hasTable('metodos_pago')); $this->assertSame($before, $method->fresh()->getAttributes());
+    }
+    public static function unsafeSortValues(): array { return [['nombre; DROP TABLE users', 'asc'], ['created_at', 'sideways'], ['password', 'DESC; DROP TABLE users'], [1, 1], [null, null]]; }
+
+    public function test_listing_renders_business_labels_states_fallbacks_and_actions(): void
+    {
+        $this->actingAs($this->user('admin')); $active = $this->method(['clave' => 'CERO01', 'nombre' => 'Completo', 'clave_forma_pago_sat' => '01', 'activo' => true]); foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $field) $active->{$field} = true; $active->save(); $this->method(['clave' => 'VACIO', 'nombre' => 'Vacío', 'clave_forma_pago_sat' => null, 'activo' => false]);
+        $test = Livewire::test(ShowMetodosPago::class)->assertSee('CERO01')->assertSee('Completo')->assertSee('01')->assertSee('Sin configurar')->assertSee('Sin datos adicionales')->assertSee('Activo')->assertSee('Inactivo')->assertSee('Editar')->assertSee('Desactivar')->assertSee('Activar')->assertDontSee('requiere_rastreo_spei');
+        foreach (ShowMetodosPago::REQUIREMENT_LABELS as $label) $test->assertSee($label);
+    }
+
+    public function test_empty_listing_message_is_rendered(): void { $this->actingAs($this->user('admin')); Livewire::test(ShowMetodosPago::class)->assertSee('No se encontraron métodos de pago.'); }
+
+    /** @dataProvider unauthorizedRoles */
+    public function test_navigation_and_direct_component_access_are_denied_to_every_non_admin_role(?string $role): void
+    {
+        $user = $role === null ? User::factory()->create(['roles_id' => null]) : $this->user($role); $this->actingAs($user);
+        foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $this->view($view)->assertDontSee(route('configuracion.metodos-pago'));
+        Livewire::test(ShowMetodosPago::class)->assertForbidden();
+    }
+    public static function unauthorizedRoles(): array { return [['venta'], ['profe'], ['alum'], [null]]; }
+
+    /** @dataProvider validBoundaries */
+    public function test_valid_normalization_and_boundaries_are_persisted(string $field, $value, $expected): void
+    {
+        $this->actingAs($this->user('admin')); $test = Livewire::test(ShowMetodosPago::class)->set('clave', 'VALIDA')->set('nombre', 'Nombre')->set($field, $value)->call('store')->assertHasNoErrors(); $this->assertSame($expected, MetodoPago::first()->{$field});
+    }
+    public static function validBoundaries(): array { return [['clave', str_repeat('A', 50), str_repeat('A', 50)], ['clave', ' abc_123 ', 'ABC_123'], ['nombre', str_repeat('N', 120), str_repeat('N', 120)], ['nombre', ' Nombre limpio ', 'Nombre limpio'], ['descripcion', ' Texto ', 'Texto'], ['descripcion', '   ', null], ['clave_forma_pago_sat', '01', '01'], ['clave_forma_pago_sat', '  ', null], ['orden', 0, 0], ['orden', 65535, 65535]]; }
+
+    /** @dataProvider additionalInvalidBoundaries */
+    public function test_invalid_boundaries_are_rejected_atomically(string $field, $value, string $rule): void
+    {
+        $this->actingAs($this->user('admin')); Livewire::test(ShowMetodosPago::class)->set('clave', 'VALIDA')->set('nombre', 'Nombre')->set($field, $value)->call('store')->assertHasErrors([$field => $rule]); $this->assertDatabaseCount('metodos_pago', 0);
+    }
+    public static function additionalInvalidBoundaries(): array { return [['clave', '', 'required'], ['clave', str_repeat('A', 51), 'max'], ['clave', 'CON-GUION', 'regex'], ['clave', 'ESPECIAL!', 'regex'], ['nombre', str_repeat('N', 121), 'max'], ['clave_forma_pago_sat', 'A1', 'regex'], ['clave_forma_pago_sat', '#1', 'regex'], ['orden', 'texto', 'integer']]; }
+
+    private function assertPristineForm($component): void
+    {
+        $component->assertSet('editingId', null)->assertSet('editingSignature', null)->assertSet('clave', '')->assertSet('nombre', '')->assertSet('descripcion', '')->assertSet('clave_forma_pago_sat', '')->assertSet('orden', 0)->assertSet('activo', true)->assertHasNoErrors();
+        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $field) $component->assertSet($field, false);
+    }
+
+    private function fieldSuffix(string $field): string { return strtoupper(substr(hash('sha1', $field), 0, 10)); }
 
     private function user(string $role): User
     {
