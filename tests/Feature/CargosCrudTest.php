@@ -44,16 +44,7 @@ class CargosCrudTest extends InscripcionesTestCase
     {
         $this->actingAs($this->user($role));
         $before = Cargo::query()->count();
-        try {
-            Livewire::test(ShowCargos::class)
-                ->set('inscripciones_id', $this->inscripcion->getKey())
-                ->set('concepto_cobro_id', $this->concepto->getKey())
-                ->set('fecha_emision', '2026-01-01')->set('fecha_vencimiento', '2026-01-02')
-                ->set('subtotal', '10.00')->call('store');
-            $this->fail('Livewire mount should have been denied.');
-        } catch (AuthorizationException $exception) {
-            $this->assertInstanceOf(AuthorizationException::class, $exception);
-        }
+        Livewire::test(ShowCargos::class)->assertForbidden();
         $this->assertSame($before, Cargo::query()->count());
     }
 
