@@ -110,8 +110,8 @@ class ShowMetodosPago extends Component
     public function update(): void
     {
         Gate::authorize('manage-metodos-pago');
-        $metodo = MetodoPago::findOrFail($this->editingId);
-        abort_unless(hash_equals($this->signature($metodo->getKey()), (string) $this->editingSignature), 404);
+        $metodo = MetodoPago::find($this->editingId);
+        abort_unless($metodo && hash_equals($this->signature($metodo->getKey()), (string) $this->editingSignature), 404);
         $this->clave = $metodo->clave;
         $this->normalize();
         $validated = $this->validate();

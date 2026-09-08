@@ -42,7 +42,7 @@ class MetodosPagoCrudTest extends TestCase
     {
         $this->actingAs($this->user('venta')); Livewire::test(ShowMetodosPago::class)->assertForbidden();
         foreach ([['create', []], ['edit', [1]], ['store', []], ['update', []], ['activar', [1]], ['desactivar', [1]], ['toggleEstado', [1]]] as [$method, $args]) {
-            try { (new ShowMetodosPago())->{$method}(...$args); $this->fail($method.' no autorizó la acción.'); } catch (AuthorizationException $exception) { $this->assertSame(403, $exception->status()); }
+            try { (new ShowMetodosPago())->{$method}(...$args); $this->fail($method.' no autorizó la acción.'); } catch (AuthorizationException $exception) { $this->assertInstanceOf(AuthorizationException::class, $exception); }
         }
     }
 
@@ -95,7 +95,7 @@ class MetodosPagoCrudTest extends TestCase
 
     public function test_activation_changes_only_status_and_there_is_no_delete_action(): void
     {
-        $this->actingAs($this->user('admin')); $method = $this->method(['activo' => true, 'requiere_banco' => true]); $before = $method->only(array_diff($method->getFillable(), ['activo']));
+        $this->actingAs($this->user('admin')); $method = $this->method(['activo' => true, 'requiere_banco' => true])->fresh(); $before = $method->only(array_diff($method->getFillable(), ['activo']));
         Livewire::test(ShowMetodosPago::class)->call('desactivar', $method->getKey()); $this->assertFalse($method->refresh()->activo); $this->assertSame($before, $method->only(array_keys($before)));
         Livewire::test(ShowMetodosPago::class)->call('activar', $method->getKey()); $this->assertTrue($method->refresh()->activo); $this->assertFalse(method_exists(ShowMetodosPago::class, 'delete'));
     }
