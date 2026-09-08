@@ -94,18 +94,18 @@ class CreadorCargoManualServiceTest extends InscripcionesTestCase
         $this->assertSame(2, Cargo::whereNull('clave_idempotencia')->count());
     }
 
-    public function test_unexpected_save_failure_propagates_and_transaction_leaves_all_records_untouched(): void
+    public function test_exception_after_insert_propagates_and_transaction_rolls_the_insert_back(): void
     {
         $existing = Cargo::create($this->cargoAttributes(['observaciones' => 'intocable']));
         $inscripcion = $this->inscripcion->fresh()->getAttributes();
         $concepto = $this->concepto->fresh()->getAttributes();
         $eventosOriginales = clone Cargo::getEventDispatcher();
-        Cargo::saving(fn () => throw new RuntimeException('fallo real de persistencia'));
+        Cargo::created(fn () => throw new RuntimeException('fallo posterior al insert'));
         try {
             $this->service->crear($this->valid(), null);
             $this->fail('The unexpected persistence exception was not propagated.');
         } catch (RuntimeException $exception) {
-            $this->assertSame('fallo real de persistencia', $exception->getMessage());
+            $this->assertSame('fallo posterior al insert', $exception->getMessage());
         } finally {
             Cargo::setEventDispatcher($eventosOriginales);
         }
