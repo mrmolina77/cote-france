@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use DateTimeImmutable;
 use App\Exceptions\CargoManualInvalidoException;
 use App\Models\Cargo;
 use App\Models\ConceptoCobro;
@@ -136,7 +137,14 @@ class ShowCargos extends Component
                     if (ctype_digit($term)) $query->orWhere('cargo_id', (int) $term);
                     $query->orWhere('observaciones', 'like', $like)
                         ->orWhereHas('conceptoCobro', fn (Builder $conceptos) => $conceptos->where('nombre', 'like', $like)->orWhere('clave', 'like', $like))
-                        ->orWhereHas('inscripcion.prospecto', fn (Builder $prospectos) => $prospectos->where('prospectos_nombres', 'like', $like)->orWhere('prospectos_apellidos', 'like', $like));
+                        ->orWhereHas('inscripcion.prospecto', function (Builder $prospectos) use ($term) {
+                            foreach (preg_split('/\s+/u', $term, -1, PREG_SPLIT_NO_EMPTY) as $parte) {
+                                $like = '%'.$parte.'%';
+                                $prospectos->where(fn (Builder $nombre) => $nombre
+                                    ->where('prospectos_nombres', 'like', $like)
+                                    ->orWhere('prospectos_apellidos', 'like', $like));
+                            }
+                        });
                 });
             })
             ->when(in_array($this->estado, Cargo::ESTADOS, true), fn (Builder $query) => $query->where('estado', $this->estado))
@@ -192,6 +200,12 @@ class ShowCargos extends Component
 
     private function fechaValida($fecha): bool
     {
-        return is_string($fecha) && preg_match('/^\d{4}-\d{2}-\d{2}$/D', $fecha) === 1;
+        if (! is_string($fecha) || preg_match('/^\d{4}-\d{2}-\d{2}$/D', $fecha) !== 1) return false;
+
+        $valor = DateTimeImmutable::createFromFormat('!Y-m-d', $fecha);
+
+        return $valor !== false
+            && DateTimeImmutable::getLastErrors() === false
+            && $valor->format('Y-m-d') === $fecha;
     }
 }
