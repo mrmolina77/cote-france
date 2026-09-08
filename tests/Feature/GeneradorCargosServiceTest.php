@@ -7,6 +7,7 @@ use App\Models\Cargo;
 use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
 use App\Models\ResponsablePago;
+use App\Services\Facturacion\CreadorCargoManualService;
 use App\Services\Facturacion\GeneradorCargosService;
 use Illuminate\Database\QueryException;
 
@@ -68,6 +69,35 @@ class GeneradorCargosServiceTest extends InscripcionesTestCase
 
         $this->assertSame($first->pluck('cargo_id')->all(), $second->pluck('cargo_id')->all());
         $this->assertDatabaseCount('cargos', 3);
+    }
+
+    public function test_manual_charge_does_not_change_or_collide_with_automatic_idempotency(): void
+    {
+        $creator = $this->user('admin');
+        $inscripcion = $this->financialEnrollment(['numero_mensualidades' => 2]);
+        $automaticos = $this->service->generarParaInscripcion($inscripcion, $creator->getKey());
+        $automaticSnapshots = $automaticos->mapWithKeys(fn (Cargo $cargo) => [$cargo->getKey() => $cargo->fresh()->getRawOriginal()]);
+        $manualConcept = ConceptoCobro::create(['clave' => 'MATERIAL-EXTRA', 'nombre' => 'Material extraordinario', 'activo' => true]);
+
+        $manual = (new CreadorCargoManualService())->crear([
+            'inscripciones_id' => $inscripcion->getKey(), 'concepto_cobro_id' => $manualConcept->getKey(),
+            'subtotal' => '87.65', 'fecha_emision' => '2026-10-01', 'fecha_vencimiento' => '2026-10-15',
+            'periodo_anio' => 2026, 'periodo_mes' => 10, 'observaciones' => 'Material especial',
+        ], $creator->getKey())->fresh();
+
+        $this->assertSame([Cargo::ORIGEN_MANUAL, null, Cargo::ESTADO_PENDIENTE, '87.65', '87.65', '2026-10-01', '2026-10-15', 2026, 10, 'Material especial', $creator->getKey()],
+            [$manual->origen, $manual->clave_idempotencia, $manual->estado, $manual->subtotal, $manual->saldo_pendiente,
+                $manual->fecha_emision->format('Y-m-d'), $manual->fecha_vencimiento->format('Y-m-d'), $manual->periodo_anio,
+                $manual->periodo_mes, $manual->observaciones, $manual->created_by]);
+        foreach ($automaticSnapshots as $id => $snapshot) $this->assertSame($snapshot, Cargo::findOrFail($id)->getRawOriginal());
+
+        $manualSnapshot = $manual->getRawOriginal();
+        $regenerated = $this->service->generarParaInscripcion($inscripcion, $this->user('venta')->getKey());
+        $this->assertSame($automaticos->pluck('cargo_id')->all(), $regenerated->pluck('cargo_id')->all());
+        $this->assertSame($automaticSnapshots->keys()->all(), Cargo::where('origen', Cargo::ORIGEN_AUTOMATICO)->orderBy('cargo_id')->pluck('cargo_id')->all());
+        foreach ($automaticSnapshots as $id => $snapshot) $this->assertSame($snapshot, Cargo::findOrFail($id)->getRawOriginal());
+        $this->assertSame($manualSnapshot, $manual->fresh()->getRawOriginal());
+        $this->assertDatabaseCount('cargos', 4);
     }
 
     /** @dataProvider emptyAmounts */

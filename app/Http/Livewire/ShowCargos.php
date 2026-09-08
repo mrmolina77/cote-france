@@ -150,8 +150,8 @@ class ShowCargos extends Component
             ->when(in_array($this->estado, Cargo::ESTADOS, true), fn (Builder $query) => $query->where('estado', $this->estado))
             ->when(in_array($this->origen, Cargo::ORIGENES, true), fn (Builder $query) => $query->where('origen', $this->origen))
             ->when(ctype_digit((string) $this->concepto), fn (Builder $query) => $query->where('concepto_cobro_id', (int) $this->concepto))
-            ->when(ctype_digit((string) $this->periodo_anio_filtro), fn (Builder $query) => $query->where('periodo_anio', (int) $this->periodo_anio_filtro))
-            ->when(ctype_digit((string) $this->periodo_mes_filtro), fn (Builder $query) => $query->where('periodo_mes', (int) $this->periodo_mes_filtro))
+            ->when($this->enteroEnRango($this->periodo_anio_filtro, 1, 65535), fn (Builder $query) => $query->where('periodo_anio', (int) $this->periodo_anio_filtro))
+            ->when($this->enteroEnRango($this->periodo_mes_filtro, 1, 12), fn (Builder $query) => $query->where('periodo_mes', (int) $this->periodo_mes_filtro))
             ->when($this->fechaValida($this->vencimiento_desde), fn (Builder $query) => $query->whereDate('fecha_vencimiento', '>=', $this->vencimiento_desde))
             ->when($this->fechaValida($this->vencimiento_hasta), fn (Builder $query) => $query->whereDate('fecha_vencimiento', '<=', $this->vencimiento_hasta));
 
@@ -159,11 +159,11 @@ class ShowCargos extends Component
             $this->sort = 'fecha_vencimiento'; $this->direction = 'desc';
         }
         $query->orderBy($this->sort, $this->direction)->orderByDesc('cargo_id');
-        $perPage = in_array((int) $this->cant, [10, 25, 50, 100], true) ? (int) $this->cant : 25;
+        $perPage = ctype_digit((string) $this->cant) && in_array((int) $this->cant, [10, 25, 50, 100], true) ? (int) $this->cant : 25;
 
         return view('livewire.show-cargos', [
             'cargos' => $query->paginate($perPage),
-            'conceptosFiltro' => ConceptoCobro::query()->activos()->whereNotIn('clave', CreadorCargoManualService::CONCEPTOS_RESERVADOS)->ordenados()->get(['concepto_cobro_id', 'clave', 'nombre']),
+            'conceptosFiltro' => ConceptoCobro::query()->activos()->ordenados()->get(['concepto_cobro_id', 'clave', 'nombre']),
             'conceptosManuales' => ConceptoCobro::query()->activos()->whereNotIn('clave', CreadorCargoManualService::CONCEPTOS_RESERVADOS)->ordenados()->get(['concepto_cobro_id', 'clave', 'nombre']),
             'inscripciones' => $this->inscripcionesDisponibles(),
         ]);
@@ -207,5 +207,10 @@ class ShowCargos extends Component
         return $valor !== false
             && DateTimeImmutable::getLastErrors() === false
             && $valor->format('Y-m-d') === $fecha;
+    }
+
+    private function enteroEnRango($valor, int $minimo, int $maximo): bool
+    {
+        return ctype_digit((string) $valor) && (int) $valor >= $minimo && (int) $valor <= $maximo;
     }
 }
