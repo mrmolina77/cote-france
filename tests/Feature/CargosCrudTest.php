@@ -120,8 +120,43 @@ class CargosCrudTest extends InscripcionesTestCase
     {
         $this->actingAs($this->user('admin'));
         ConceptoCobro::create(['clave' => 'INACTIVO', 'nombre' => 'Inactivo', 'activo' => false]);
-        Livewire::test(ShowCargos::class)->call('create')->assertSet('open_form', true)->assertSet('subtotal', '')
-            ->assertSee('MATERIAL')->assertDontSee('INACTIVO')->assertDontSee('MENSUALIDAD')->call('closeForm')->assertSet('open_form', false)->assertSet('fecha_emision', '');
+        Livewire::test(ShowCargos::class)
+            ->call('create')
+            ->assertSet('open_form', true)
+            ->assertSet('busqueda_inscripcion', '')
+            ->assertSet('inscripciones_id', '')
+            ->assertSet('concepto_cobro_id', '')
+            ->assertSet('fecha_emision', now()->toDateString())
+            ->assertSet('fecha_vencimiento', now()->toDateString())
+            ->assertSet('subtotal', '')
+            ->assertSet('periodo_anio', '')
+            ->assertSet('periodo_mes', '')
+            ->assertSet('observaciones', '')
+            ->assertViewHas('conceptosManuales', function ($items) {
+                $keys = $items->pluck('clave')->all();
+
+                return in_array('MATERIAL', $keys, true)
+                    && count(array_intersect(CreadorCargoManualService::CONCEPTOS_RESERVADOS, $keys)) === 0
+                    && ! in_array('INACTIVO', $keys, true);
+            })
+            ->set('busqueda_inscripcion', 'Alumno temporal')
+            ->set('inscripciones_id', $this->inscripcion->getKey())
+            ->set('concepto_cobro_id', $this->concepto->getKey())
+            ->set('subtotal', '10.00')
+            ->set('periodo_anio', '2026')
+            ->set('periodo_mes', '9')
+            ->set('observaciones', 'Temporal')
+            ->call('closeForm')
+            ->assertSet('open_form', false)
+            ->assertSet('busqueda_inscripcion', '')
+            ->assertSet('inscripciones_id', '')
+            ->assertSet('concepto_cobro_id', '')
+            ->assertSet('fecha_emision', '')
+            ->assertSet('fecha_vencimiento', '')
+            ->assertSet('subtotal', '')
+            ->assertSet('periodo_anio', '')
+            ->assertSet('periodo_mes', '')
+            ->assertSet('observaciones', '');
     }
 
     public function test_admin_creates_charge_with_protected_server_values_and_alert(): void
