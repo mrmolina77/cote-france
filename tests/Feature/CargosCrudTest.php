@@ -225,7 +225,7 @@ class CargosCrudTest extends InscripcionesTestCase
         foreach ([['manual','pendiente',null,null,'Nota única'], ['automatico','pagado',2027,2,'Automático']] as [$origen,$estado,$anio,$mes,$nota]) {
             Cargo::create(['inscripciones_id'=>$this->inscripcion->getKey(),'concepto_cobro_id'=>$this->concepto->getKey(),'fecha_emision'=>'2026-01-01','fecha_vencimiento'=>'2026-02-01','moneda'=>'MXN','subtotal'=>'10.00','descuento'=>'0.00','recargo'=>'0.00','impuestos'=>'0.00','total'=>'10.00','saldo_pendiente'=>'10.00','estado'=>$estado,'origen'=>$origen,'periodo_anio'=>$anio,'periodo_mes'=>$mes,'observaciones'=>$nota]);
         }
-        Livewire::test(ShowCargos::class)->assertSee('Alumno')->assertSee('Sin periodo')->assertSee('2027-02')->set('search', 'Nota única')->assertSee('Nota única')->assertDontSee('Automático')
+        Livewire::test(ShowCargos::class)->assertSee('Alumno')->assertSee('Subtotal')->assertSee('Descuento')->assertSee('Total')->assertSee('Saldo')->assertSee('Sin periodo')->assertSee('2027-02')->set('search', 'Nota única')->assertSee('Nota única')->assertDontSee('Automático')
             ->set('search', '')->set('origen', 'automatico')->assertSee('Automático')->assertDontSee('Nota única')->set('cant', 10)->assertViewHas('cargos', fn($items) => $items->perPage() === 10)
             ->set('sort', 'cargo_id; DROP TABLE users')->set('direction', 'sideways')->assertSet('sort', 'fecha_vencimiento')->assertSet('direction', 'desc');
         $this->assertTrue(Schema::hasTable('users'));
