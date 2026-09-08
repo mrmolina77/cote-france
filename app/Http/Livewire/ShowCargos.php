@@ -155,7 +155,7 @@ class ShowCargos extends Component
 
         return view('livewire.show-cargos', [
             'cargos' => $query->paginate($perPage),
-            'conceptosFiltro' => ConceptoCobro::query()->ordenados()->get(['concepto_cobro_id', 'clave', 'nombre']),
+            'conceptosFiltro' => ConceptoCobro::query()->activos()->whereNotIn('clave', CreadorCargoManualService::CONCEPTOS_RESERVADOS)->ordenados()->get(['concepto_cobro_id', 'clave', 'nombre']),
             'conceptosManuales' => ConceptoCobro::query()->activos()->whereNotIn('clave', CreadorCargoManualService::CONCEPTOS_RESERVADOS)->ordenados()->get(['concepto_cobro_id', 'clave', 'nombre']),
             'inscripciones' => $this->inscripcionesDisponibles(),
         ]);
