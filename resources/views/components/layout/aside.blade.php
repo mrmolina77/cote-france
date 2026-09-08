@@ -133,6 +133,14 @@
             </x-layout.aside-link>
         @endcan
 
+        @can('manage-metodos-pago')
+            <x-layout.aside-link href="{{ route('configuracion.metodos-pago') }}"
+                                 :active="request()->routeIs('configuracion.metodos-pago')"
+                                 icon="fas fa-credit-card text-cyan-400 hover:text-cyan-200">
+                Métodos de pago
+            </x-layout.aside-link>
+        @endcan
+
         @can('manage-cargos')
             <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Facturación</div>
             <x-layout.aside-link href="{{ route('facturacion.cargos') }}"
