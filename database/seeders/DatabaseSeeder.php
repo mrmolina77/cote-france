@@ -39,5 +39,6 @@ class DatabaseSeeder extends Seeder
         $this->call(HoraSeeder::class);
         $this->call(DiaSeeder::class);
         $this->call(ConceptoCobroSeeder::class);
+        $this->call(MetodoPagoSeeder::class);
     }
 }
