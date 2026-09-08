@@ -6,6 +6,7 @@ use App\Http\Livewire\ShowGrupos;
 use App\Http\Livewire\ShowHorarios;
 use App\Http\Livewire\ShowInscripciones;
 use App\Http\Livewire\ShowConceptosCobro;
+use App\Http\Livewire\ShowMetodosPago;
 use App\Http\Livewire\ShowCargos;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
@@ -99,6 +100,13 @@ Route::middleware([
     'can:manage-conceptos-cobro',
 ])->get('/configuracion/conceptos-cobro', ShowConceptosCobro::class)
     ->name('configuracion.conceptos-cobro');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'can:manage-metodos-pago',
+])->get('/configuracion/metodos-pago', ShowMetodosPago::class)
+    ->name('configuracion.metodos-pago');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
