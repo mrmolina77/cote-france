@@ -23,7 +23,7 @@ class MarcarCargosVencidosCommandTest extends TestCase
 
     public function test_la_tarea_esta_registrada_una_sola_vez_diariamente_y_sin_solapamiento(): void
     {
-        $schedule = app(Schedule::class);
+        $schedule = new Schedule();
         $kernel = app(Kernel::class);
         $method = new \ReflectionMethod($kernel, 'schedule');
         $method->setAccessible(true);

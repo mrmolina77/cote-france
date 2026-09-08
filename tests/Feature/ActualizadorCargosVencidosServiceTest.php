@@ -43,7 +43,7 @@ class ActualizadorCargosVencidosServiceTest extends InscripcionesTestCase
         [$otroProspecto, $otroCurso, $otroGrupo] = $this->catalogs();
         $otraInscripcion = $this->enroll($otroProspecto, $otroCurso, $otroGrupo);
         $ajenoNoElegible = $this->cargo(Cargo::ESTADO_PAGADO, '2026-01-01', '0.00', $otraInscripcion);
-        $protegidos = $parcial->getRawOriginal();
+        $protegidos = $parcial->fresh()->getRawOriginal();
 
         $this->assertSame(2, $this->service->actualizar(CarbonImmutable::parse('2026-09-08', 'America/Mexico_City')));
 
