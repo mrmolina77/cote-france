@@ -37,6 +37,7 @@ class GeneradorCargosService
     /**
      * Genera o recupera idempotentemente el cargo de inscripción; retorna null si su importe es cero.
      *
+     * @return Cargo|null
      * @throws InscripcionFinancieraInvalidaException
      */
     public function generarCargoInscripcion(Inscripcion $inscripcion, ?int $usuarioId = null): ?Cargo
