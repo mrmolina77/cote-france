@@ -466,6 +466,7 @@ class InscripcionesTest extends InscripcionesTestCase
         $this->assertSame('Nuevo alumno Apellido',$responsable->nombre_razon_social);
         $this->assertSame('5551111111',$responsable->telefono);
         $this->assertSame('alumno@example.com',$responsable->correo);
+        $this->assertDatabaseCount('cargos', 0);
     }
 
     public function test_financial_configuration_scopes_distinguish_null_zero_and_positive_monthly_amounts(): void
