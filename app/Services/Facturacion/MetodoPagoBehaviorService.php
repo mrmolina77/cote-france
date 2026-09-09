@@ -48,6 +48,32 @@ class MetodoPagoBehaviorService
         return $metodo;
     }
 
+    /**
+     * Punto de entrada autorizado para preparar los datos de un nuevo pago.
+     *
+     * @return array{metodo: MetodoPago, datos: array<string, mixed>}
+     */
+    public function validarYNormalizarParaNuevoPago($metodoPagoId, array $datos): array
+    {
+        // seleccionarActivo valida el ID y vuelve a consultar el estado vigente en la BD.
+        $metodo = $this->seleccionarActivo($metodoPagoId);
+        $normalizados = $this->normalizarDatos($metodo, $datos);
+
+        $validados = Validator::make(
+            $normalizados,
+            $this->reglasValidacion($metodo)
+        )->validate();
+
+        $formaSat = $this->resolverFormaPagoSat($metodo, $normalizados['forma_pago_sat'] ?? null);
+        if ($formaSat !== null) {
+            $validados['forma_pago_sat'] = $formaSat;
+        } else {
+            unset($validados['forma_pago_sat']);
+        }
+
+        return ['metodo' => $metodo, 'datos' => $validados];
+    }
+
     public function configuracion(MetodoPago $metodo): array
     {
         return [
