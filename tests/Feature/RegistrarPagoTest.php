@@ -10,6 +10,7 @@ use App\Models\ResponsablePago;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 
@@ -53,6 +54,17 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertFalse(Gate::forUser($withoutRole)->allows('manage-pagos'));
         $this->app['auth']->forgetGuards();
         $this->get('/facturacion/pagos/registrar')->assertRedirect('/login');
+    }
+
+    public function test_navigation_link_is_visible_only_to_authorized_role(): void
+    {
+        $this->actingAs($this->user('admin'));
+        $this->assertStringContainsString('Registrar pago', Blade::render('<x-layout.aside />'));
+
+        foreach (['venta', 'profe', 'alum'] as $role) {
+            $this->actingAs($this->user($role));
+            $this->assertStringNotContainsString('Registrar pago', Blade::render('<x-layout.aside />'));
+        }
     }
 
     public function test_public_actions_reauthorize_independently(): void
@@ -102,7 +114,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
             ->assertSet('inscripcionSeleccionadaId', $this->inscripcion->getKey())
             ->set('busqueda', 'nadie')->assertSet('inscripcionSeleccionadaId', $this->inscripcion->getKey())
-            ->call('limpiarSeleccion')->assertSet('inscripcionSeleccionadaId', null)->assertSet('saldoPendiente', '0.00');
+            ->call('limpiarSeleccion')->assertSet('inscripcionSeleccionadaId', null);
 
         Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->call('seleccionarInscripcion', '1 OR 1=1')->assertNotFound();
         Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->call('seleccionarInscripcion', 999999)->assertNotFound();
@@ -113,13 +125,13 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->cargo(['saldo_pendiente' => '35.50']);
         $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
-            ->assertSet('saldoPendiente', '35.50');
+            ->assertSee('MXN $35.50');
         try {
             $component->call('seleccionarInscripcion', 999999);
         } catch (\Throwable $exception) {
             // Livewire converts this abort to a test response in some supported versions.
         }
-        $component->assertSet('inscripcionSeleccionadaId', null)->assertSet('saldoPendiente', '0.00');
+        $component->assertSet('inscripcionSeleccionadaId', null)->assertDontSee('MXN $35.50');
     }
 
     public function test_displays_student_course_group_responsible_and_tolerates_optional_nulls(): void
@@ -147,31 +159,101 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
         Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
-            ->assertSet('saldoPendiente', '60.60')->assertSet('saldoVencido', '50.50')
-            ->assertSet('cantidadCargosAbiertos', 3)->assertSet('cantidadCargosVencidos', 2)
-            ->assertSet('proximoVencimiento', '2026-09-09')
+            ->assertViewHas('resumen', fn ($resumen) => $resumen === [
+                'saldoPendiente' => '60.60', 'saldoVencido' => '50.50',
+                'cantidadCargosAbiertos' => 3, 'cantidadCargosVencidos' => 2,
+                'proximoVencimiento' => '2026-09-09',
+            ])
             ->assertSee('MXN $60.60')->assertDontSee('MXN $40.40');
     }
 
     public function test_orders_overdue_first_then_due_date_and_formats_periods(): void
     {
-        $this->cargo(['observaciones' => 'Futuro', 'fecha_vencimiento' => '2026-10-01', 'periodo_anio' => 2026, 'periodo_mes' => 10]);
-        $this->cargo(['observaciones' => 'Pasado', 'fecha_vencimiento' => '2026-09-01', 'periodo_anio' => null, 'periodo_mes' => null]);
+        $futuro = $this->cargo(['fecha_vencimiento' => '2026-10-01', 'periodo_anio' => 2026, 'periodo_mes' => 10]);
+        $actual = $this->cargo(['fecha_vencimiento' => '2026-09-09']);
+        $vencidoEstado = $this->cargo(['estado' => 'vencido', 'fecha_vencimiento' => '2026-09-08']);
+        $vencidoFechaA = $this->cargo(['fecha_vencimiento' => '2026-09-01', 'periodo_anio' => null, 'periodo_mes' => null]);
+        $vencidoFechaB = $this->cargo(['fecha_vencimiento' => '2026-09-01']);
         Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
-            ->assertSeeInOrder(['2026-09-01', '2026-10-01'])->assertSee('Sin periodo')->assertSee('2026-10');
+            ->assertViewHas('cargos', fn ($cargos) => $cargos->pluck('cargo_id')->all() === [
+                $vencidoFechaA->cargo_id, $vencidoFechaB->cargo_id, $vencidoEstado->cargo_id,
+                $actual->cargo_id, $futuro->cargo_id,
+            ])->assertSee('Sin periodo')->assertSee('2026-10');
+    }
+
+    public function test_tampered_selection_values_are_cleared_without_query_errors_or_stale_data(): void
+    {
+        $this->cargo(['saldo_pendiente' => '35.50']);
+        foreach (['texto', ['id' => 1], 0, -1, 999999] as $value) {
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->set('inscripcionSeleccionadaId', $value)
+                ->assertSet('inscripcionSeleccionadaId', null)
+                ->assertDontSee('MXN $35.50');
+        }
+    }
+
+    public function test_direct_valid_id_is_requeried_and_deleted_or_orphaned_enrollment_is_cleared(): void
+    {
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $prospecto->update(['prospectos_nombres' => 'Servidor Dos']);
+        $other = $this->enroll($prospecto, $curso, $grupo);
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->set('inscripcionSeleccionadaId', $other->getKey())->assertSee('Servidor Dos');
+        $other->delete();
+        $component->set('busqueda', 'refrescar')->assertSet('inscripcionSeleccionadaId', null)->assertDontSee('Servidor Dos');
+
+        $this->inscripcion->update(['prospectos_id' => 999999]);
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->set('inscripcionSeleccionadaId', $this->inscripcion->getKey())
+            ->assertSet('inscripcionSeleccionadaId', null);
+    }
+
+    public function test_summary_is_recalculated_and_cannot_be_forged_as_livewire_state(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '10.01']);
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->assertSee('MXN $10.01');
+        $cargo->update(['saldo_pendiente' => '25.99']);
+        $component->set('busqueda', 'render')->assertSee('MXN $25.99')->assertDontSee('MXN $10.01');
+
+        $public = collect((new \ReflectionClass(RegistrarPago::class))->getProperties(\ReflectionProperty::IS_PUBLIC))->pluck('name');
+        foreach (['saldoPendiente', 'saldoVencido', 'cantidadCargosAbiertos', 'cantidadCargosVencidos', 'proximoVencimiento'] as $property) {
+            $this->assertNotContains($property, $public);
+        }
+    }
+
+    public function test_empty_message_inactive_warning_and_each_non_open_charge_is_hidden(): void
+    {
+        $this->inscripcion->responsablePago->update(['activo' => false]);
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->assertSee('El responsable de pago está inactivo.')->assertSee('No hay cargos pendientes.');
+
+        foreach ([['pagado', '41.01'], ['cancelado', '42.02'], ['pendiente', '0.00']] as [$estado, $saldo]) {
+            $this->cargo(['estado' => $estado, 'saldo_pendiente' => $saldo, 'total' => $saldo]);
+        }
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->assertDontSee('MXN $41.01')->assertDontSee('MXN $42.02')->assertSee('No hay cargos pendientes.');
     }
 
     public function test_query_actions_and_repeated_render_do_not_write_financial_records(): void
     {
         $cargo = $this->cargo(['saldo_pendiente' => '75.25']);
-        $before = $cargo->fresh()->getRawOriginal();
+        $tables = ['pagos', 'consecutivos_pago', 'cargos', 'inscripciones', 'responsables_pago'];
+        $before = collect($tables)->mapWithKeys(fn ($table) => [$table => \DB::table($table)->get()->map(fn ($row) => (array) $row)->all()]);
         $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->set('busqueda', 'Marie')->call('seleccionarInscripcion', $this->inscripcion->getKey());
         $component->assertSee('75.25')->assertSee('75.25')->set('busqueda', 'otra')->call('limpiarSeleccion');
-        $this->assertSame($before, $cargo->fresh()->getRawOriginal());
+        foreach ($tables as $table) {
+            $after = \DB::table($table)->get()->map(fn ($row) => (array) $row)->all();
+            $this->assertEqualsCanonicalizing($before[$table], $after, "La consulta modificó {$table}.");
+        }
         $this->assertDatabaseCount('cargos', 1);
         $this->assertDatabaseCount('responsables_pago', 1);
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
     }
 
     private function cargo(array $overrides = []): Cargo
