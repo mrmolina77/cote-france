@@ -61,7 +61,7 @@ class ShowMetodosPago extends Component
             'activo' => ['boolean'],
         ];
         foreach (array_keys(self::REQUIREMENT_LABELS) as $field) $rules[$field] = ['boolean'];
-        $rules['requiere_forma_pago_sat'][] = Rule::prohibitedIf(fn () => $this->clave_forma_pago_sat !== '');
+        $rules['requiere_forma_pago_sat'][] = Rule::prohibitedIf(fn () => $this->clave_forma_pago_sat !== '' && (bool) $this->requiere_forma_pago_sat);
         return $rules;
     }
 

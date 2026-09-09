@@ -64,7 +64,7 @@ class MetodoPagoCrudConsistencyTest extends TestCase
 
     public function test_edicion_rechaza_contradiccion_sat_sin_cambios_parciales(): void
     {
-        $metodo = MetodoPago::create(['clave' => 'INMUTABLE', 'nombre' => 'Original', 'descripcion' => 'Conservar', 'orden' => 7, 'activo' => true, 'requiere_banco' => true, 'requiere_comprobante' => true]);
+        $metodo = MetodoPago::create(['clave' => 'INMUTABLE', 'nombre' => 'Original', 'descripcion' => 'Conservar', 'orden' => 7, 'activo' => true, 'requiere_banco' => true, 'requiere_comprobante' => true])->fresh();
         $antes = $metodo->only($metodo->getFillable());
 
         Livewire::test(ShowMetodosPago::class)->call('edit', $metodo->getKey())->set('clave', 'MANIPULADA')->set('nombre', 'Alterado')->set('descripcion', 'Alterada')->set('orden', 99)->set('activo', false)->set('requiere_banco', false)->set('requiere_terminal', true)->set('clave_forma_pago_sat', '03')->set('requiere_forma_pago_sat', true)->call('update')->assertHasErrors(['requiere_forma_pago_sat' => 'prohibited']);
@@ -75,8 +75,8 @@ class MetodoPagoCrudConsistencyTest extends TestCase
 
     public function test_id_manipulado_no_edita_otro_metodo_y_clave_es_inmutable(): void
     {
-        $uno = MetodoPago::create(['clave' => 'UNO', 'nombre' => 'Uno']);
-        $dos = MetodoPago::create(['clave' => 'DOS', 'nombre' => 'Dos']);
+        $uno = MetodoPago::create(['clave' => 'UNO', 'nombre' => 'Uno'])->fresh();
+        $dos = MetodoPago::create(['clave' => 'DOS', 'nombre' => 'Dos'])->fresh();
         $antesDos = $dos->getAttributes();
         Livewire::test(ShowMetodosPago::class)->call('edit', $uno->getKey())->set('editingId', $dos->getKey())->set('clave', 'HACK')->set('nombre', 'Hack')->call('update')->assertStatus(404);
         $this->assertSame($antesDos, $dos->fresh()->getAttributes());

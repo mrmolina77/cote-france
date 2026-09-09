@@ -198,11 +198,14 @@ class MetodosPagoCrudTest extends TestCase
         $other = $this->method(['clave' => 'OTRO', 'nombre' => 'Intacto']);
         $component = Livewire::test(ShowMetodosPago::class)->call('edit', $selected->getKey())->set('clave', 'ALTERADA')
             ->set('nombre', ' Nuevo ')->set('descripcion', ' ')->set('clave_forma_pago_sat', ' ')->set('orden', 65535)->set('activo', false);
-        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $index => $field) $component->set($field, $index % 2 === 0);
+        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $index => $field) {
+            $value = $index % 2 === 0 && $field !== 'requiere_rastreo_spei';
+            $component->set($field, $value);
+        }
         $component->call('update')->assertHasNoErrors()->assertEmitted('alert', 'El método de pago fue actualizado satisfactoriamente.')->assertSet('open_form', false);
         $selected->refresh();
         $this->assertSame('INMUTABLE', $selected->clave); $this->assertSame('Nuevo', $selected->nombre); $this->assertNull($selected->descripcion); $this->assertNull($selected->clave_forma_pago_sat); $this->assertSame(65535, $selected->orden); $this->assertFalse($selected->activo);
-        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $index => $field) $this->assertSame($index % 2 === 0, $selected->{$field});
+        foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $index => $field) $this->assertSame($index % 2 === 0 && $field !== 'requiere_rastreo_spei', (bool) $selected->{$field});
         $this->assertSame('Intacto', $other->fresh()->nombre); $this->assertDatabaseCount('metodos_pago', 2); $this->assertPristineForm($component);
     }
 
