@@ -85,7 +85,8 @@ class ShowMetodosPago extends Component
     public function edit($id): void
     {
         Gate::authorize('manage-metodos-pago');
-        $metodo = MetodoPago::findOrFail($id);
+        $metodo = MetodoPago::find($id);
+        abort_unless($metodo, 404);
         $this->resetForm();
         $this->editingId = $metodo->getKey();
         $this->editingSignature = $this->signature($metodo->getKey());
@@ -127,7 +128,8 @@ class ShowMetodosPago extends Component
     public function toggleEstado($id): void
     {
         Gate::authorize('manage-metodos-pago');
-        $metodo = MetodoPago::findOrFail($id);
+        $metodo = MetodoPago::find($id);
+        abort_unless($metodo, 404);
         $this->setActivo($metodo->getKey(), ! $metodo->activo);
     }
 
@@ -163,7 +165,8 @@ class ShowMetodosPago extends Component
     private function setActivo($id, bool $activo): void
     {
         Gate::authorize('manage-metodos-pago');
-        $metodo = MetodoPago::findOrFail($id);
+        $metodo = MetodoPago::find($id);
+        abort_unless($metodo, 404);
         $metodo->activo = $activo;
         $metodo->save();
         $this->emit('alert', $activo ? 'El método de pago fue activado.' : 'El método de pago fue desactivado.');

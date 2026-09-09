@@ -36,6 +36,7 @@
         </x-table>
     </div>
 
+    @if ($open_form)
     <x-dialog-modal wire:model="open_form">
         <x-slot name="title">{{ $editingId ? 'Editar método de pago' : 'Crear método de pago' }}</x-slot>
         <x-slot name="content">
@@ -51,6 +52,7 @@
         </x-slot>
         <x-slot name="footer"><button type="button" wire:click="closeForm" class="px-4 py-2 mr-2 border rounded">Cancelar</button><button type="button" wire:click="{{ $editingId ? 'update' : 'store' }}" wire:loading.attr="disabled" class="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"><span wire:loading.remove wire:target="store,update">Guardar</span><span wire:loading wire:target="store,update">Guardando…</span></button></x-slot>
     </x-dialog-modal>
+    @endif
 </div>
 
 @push('js')

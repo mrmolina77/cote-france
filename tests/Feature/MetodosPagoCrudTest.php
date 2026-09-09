@@ -272,9 +272,9 @@ class MetodosPagoCrudTest extends TestCase
     /** @dataProvider statusFilters */
     public function test_each_status_filter_is_correct_and_read_only(string $filter, bool $seesActive, bool $seesInactive): void
     {
-        $this->actingAs($this->user('admin')); $this->method(['clave' => 'ACTIVO_UNICO', 'activo' => true]); $this->method(['clave' => 'INACTIVO_UNICO', 'activo' => false]); $before = MetodoPago::all()->map->getAttributes()->all();
+        $this->actingAs($this->user('admin')); $this->method(['clave' => 'PAGO_ACTIVO_SOLO', 'activo' => true]); $this->method(['clave' => 'PAGO_INACTIVO_SOLO', 'activo' => false]); $before = MetodoPago::all()->map->getAttributes()->all();
         $test = Livewire::test(ShowMetodosPago::class)->set('page', 2)->set('estado', $filter)->assertSet('page', 1);
-        $seesActive ? $test->assertSee('ACTIVO_UNICO') : $test->assertDontSee('ACTIVO_UNICO'); $seesInactive ? $test->assertSee('INACTIVO_UNICO') : $test->assertDontSee('INACTIVO_UNICO');
+        $seesActive ? $test->assertSee('PAGO_ACTIVO_SOLO') : $test->assertDontSee('PAGO_ACTIVO_SOLO'); $seesInactive ? $test->assertSee('PAGO_INACTIVO_SOLO') : $test->assertDontSee('PAGO_INACTIVO_SOLO');
         $this->assertSame($before, MetodoPago::all()->map->getAttributes()->all());
     }
 
@@ -441,6 +441,6 @@ class MetodosPagoCrudTest extends TestCase
 
     private function method(array $attributes = []): MetodoPago
     {
-        return MetodoPago::create(array_merge(['clave' => 'METODO_'.uniqid(), 'nombre' => 'Método'], $attributes));
+        return MetodoPago::create(array_merge(['clave' => 'METODO_'.uniqid(), 'nombre' => 'Método'], $attributes))->fresh();
     }
 }
