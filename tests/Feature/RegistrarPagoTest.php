@@ -7,6 +7,7 @@ use App\Models\Cargo;
 use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
 use App\Models\MetodoPago;
+use App\Models\Pago;
 use App\Models\ResponsablePago;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -100,6 +101,87 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->assertSet('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1']);
     }
 
+    public function test_required_receipt_errors_use_the_visible_property_and_validate_type_and_size(): void
+    {
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF', 'rastreo_spei' => 'SPEI']);
+
+        $component->call('prepararPago')
+            ->assertHasErrors('comprobante')->assertHasNoErrors('datosMetodo.comprobante')
+            ->assertSet('mostrarConfirmacion', false)
+            ->set('comprobante', UploadedFile::fake()->create('virus.exe', 20, 'application/octet-stream'))
+            ->call('prepararPago')->assertHasErrors('comprobante')->assertSet('mostrarConfirmacion', false)
+            ->set('comprobante', UploadedFile::fake()->create('grande.pdf', 10241, 'application/pdf'))
+            ->call('prepararPago')->assertHasErrors('comprobante')->assertSet('mostrarConfirmacion', false)
+            ->set('comprobante', UploadedFile::fake()->create('valido.pdf', 100, 'application/pdf'))
+            ->call('prepararPago')->assertHasNoErrors('comprobante')->assertSet('mostrarConfirmacion', true);
+    }
+
+    public function test_method_change_clears_dynamic_errors_receipt_and_injected_hidden_fields(): void
+    {
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())->call('prepararPago')
+            ->assertHasErrors(['datosMetodo.banco', 'datosMetodo.referencia', 'datosMetodo.rastreo_spei', 'comprobante'])
+            ->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'))
+            ->set('metodoPagoId', $efectivo->getKey())
+            ->assertSet('datosMetodo', [])->assertSet('comprobante', null)->assertHasNoErrors()
+            ->set('datosMetodo', ['banco' => 'inyectado', 'referencia' => 'oculta'])
+            ->set('comprobante', UploadedFile::fake()->create('inyectado.pdf', 20, 'application/pdf'))
+            ->call('prepararPago')->assertSet('datosMetodo', [])->assertSet('comprobante', null)
+            ->assertSet('mostrarConfirmacion', true);
+    }
+
+    public function test_direct_confirmation_flag_cannot_display_an_unvalidated_review(): void
+    {
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->set('mostrarConfirmacion', true)
+            ->assertDontSee('Revisión del pago');
+
+        $cargo = $this->cargo();
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $efectivo->getKey())->call('prepararPago')->assertSee('Revisión del pago');
+
+        $component->set('montoRecibido', '0.01')->set('mostrarConfirmacion', true)
+            ->assertDontSee('Revisión del pago');
+    }
+
+    public function test_duplicate_warning_uses_identifiers_not_bank_and_ignores_cancelled_payments(): void
+    {
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $this->existingPayment($spei, ['banco' => 'Banco Uno', 'referencia' => 'OTRA', 'rastreo_spei' => 'OTRO']);
+
+        $base = fn () => Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('comprobante', UploadedFile::fake()->create('comprobante.pdf', 20, 'application/pdf'));
+
+        $base()->set('datosMetodo', ['banco' => 'Banco Uno', 'referencia' => 'NUEVA', 'rastreo_spei' => 'NUEVO'])
+            ->call('prepararPago')->assertDontSee('identificador coincidente')->assertSet('mostrarConfirmacion', true);
+        $base()->set('datosMetodo', ['banco' => 'Otro banco', 'referencia' => ' otra ', 'rastreo_spei' => 'NUEVO'])
+            ->call('prepararPago')->assertSee('identificador coincidente')->assertSet('mostrarConfirmacion', true)
+            ->assertViewHas('advertenciaDuplicidad', function ($advertencia) {
+                return ! str_contains($advertencia, 'Marie Claire') && ! str_contains($advertencia, 'Jean Dupont')
+                    && ! str_contains($advertencia, '100.00');
+            });
+
+        $cancelado = $this->existingPayment($spei, ['folio' => 'PAG-2026-999998', 'referencia' => 'CANCELADA', 'rastreo_spei' => 'CANCELADO']);
+        $cancelado->forceFill(['estado' => Pago::ESTADO_CANCELADO])->save();
+        $base()->set('datosMetodo', ['banco' => 'Banco Uno', 'referencia' => 'CANCELADA', 'rastreo_spei' => 'SIN-DUPLICAR'])
+            ->call('prepararPago')->assertDontSee('identificador coincidente')->assertSet('mostrarConfirmacion', true);
+    }
+
     public function test_received_amount_must_exactly_match_reconciled_total(): void
     {
         $cargo = $this->cargo(['saldo_pendiente' => '100.00']);
@@ -136,6 +218,30 @@ class RegistrarPagoTest extends InscripcionesTestCase
     {
         $this->actingAs($this->user('venta'));
         foreach ([['seleccionarInscripcion', [$this->inscripcion->getKey()]], ['limpiarSeleccion', []], ['updatedBusqueda', []], ['render', []]] as [$method, $arguments]) {
+            try {
+                (new RegistrarPago())->{$method}(...$arguments);
+                $this->fail("{$method} no rechazó al usuario.");
+            } catch (AuthorizationException $exception) {
+                $this->assertInstanceOf(AuthorizationException::class, $exception);
+            }
+        }
+    }
+
+    public function test_payment_hooks_and_actions_reauthorize_independently(): void
+    {
+        $this->actingAs($this->user('venta'));
+        $calls = [
+            ['updated', ['montoRecibido', '10.00']],
+            ['updatedMetodoPagoId', []],
+            ['updatedDatosMetodo', []],
+            ['updatedFechaPago', []],
+            ['updatedMontoRecibido', []],
+            ['updatedObservaciones', []],
+            ['updatedComprobante', []],
+            ['prepararPago', []],
+            ['volverAEditar', []],
+        ];
+        foreach ($calls as [$method, $arguments]) {
             try {
                 (new RegistrarPago())->{$method}(...$arguments);
                 $this->fail("{$method} no rechazó al usuario.");
@@ -645,6 +751,23 @@ class RegistrarPagoTest extends InscripcionesTestCase
             'fecha_emision' => '2026-09-01', 'fecha_vencimiento' => '2026-09-30', 'moneda' => 'MXN',
             'subtotal' => '100.00', 'descuento' => '0.00', 'recargo' => '0.00', 'impuestos' => '0.00',
             'total' => '100.00', 'saldo_pendiente' => '100.00', 'estado' => 'pendiente', 'origen' => 'manual',
+        ], $overrides));
+    }
+
+    private function existingPayment(MetodoPago $metodo, array $overrides = []): Pago
+    {
+        return Pago::create(array_merge([
+            'folio' => 'PAG-2026-999999',
+            'inscripciones_id' => $this->inscripcion->getKey(),
+            'prospectos_id' => $this->inscripcion->prospectos_id,
+            'responsable_pago_id' => $this->inscripcion->responsable_pago_id,
+            'fecha_pago' => '2026-09-09 11:00:00',
+            'zona_horaria' => config('app.timezone'),
+            'moneda' => 'MXN',
+            'tipo_cambio' => '1.000000',
+            'monto' => '100.00',
+            'metodo_pago_id' => $metodo->getKey(),
+            'forma_pago_sat' => $metodo->clave_forma_pago_sat,
         ], $overrides));
     }
 }
