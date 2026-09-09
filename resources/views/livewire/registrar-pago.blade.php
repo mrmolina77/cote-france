@@ -82,12 +82,16 @@
             </div>
 
             <div class="bg-white rounded-lg shadow overflow-x-auto">
-                @if($cargos->isNotEmpty())
+                @if($cargos->isNotEmpty() || $errors->has('cargosSeleccionados'))
                     <div class="flex flex-wrap gap-2 items-center justify-between p-4 border-b">
-                        <div class="flex gap-2">
-                            <button type="button" wire:click="seleccionarTodosCargos" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Seleccionar todos</button>
-                            <button type="button" wire:click="limpiarSeleccionCargos" class="px-3 py-2 border rounded text-gray-700 hover:bg-gray-50">Limpiar selección</button>
-                        </div>
+                        @if($cargos->isNotEmpty())
+                            <div class="flex gap-2">
+                                <button type="button" wire:click="seleccionarTodosCargos" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Seleccionar todos</button>
+                                <button type="button" wire:click="limpiarSeleccionCargos" class="px-3 py-2 border rounded text-gray-700 hover:bg-gray-50">Limpiar selección</button>
+                            </div>
+                        @else
+                            <div></div>
+                        @endif
                         @error('cargosSeleccionados') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endif
