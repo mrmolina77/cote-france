@@ -4,26 +4,80 @@ namespace App\Http\Livewire;
 
 use App\Models\Cargo;
 use App\Models\Inscripcion;
+use App\Models\Pago;
+use App\Services\Facturacion\MetodoPagoBehaviorService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class RegistrarPago extends Component
 {
+    use WithFileUploads;
+
+    /** A payment timestamp may be at most five minutes ahead of the server clock. */
+    private const TOLERANCIA_FECHA_FUTURA_MINUTOS = 5;
+
     public $busqueda = '';
     public $inscripcionSeleccionadaId;
     public $cargosSeleccionados = [];
     public $importesAplicar = [];
+    public $fechaPago;
+    public $metodoPagoId;
+    public $montoRecibido;
+    public $datosMetodo = [];
+    public $observaciones;
+    public $comprobante;
+    public $mostrarConfirmacion = false;
 
     public function mount(): void
     {
         Gate::authorize('manage-pagos');
+        $this->fechaPago = now()->format('Y-m-d\TH:i');
     }
 
     public function updatedBusqueda(): void
     {
         Gate::authorize('manage-pagos');
     }
+
+    public function updated($name, $value): void
+    {
+        Gate::authorize('manage-pagos');
+        if (in_array($name, ['inscripcionSeleccionadaId', 'cargosSeleccionados', 'importesAplicar', 'metodoPagoId', 'datosMetodo', 'fechaPago', 'montoRecibido', 'comprobante', 'observaciones'], true)
+            || str_starts_with($name, 'importesAplicar.') || str_starts_with($name, 'datosMetodo.')) {
+            $this->mostrarConfirmacion = false;
+        }
+    }
+
+    public function updatedMetodoPagoId(): void
+    {
+        Gate::authorize('manage-pagos');
+        $this->mostrarConfirmacion = false;
+        $this->datosMetodo = [];
+        $this->comprobante = null;
+        $this->resetErrorBag(['metodoPagoId', 'datosMetodo', 'comprobante']);
+
+        try {
+            $this->servicioMetodos()->seleccionarActivo($this->metodoPagoId);
+        } catch (ValidationException $exception) {
+            $this->copiarErrores($exception, 'metodoPagoId');
+        }
+    }
+
+    public function updatedDatosMetodo(): void
+    {
+        Gate::authorize('manage-pagos');
+        $this->mostrarConfirmacion = false;
+    }
+
+    public function updatedFechaPago(): void { Gate::authorize('manage-pagos'); $this->mostrarConfirmacion = false; }
+    public function updatedMontoRecibido(): void { Gate::authorize('manage-pagos'); $this->mostrarConfirmacion = false; }
+    public function updatedObservaciones(): void { Gate::authorize('manage-pagos'); $this->mostrarConfirmacion = false; }
+    public function updatedComprobante(): void { Gate::authorize('manage-pagos'); $this->mostrarConfirmacion = false; }
 
     public function seleccionarInscripcion($inscripcionId): void
     {
@@ -69,6 +123,7 @@ class RegistrarPago extends Component
             $this->cargosSeleccionados[] = $cargo->getKey();
         }
         $this->importesAplicar[$key] = $cargo->saldo_pendiente;
+        $this->actualizarMontoPropuesto();
         $this->resetErrorBag('importesAplicar.'.$key);
     }
 
@@ -86,6 +141,7 @@ class RegistrarPago extends Component
             $this->normalizarIdsSeleccionados(), fn (int $id) => $id !== $cargoId
         ));
         unset($this->importesAplicar[(string) $cargoId], $this->importesAplicar[$cargoId]);
+        $this->actualizarMontoPropuesto();
         $this->resetErrorBag('importesAplicar.'.$cargoId);
     }
 
@@ -101,6 +157,7 @@ class RegistrarPago extends Component
         $cargos = $this->consultaCargosAbiertos($inscripcionId)->get();
         $this->cargosSeleccionados = $cargos->modelKeys();
         $this->importesAplicar = $cargos->mapWithKeys(fn (Cargo $cargo) => [(string) $cargo->getKey() => $cargo->saldo_pendiente])->all();
+        $this->actualizarMontoPropuesto();
         $this->resetErrorBag();
     }
 
@@ -143,6 +200,7 @@ class RegistrarPago extends Component
             $this->addError('importesAplicar.'.$id, 'El importe no puede superar el saldo pendiente actual.');
         } else {
             $this->importesAplicar[(string) $id] = $this->centavosAImporte($centavos);
+            $this->actualizarMontoPropuesto();
             $this->resetErrorBag('importesAplicar.'.$id);
         }
     }
@@ -150,11 +208,64 @@ class RegistrarPago extends Component
     public function prepararPago(): void
     {
         Gate::authorize('manage-pagos');
-        $this->reconciliarSeleccion();
-        if ($this->resumenSeleccion()['cantidad'] === 0) {
-            $this->addError('cargosSeleccionados', 'Selecciona al menos un cargo válido.');
+        $this->mostrarConfirmacion = false;
+        $this->resetErrorBag();
+        $inscripcionId = $this->normalizarId($this->inscripcionSeleccionadaId);
+        $inscripcion = $inscripcionId ? Inscripcion::query()->with(['prospecto', 'responsablePago'])->find($inscripcionId) : null;
+        if (! $inscripcion || ! $inscripcion->prospecto || $inscripcion->estatus === 'cancelada') {
+            $this->addError('inscripcionSeleccionadaId', 'La inscripción seleccionada ya no es válida.');
+            return;
         }
+        if (! $inscripcion->responsablePago || ! $inscripcion->responsablePago->activo) {
+            $this->addError('inscripcionSeleccionadaId', 'La inscripción no tiene un responsable de pago activo.');
+            return;
+        }
+        $this->reconciliarSeleccion();
+        $resumen = $this->resumenSeleccion();
+        if ($resumen['cantidad'] === 0) {
+            $this->addError('cargosSeleccionados', 'Selecciona al menos un cargo válido.');
+            return;
+        }
+
+        $fecha = $this->validarFechaPago();
+        $monto = $this->importeACentavos($this->montoRecibido);
+        if ($monto === null || $monto <= 0) $this->addError('montoRecibido', 'El importe recibido debe ser mayor a 0.00 y tener máximo dos decimales.');
+        elseif ($monto !== $this->importeACentavos($resumen['total'])) $this->addError('montoRecibido', 'El importe recibido debe coincidir exactamente con el total aplicado.');
+        else $this->montoRecibido = $this->centavosAImporte($monto);
+
+        $this->observaciones = is_string($this->observaciones) ? (trim($this->observaciones) ?: null) : $this->observaciones;
+        Validator::make(['observaciones' => $this->observaciones], ['observaciones' => ['nullable', 'string', 'max:2000']], [], ['observaciones' => 'observaciones'])
+            ->after(function ($validator) { foreach ($validator->errors()->get('observaciones') as $message) $this->addError('observaciones', $message); })->passes();
+
+        try {
+            $metodoVigente = $this->servicioMetodos()->seleccionarActivo($this->metodoPagoId);
+            if ($metodoVigente->requiere_anticipo_relacionado) {
+                $this->datosMetodo = [];
+                $this->comprobante = null;
+                $this->addError('metodoPagoId', 'La aplicación de anticipos se habilitará en el bloque correspondiente.');
+                return;
+            }
+            $datosCapturados = is_array($this->datosMetodo) ? $this->datosMetodo : [];
+            $datosCapturados['comprobante'] = $this->comprobante;
+            $resultado = $this->servicioMetodos()->validarYNormalizarParaNuevoPago($this->metodoPagoId, $datosCapturados);
+            $metodo = $resultado['metodo'];
+            unset($resultado['datos']['comprobante']);
+            $this->datosMetodo = $resultado['datos'];
+            if ($metodo->requiere_comprobante) {
+                try { $this->validateOnly('comprobante', ['comprobante' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240']]); }
+                catch (ValidationException $e) { /* Livewire has already populated the error bag. */ }
+            } else {
+                $this->comprobante = null;
+                $this->resetErrorBag('comprobante');
+            }
+        } catch (ValidationException $exception) {
+            $this->copiarErrores($exception, 'datosMetodo');
+        }
+
+        if ($fecha && ! $this->getErrorBag()->isNotEmpty()) $this->mostrarConfirmacion = true;
     }
+
+    public function volverAEditar(): void { Gate::authorize('manage-pagos'); $this->mostrarConfirmacion = false; }
 
     public function render()
     {
@@ -193,8 +304,13 @@ class RegistrarPago extends Component
         }
 
         $resumenSeleccion = $this->resumenSeleccion();
+        $metodosPago = $this->servicioMetodos()->metodosDisponibles();
+        $configuracionMetodo = null;
+        try { $configuracionMetodo = $this->servicioMetodos()->configuracion($this->servicioMetodos()->seleccionarActivo($this->metodoPagoId)); } catch (ValidationException $e) {}
+        $resumenConfirmacion = $this->mostrarConfirmacion ? $this->crearResumenConfirmacion($inscripcion, $resumenSeleccion) : null;
+        $advertenciaDuplicidad = $this->advertenciaDuplicidad();
 
-        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen', 'resumenSeleccion'));
+        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen', 'resumenSeleccion', 'metodosPago', 'configuracionMetodo', 'resumenConfirmacion', 'advertenciaDuplicidad'));
     }
 
     private function consultaBusqueda(string $termino): Builder
@@ -256,6 +372,7 @@ class RegistrarPago extends Component
     {
         $this->inscripcionSeleccionadaId = null;
         $this->limpiarSeleccionCargosInterno();
+        $this->mostrarConfirmacion = false;
     }
 
     private function normalizarId($value): ?int
@@ -429,6 +546,89 @@ class RegistrarPago extends Component
     {
         $this->cargosSeleccionados = [];
         $this->importesAplicar = [];
+        $this->montoRecibido = null;
+        $this->mostrarConfirmacion = false;
+    }
+
+    private function actualizarMontoPropuesto(): void
+    {
+        $this->montoRecibido = $this->resumenSeleccion()['total'];
+        $this->mostrarConfirmacion = false;
+    }
+
+    private function validarFechaPago(): ?Carbon
+    {
+        if (! is_string($this->fechaPago)) {
+            $this->addError('fechaPago', 'La fecha y hora del pago no es válida.');
+            return null;
+        }
+        try {
+            $fecha = Carbon::createFromFormat('Y-m-d\TH:i', $this->fechaPago, config('app.timezone'));
+            if (! $fecha || $fecha->format('Y-m-d\TH:i') !== $this->fechaPago) throw new \InvalidArgumentException();
+        } catch (\Throwable $exception) {
+            $this->addError('fechaPago', 'La fecha y hora del pago no es válida.');
+            return null;
+        }
+        if ($fecha->greaterThan(now()->addMinutes(self::TOLERANCIA_FECHA_FUTURA_MINUTOS))) {
+            $this->addError('fechaPago', 'La fecha del pago no puede superar por más de 5 minutos la hora del servidor.');
+            return null;
+        }
+        return $fecha;
+    }
+
+    private function servicioMetodos(): MetodoPagoBehaviorService
+    {
+        return app(MetodoPagoBehaviorService::class);
+    }
+
+    private function copiarErrores(ValidationException $exception, string $prefijo): void
+    {
+        foreach ($exception->errors() as $campo => $mensajes) {
+            $destino = $campo === 'metodo_pago_id' ? 'metodoPagoId' : $prefijo.'.'.$campo;
+            foreach ($mensajes as $mensaje) $this->addError($destino, $mensaje);
+        }
+    }
+
+    private function advertenciaDuplicidad(): ?string
+    {
+        if (! is_array($this->datosMetodo)) return null;
+        $campos = ['banco', 'referencia', 'rastreo_spei', 'numero_cheque', 'numero_autorizacion'];
+        $valores = [];
+        try {
+            $metodo = $this->servicioMetodos()->seleccionarActivo($this->metodoPagoId);
+            $aplicables = array_keys($this->servicioMetodos()->camposAplicables($metodo));
+        } catch (ValidationException $e) { return null; }
+        foreach (array_intersect($campos, $aplicables) as $campo) {
+            $valor = $this->datosMetodo[$campo] ?? null;
+            if (is_string($valor) && trim($valor) !== '') $valores[$campo] = trim($valor);
+        }
+        if ($valores === []) return null;
+        $existe = Pago::query()->where('estado', '!=', Pago::ESTADO_CANCELADO)
+            ->where(function (Builder $query) use ($valores) {
+                foreach ($valores as $campo => $valor) $query->orWhere($campo, $valor);
+            })->exists();
+        return $existe ? 'Existe otro pago activo con una referencia o identificador coincidente. Verifica los datos antes de continuar.' : null;
+    }
+
+    private function crearResumenConfirmacion(?Inscripcion $inscripcion, array $seleccion): ?array
+    {
+        if (! $inscripcion) return null;
+        try {
+            $datosCapturados = is_array($this->datosMetodo) ? $this->datosMetodo : [];
+            $datosCapturados['comprobante'] = $this->comprobante;
+            $resultado = $this->servicioMetodos()->validarYNormalizarParaNuevoPago($this->metodoPagoId, $datosCapturados);
+            unset($resultado['datos']['comprobante']);
+        } catch (ValidationException $e) { return null; }
+        return [
+            'alumno' => trim(($inscripcion->prospecto?->prospectos_nombres ?? '').' '.($inscripcion->prospecto?->prospectos_apellidos ?? '')),
+            'inscripcion' => $inscripcion->getKey(),
+            'responsable' => $inscripcion->responsablePago?->nombre_razon_social,
+            'cantidad' => $seleccion['cantidad'], 'totalRecibido' => $this->montoRecibido,
+            'totalAplicado' => $seleccion['total'], 'saldoRestante' => $seleccion['saldoRestante'],
+            'moneda' => $inscripcion->moneda, 'metodo' => $resultado['metodo']->nombre,
+            'datos' => $resultado['datos'], 'fecha' => $this->fechaPago,
+            'zonaHoraria' => config('app.timezone'), 'comprobante' => $resultado['metodo']->requiere_comprobante && $this->comprobante !== null,
+        ];
     }
 
     private function normalizarInscripcionId($value): ?int

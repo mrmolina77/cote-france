@@ -6,6 +6,7 @@ use App\Http\Livewire\RegistrarPago;
 use App\Models\Cargo;
 use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
+use App\Models\MetodoPago;
 use App\Models\ResponsablePago;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -13,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use ReflectionClass;
 use ReflectionProperty;
@@ -59,6 +61,64 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertFalse(Gate::forUser($withoutRole)->allows('manage-pagos'));
         $this->actingAs($withoutRole)->get('/facturacion/pagos/registrar')->assertForbidden();
         Livewire::actingAs($withoutRole)->test(RegistrarPago::class)->assertForbidden();
+    }
+
+    public function test_payment_information_is_prepared_without_persistence(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '60.60']);
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->assertSet('montoRecibido', '60.60')
+            ->set('metodoPagoId', $efectivo->getKey())
+            ->set('observaciones', '  Pago en recepción  ')
+            ->call('prepararPago')
+            ->assertSet('montoRecibido', '60.60')
+            ->assertSet('observaciones', 'Pago en recepción')
+            ->assertSet('mostrarConfirmacion', true)
+            ->assertSee('Revisión del pago');
+
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '60.60']);
+    }
+
+    public function test_transfer_requires_server_configured_fields_and_temporary_receipt(): void
+    {
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())->call('prepararPago')
+            ->assertHasErrors(['datosMetodo.banco', 'datosMetodo.referencia', 'datosMetodo.rastreo_spei']);
+
+        $component->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1', 'proveedor' => 'inyectado'])
+            ->set('comprobante', UploadedFile::fake()->create('comprobante.pdf', 100, 'application/pdf'))
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->assertSet('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1']);
+    }
+
+    public function test_received_amount_must_exactly_match_reconciled_total(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '100.00']);
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('importesAplicar.'.$cargo->getKey(), '33.33')->set('metodoPagoId', $efectivo->getKey())
+            ->set('montoRecibido', '33.34')->call('prepararPago')
+            ->assertHasErrors('montoRecibido')->assertSet('mostrarConfirmacion', false);
+    }
+
+    public function test_changing_payment_data_invalidates_prepared_summary(): void
+    {
+        $cargo = $this->cargo();
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $efectivo->getKey())->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->set('observaciones', 'modificada')->assertSet('mostrarConfirmacion', false);
     }
 
     public function test_navigation_link_is_visible_only_to_authorized_role(): void
