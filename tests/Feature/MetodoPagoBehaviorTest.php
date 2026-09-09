@@ -58,11 +58,56 @@ class MetodoPagoBehaviorTest extends TestCase
             MetodoPago::CHEQUE_NOMINATIVO => ['banco', 'numero_cheque', 'comprobante'],
             MetodoPago::TRANSFERENCIA_SPEI => ['banco', 'referencia', 'rastreo_spei', 'comprobante'],
             MetodoPago::TARJETA_CREDITO => ['numero_autorizacion', 'terminal', 'ultimos_4_digitos'],
+            MetodoPago::MONEDERO_ELECTRONICO => ['referencia', 'proveedor'],
+            MetodoPago::DINERO_ELECTRONICO => ['referencia', 'proveedor'],
+            MetodoPago::TARJETA_DEBITO => ['numero_autorizacion', 'terminal', 'ultimos_4_digitos'],
+            MetodoPago::TARJETA_SERVICIOS => ['numero_autorizacion'],
+            MetodoPago::APLICACION_ANTICIPO => ['anticipo_relacionado_id'],
+            MetodoPago::INTERMEDIARIO_PAGOS => ['referencia', 'proveedor'],
+            MetodoPago::POR_DEFINIR => [],
             MetodoPago::DEPOSITO_BANCARIO => ['forma_pago_sat', 'banco', 'referencia', 'comprobante'],
         ];
         foreach ($casos as $clave => $campos) {
             $metodo = MetodoPago::where('clave', $clave)->firstOrFail();
             $this->assertSame($campos, array_keys($this->service->camposAplicables($metodo)), $clave);
+        }
+    }
+
+    public function test_flujo_integral_normaliza_valida_descarta_campos_y_fija_sat(): void
+    {
+        $intermediario = MetodoPago::where('clave', MetodoPago::INTERMEDIARIO_PAGOS)->firstOrFail();
+        $antes = $intermediario->getAttributes();
+
+        $resultado = $this->service->validarYNormalizarParaNuevoPago($intermediario->getKey(), [
+            'proveedor' => '  Proveedor  ', 'referencia' => ' REF ', 'terminal' => 'oculto', 'forma_pago_sat' => '99',
+        ]);
+
+        $this->assertTrue($resultado['metodo']->is($intermediario));
+        $this->assertSame(['referencia' => 'REF', 'proveedor' => 'Proveedor', 'forma_pago_sat' => '31'], $resultado['datos']);
+        $this->assertSame($antes, $intermediario->fresh()->getAttributes());
+    }
+
+    public function test_flujo_integral_normaliza_antes_de_validar_campos_obligatorios(): void
+    {
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $this->expectException(ValidationException::class);
+        $this->service->validarYNormalizarParaNuevoPago($spei->getKey(), [
+            'banco' => '   ', 'referencia' => 'R', 'rastreo_spei' => 'S', 'comprobante' => 'archivo',
+        ]);
+    }
+
+    public function test_flujo_integral_rechaza_ids_invalidos_inexistentes_e_inactivos(): void
+    {
+        $metodo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $metodo->update(['activo' => false]);
+
+        foreach ([null, '', 0, -1, 1.5, 'texto', '1 OR 1=1', 999999, $metodo->getKey()] as $id) {
+            try {
+                $this->service->validarYNormalizarParaNuevoPago($id, ['banco' => 'no debe devolverse']);
+                $this->fail('Debió rechazar el método de pago.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('metodo_pago_id', $exception->errors());
+            }
         }
     }
 
@@ -142,12 +187,38 @@ class MetodoPagoBehaviorTest extends TestCase
         $this->assertSame('31', $intermediario->fresh()->clave_forma_pago_sat);
         $this->assertSame('99', $personalizado->fresh()->clave_forma_pago_sat);
         $migration->down();
-        $this->assertNull($intermediario->fresh()->clave_forma_pago_sat);
+        $intermediario->refresh();
+        $this->assertNull($intermediario->clave_forma_pago_sat);
         $this->assertTrue($intermediario->requiere_forma_pago_sat);
 
         $intermediario->update(['nombre' => 'Configuración administrativa', 'clave_forma_pago_sat' => '31', 'requiere_forma_pago_sat' => false]);
         $migration->down();
         $this->assertSame('31', $intermediario->fresh()->clave_forma_pago_sat);
+    }
+
+    public function test_migracion_no_toca_el_intermediario_objetivo_si_fue_personalizado(): void
+    {
+        $migration = require database_path('migrations/2026_09_09_000001_align_intermediario_pagos_sat_key.php');
+        $intermediario = MetodoPago::where('clave', MetodoPago::INTERMEDIARIO_PAGOS)->firstOrFail();
+        $base = ['clave_forma_pago_sat' => null, 'requiere_forma_pago_sat' => true];
+
+        foreach ([
+            ['nombre' => 'Nombre administrativo'],
+            ['orden' => 101],
+            ['activo' => false],
+            ['requiere_banco' => true],
+            ['clave_forma_pago_sat' => '99', 'requiere_forma_pago_sat' => true],
+            ['requiere_forma_pago_sat' => false],
+        ] as $personalizacion) {
+            $intermediario->update(array_merge($base, $personalizacion));
+            $migration->up();
+            $intermediario->refresh();
+            $this->assertSame($personalizacion['clave_forma_pago_sat'] ?? null, $intermediario->clave_forma_pago_sat);
+            $this->assertSame($personalizacion['requiere_forma_pago_sat'] ?? true, $intermediario->requiere_forma_pago_sat);
+            $intermediario->update([
+                'nombre' => 'Intermediario de pagos', 'orden' => 100, 'activo' => true, 'requiere_banco' => false,
+            ]);
+        }
     }
 
     private function migration()
