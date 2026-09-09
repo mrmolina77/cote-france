@@ -149,5 +149,13 @@
                 Cargos
             </x-layout.aside-link>
         @endcan
+
+        @can('manage-pagos')
+            <x-layout.aside-link href="{{ route('facturacion.pagos.registrar') }}"
+                                 :active="request()->routeIs('facturacion.pagos.registrar')"
+                                 icon="fas fa-cash-register text-green-400 hover:text-green-200">
+                Registrar pago
+            </x-layout.aside-link>
+        @endcan
     </nav>
 </aside>
