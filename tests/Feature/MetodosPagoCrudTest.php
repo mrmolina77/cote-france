@@ -9,6 +9,7 @@ use App\Models\User;
 use Database\Seeders\MetodoPagoSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -118,6 +119,34 @@ class MetodosPagoCrudTest extends TestCase
     {
         $admin = $this->actingAs($this->user('admin')); foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $admin->view($view)->assertSee('Métodos de pago')->assertSee(route('configuracion.metodos-pago'));
         $other = $this->actingAs($this->user('venta')); foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $other->view($view)->assertDontSee('Métodos de pago');
+    }
+
+    public function test_payment_method_navigation_links_are_active_on_their_route(): void
+    {
+        $this->actingAs($this->user('admin'));
+        $url = route('configuracion.metodos-pago');
+
+        $aside = $this->navigationView('components.layout.aside', 'configuracion.metodos-pago');
+        $this->assertStringContainsString($url, $aside); $this->assertStringContainsString('Métodos de pago', $aside); $this->assertStringContainsString('bg-blue-600 text-white', $aside);
+        $this->assertMatchesRegularExpression('/href="'.preg_quote($url, '/').'"[\s\S]*?class="bg-blue-600 text-white[^\"]*"/', $aside);
+
+        $mobile = $this->navigationView('components.layout.mobile-header', 'configuracion.metodos-pago');
+        $this->assertStringContainsString($url, $mobile); $this->assertStringContainsString('Métodos de pago', $mobile);
+        $this->assertMatchesRegularExpression('/href="'.preg_quote($url, '/').'" class="[^"]*active-nav-link[^"]*"/', $mobile);
+    }
+
+    public function test_payment_method_navigation_links_remain_visible_but_inactive_on_another_route(): void
+    {
+        $this->actingAs($this->user('admin'));
+        $url = route('configuracion.metodos-pago');
+        $aside = $this->navigationView('components.layout.aside', 'dashboard');
+        $this->assertStringContainsString($url, $aside); $this->assertStringContainsString('Métodos de pago', $aside);
+        $this->assertMatchesRegularExpression('/href="'.preg_quote($url, '/').'"[\s\S]*?class="text-gray-300 hover:bg-gray-700 hover:text-white[^"]*"/', $aside);
+
+        $mobile = $this->navigationView('components.layout.mobile-header', 'dashboard');
+        $this->assertStringContainsString($url, $mobile); $this->assertStringContainsString('Métodos de pago', $mobile);
+        $this->assertMatchesRegularExpression('/href="'.preg_quote($url, '/').'" class="[^"]*opacity-75 hover:opacity-100[^"]*"/', $mobile);
+        $this->assertDoesNotMatchRegularExpression('/href="'.preg_quote($url, '/').'" class="[^"]*active-nav-link[^"]*"/', $mobile);
     }
 
     public function test_create_and_close_restore_the_complete_pristine_form(): void
@@ -266,14 +295,46 @@ class MetodosPagoCrudTest extends TestCase
     public static function invalidPageSizes(): array { return [[0], [-1], [11], [1000], ['arbitrario'], [null]]; }
 
     /** @dataProvider sortableColumns */
-    public function test_every_whitelisted_column_sorts_and_toggles_safely(string $column): void
+    public function test_every_whitelisted_column_sorts_and_toggles_safely(string $column, array $values, array $ascending, array $descending): void
     {
-        $this->actingAs($this->user('admin')); $this->method(['clave' => 'B', 'nombre' => 'Beta', 'orden' => 2]); $this->method(['clave' => 'A', 'nombre' => 'Alfa', 'orden' => 1]);
+        $this->actingAs($this->user('admin'));
+        $records = [
+            'A' => $this->method(['clave' => 'SORT_A', 'nombre' => 'Gamma']),
+            'B' => $this->method(['clave' => 'SORT_B', 'nombre' => 'Alfa']),
+            'C' => $this->method(['clave' => 'SORT_C', 'nombre' => 'Beta']),
+        ];
+        foreach ($records as $key => $record) {
+            if ($column === 'metodo_pago_id') {
+                DB::table('metodos_pago')->where('metodo_pago_id', $record->getKey())->update(['metodo_pago_id' => $values[$key]]);
+                $record = MetodoPago::findOrFail($values[$key]);
+                $records[$key] = $record;
+            } else {
+                $record->{$column} = $values[$key];
+                $record->save();
+            }
+        }
+        $snapshot = MetodoPago::orderBy('metodo_pago_id')->get()->map->getAttributes()->all();
         $test = Livewire::test(ShowMetodosPago::class)->call('order', $column)->assertSet('sort', $column);
         $first = $test->get('direction'); $this->assertContains($first, ['asc', 'desc']);
-        $test->call('order', $column); $this->assertNotSame($first, $test->get('direction')); $this->assertContains($test->get('direction'), ['asc', 'desc']);
+        $expectedFirst = $first === 'asc' ? $ascending : $descending;
+        $test->assertViewHas('metodos', fn ($items) => $items->pluck('clave')->all() === array_map(fn ($key) => $records[$key]->clave, $expectedFirst));
+        $test->call('order', $column); $second = $test->get('direction');
+        $this->assertNotSame($first, $second); $this->assertContains($second, ['asc', 'desc']);
+        $expectedSecond = $second === 'asc' ? $ascending : $descending;
+        $test->assertViewHas('metodos', fn ($items) => $items->pluck('clave')->all() === array_map(fn ($key) => $records[$key]->clave, $expectedSecond));
+        $this->assertSame($snapshot, MetodoPago::orderBy('metodo_pago_id')->get()->map->getAttributes()->all());
     }
-    public static function sortableColumns(): array { return array_map(static fn ($v) => [$v], ['metodo_pago_id', 'clave', 'nombre', 'clave_forma_pago_sat', 'activo', 'orden']); }
+    public static function sortableColumns(): array
+    {
+        return [
+            'internal id' => ['metodo_pago_id', ['A' => 30, 'B' => 10, 'C' => 20], ['B', 'C', 'A'], ['A', 'C', 'B']],
+            'internal key' => ['clave', ['A' => 'ZZ', 'B' => 'AA', 'C' => 'MM'], ['B', 'C', 'A'], ['A', 'C', 'B']],
+            'name' => ['nombre', ['A' => 'Gamma', 'B' => 'Alfa', 'C' => 'Beta'], ['B', 'C', 'A'], ['A', 'C', 'B']],
+            'SAT key with ties' => ['clave_forma_pago_sat', ['A' => '03', 'B' => '01', 'C' => '01'], ['B', 'C', 'A'], ['A', 'B', 'C']],
+            'active with ties' => ['activo', ['A' => true, 'B' => false, 'C' => false], ['B', 'C', 'A'], ['A', 'B', 'C']],
+            'order with ties' => ['orden', ['A' => 2, 'B' => 1, 'C' => 1], ['B', 'C', 'A'], ['A', 'B', 'C']],
+        ];
+    }
 
     public function test_default_order_uses_name_as_tie_breaker(): void
     {
@@ -303,7 +364,7 @@ class MetodosPagoCrudTest extends TestCase
     public function test_navigation_and_direct_component_access_are_denied_to_every_non_admin_role(?string $role): void
     {
         $user = $role === null ? User::factory()->create(['roles_id' => null]) : $this->user($role); $this->actingAs($user);
-        foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $this->view($view)->assertDontSee(route('configuracion.metodos-pago'));
+        foreach (['components.layout.aside', 'components.layout.mobile-header'] as $view) $this->assertStringNotContainsString(route('configuracion.metodos-pago'), $this->navigationView($view, 'configuracion.metodos-pago'));
         Livewire::test(ShowMetodosPago::class)->assertForbidden();
     }
     public static function unauthorizedRoles(): array { return [['venta'], ['profe'], ['alum'], [null]]; }
@@ -322,6 +383,39 @@ class MetodosPagoCrudTest extends TestCase
     }
     public static function additionalInvalidBoundaries(): array { return [['clave', '', 'required'], ['clave', str_repeat('A', 51), 'max'], ['clave', 'CON-GUION', 'regex'], ['clave', 'ESPECIAL!', 'regex'], ['nombre', str_repeat('N', 121), 'max'], ['clave_forma_pago_sat', 'A1', 'regex'], ['clave_forma_pago_sat', '#1', 'regex'], ['orden', 'texto', 'integer']]; }
 
+    /** @dataProvider invalidSatKeysForUpdate */
+    public function test_invalid_sat_key_update_is_atomic(string $invalidSatKey): void
+    {
+        $this->actingAs($this->user('admin'));
+        $method = $this->method(['clave' => 'SAT_INMUTABLE', 'nombre' => 'Original', 'descripcion' => 'Sin cambios', 'clave_forma_pago_sat' => '03', 'activo' => true, 'orden' => 7, 'requiere_banco' => false, 'requiere_terminal' => true]);
+        $original = $method->getAttributes(); $count = MetodoPago::count();
+
+        Livewire::test(ShowMetodosPago::class)->call('edit', $method->getKey())->set('clave', 'CLAVE_ALTERADA')->set('nombre', 'Modificado')->set('descripcion', 'También modificado')->set('activo', false)->set('orden', 99)->set('requiere_banco', true)->set('requiere_terminal', false)->set('clave_forma_pago_sat', $invalidSatKey)->call('update')->assertHasErrors(['clave_forma_pago_sat' => 'regex']);
+
+        $this->assertSame($original, $method->fresh()->getAttributes());
+        $this->assertSame('SAT_INMUTABLE', $method->fresh()->clave);
+        $this->assertSame($count, MetodoPago::count());
+    }
+
+    public static function invalidSatKeysForUpdate(): array { return [['1'], ['001'], ['A1'], ['#1']]; }
+
+    /** @dataProvider invalidOrdersForUpdate */
+    public function test_invalid_order_update_is_atomic($invalidOrder, string $rule): void
+    {
+        $this->actingAs($this->user('admin'));
+        $method = $this->method(['clave' => 'ORDEN_INMUTABLE', 'nombre' => 'Original', 'descripcion' => 'Sin cambios', 'clave_forma_pago_sat' => '03', 'activo' => true, 'orden' => 7, 'requiere_banco' => false]);
+        $other = $this->method(['clave' => 'TESTIGO', 'nombre' => 'Testigo', 'orden' => 8, 'requiere_terminal' => true]);
+        $original = $method->getAttributes(); $otherOriginal = $other->getAttributes(); $count = MetodoPago::count();
+
+        Livewire::test(ShowMetodosPago::class)->call('edit', $method->getKey())->set('nombre', 'Modificado')->set('descripcion', 'También modificado')->set('clave_forma_pago_sat', '01')->set('activo', false)->set('requiere_banco', true)->set('orden', $invalidOrder)->call('update')->assertHasErrors(['orden' => $rule]);
+
+        $this->assertSame($original, $method->fresh()->getAttributes());
+        $this->assertSame($otherOriginal, $other->fresh()->getAttributes());
+        $this->assertSame($count, MetodoPago::count());
+    }
+
+    public static function invalidOrdersForUpdate(): array { return [[-1, 'min'], [65536, 'max'], [1.5, 'integer'], ['texto', 'integer']]; }
+
     private function assertPristineForm($component): void
     {
         $component->assertSet('editingId', null)->assertSet('editingSignature', null)->assertSet('clave', '')->assertSet('nombre', '')->assertSet('descripcion', '')->assertSet('clave_forma_pago_sat', '')->assertSet('orden', 0)->assertSet('activo', true)->assertHasNoErrors();
@@ -329,6 +423,16 @@ class MetodosPagoCrudTest extends TestCase
     }
 
     private function fieldSuffix(string $field): string { return strtoupper(substr(hash('sha1', $field), 0, 10)); }
+
+    private function navigationView(string $view, string $routeName): string
+    {
+        $request = Request::create(route($routeName), 'GET');
+        $route = app('router')->getRoutes()->match($request);
+        $request->setRouteResolver(static fn () => $route);
+        $this->app->instance('request', $request);
+
+        return view($view)->render();
+    }
 
     private function user(string $role): User
     {
