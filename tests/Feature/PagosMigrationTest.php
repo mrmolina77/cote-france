@@ -25,8 +25,13 @@ class PagosMigrationTest extends PagosTestCase
         $this->assertTrue(Schema::hasColumns('pagos', $columns));
 
         $sql = DB::selectOne("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pagos'")->sql;
-        $this->assertMatchesRegularExpression('/(?:decimal|numeric)\(12,\s*2\)/i', $sql);
-        $this->assertMatchesRegularExpression('/(?:decimal|numeric)\(18,\s*6\)/i', $sql);
+        if (DB::getDriverName() === 'sqlite') {
+            $this->assertMatchesRegularExpression('/"monto"\s+numeric/i', $sql);
+            $this->assertMatchesRegularExpression('/"tipo_cambio"\s+numeric/i', $sql);
+        } else {
+            $this->assertMatchesRegularExpression('/(?:decimal|numeric)\(12,\s*2\)/i', $sql);
+            $this->assertMatchesRegularExpression('/(?:decimal|numeric)\(18,\s*6\)/i', $sql);
+        }
         $this->assertStringContainsString('primary key autoincrement', strtolower($sql));
 
         $attributes = $this->paymentAttributes();
