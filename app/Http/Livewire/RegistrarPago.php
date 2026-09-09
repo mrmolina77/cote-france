@@ -12,6 +12,8 @@ class RegistrarPago extends Component
 {
     public $busqueda = '';
     public $inscripcionSeleccionadaId;
+    public $cargosSeleccionados = [];
+    public $importesAplicar = [];
 
     public function mount(): void
     {
@@ -27,6 +29,8 @@ class RegistrarPago extends Component
     {
         Gate::authorize('manage-pagos');
         $this->limpiarDatosSeleccionados();
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         $inscripcionId = $this->normalizarInscripcionId($inscripcionId);
         abort_unless($inscripcionId !== null, 404);
@@ -46,6 +50,97 @@ class RegistrarPago extends Component
         $this->limpiarDatosSeleccionados();
         $this->resetErrorBag();
         $this->resetValidation();
+    }
+
+    public function seleccionarCargo($cargoId): void
+    {
+        Gate::authorize('manage-pagos');
+        $cargoId = $this->normalizarId($cargoId);
+        $cargo = $cargoId === null ? null : $this->consultarCargoElegible($cargoId);
+
+        if (! $cargo) {
+            $this->addError('cargosSeleccionados', 'El cargo seleccionado ya no está disponible.');
+            return;
+        }
+
+        $key = (string) $cargo->getKey();
+        if (! in_array($cargo->getKey(), $this->cargosSeleccionados, true)) {
+            $this->cargosSeleccionados[] = $cargo->getKey();
+        }
+        $this->importesAplicar[$key] = $cargo->saldo_pendiente;
+        $this->resetErrorBag('importesAplicar.'.$key);
+    }
+
+    public function deseleccionarCargo($cargoId): void
+    {
+        Gate::authorize('manage-pagos');
+        $cargoId = $this->normalizarId($cargoId);
+        if ($cargoId === null) {
+            $this->addError('cargosSeleccionados', 'El identificador del cargo no es válido.');
+            return;
+        }
+
+        $this->cargosSeleccionados = array_values(array_filter(
+            $this->normalizarIdsSeleccionados(), fn (int $id) => $id !== $cargoId
+        ));
+        unset($this->importesAplicar[(string) $cargoId], $this->importesAplicar[$cargoId]);
+        $this->resetErrorBag('importesAplicar.'.$cargoId);
+    }
+
+    public function seleccionarTodosCargos(): void
+    {
+        Gate::authorize('manage-pagos');
+        $inscripcionId = $this->normalizarId($this->inscripcionSeleccionadaId);
+        if ($inscripcionId === null || ! $this->inscripcionPersistida($inscripcionId)) {
+            $this->limpiarSeleccionCargosInterno();
+            return;
+        }
+
+        $cargos = $this->consultaCargosAbiertos($inscripcionId)->get();
+        $this->cargosSeleccionados = $cargos->modelKeys();
+        $this->importesAplicar = $cargos->mapWithKeys(fn (Cargo $cargo) => [(string) $cargo->getKey() => $cargo->saldo_pendiente])->all();
+        $this->resetErrorBag();
+    }
+
+    public function limpiarSeleccionCargos(): void
+    {
+        Gate::authorize('manage-pagos');
+        $this->limpiarSeleccionCargosInterno();
+        $this->resetErrorBag();
+        $this->resetValidation();
+    }
+
+    public function updatedImportesAplicar($value, $key): void
+    {
+        Gate::authorize('manage-pagos');
+        $id = $this->normalizarId($key);
+        if ($id === null || ! in_array($id, $this->normalizarIdsSeleccionados(), true)) {
+            unset($this->importesAplicar[$key]);
+            $this->addError('importesAplicar.'.$key, 'El cargo no forma parte de la selección válida.');
+            return;
+        }
+
+        $cargo = $this->consultarCargoElegible($id);
+        $centavos = $this->importeACentavos($value);
+        if (! $cargo) {
+            $this->retirarCargoObsoleto($id, 'El cargo seleccionado ya no está disponible.');
+        } elseif ($centavos === null || $centavos <= 0) {
+            $this->addError('importesAplicar.'.$id, 'El importe debe ser mayor a 0.00 y tener máximo dos decimales.');
+        } elseif ($centavos > $this->importeACentavos($cargo->saldo_pendiente)) {
+            $this->addError('importesAplicar.'.$id, 'El importe no puede superar el saldo pendiente actual.');
+        } else {
+            $this->importesAplicar[(string) $id] = $this->centavosAImporte($centavos);
+            $this->resetErrorBag('importesAplicar.'.$id);
+        }
+    }
+
+    public function prepararPago(): void
+    {
+        Gate::authorize('manage-pagos');
+        $this->reconciliarSeleccion();
+        if ($this->resumenSeleccion()['cantidad'] === 0) {
+            $this->addError('cargosSeleccionados', 'Selecciona al menos un cargo válido.');
+        }
     }
 
     public function render()
@@ -78,12 +173,15 @@ class RegistrarPago extends Component
                     ->orderBy('cargo_id')
                     ->get();
                 $resumen = $this->calcularResumenFinanciero($cargos);
+                $this->reconciliarSeleccion();
             }
         } elseif ($this->inscripcionSeleccionadaId !== null) {
             $this->limpiarDatosSeleccionados();
         }
 
-        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen'));
+        $resumenSeleccion = $this->resumenSeleccion();
+
+        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen', 'resumenSeleccion'));
     }
 
     private function consultaBusqueda(string $termino): Builder
@@ -109,6 +207,7 @@ class RegistrarPago extends Component
     {
         return Cargo::query()
             ->where('inscripciones_id', $inscripcionId)
+            ->where('moneda', $this->inscripcionPersistida($inscripcionId)?->moneda)
             ->whereIn('estado', [Cargo::ESTADO_PENDIENTE, Cargo::ESTADO_PARCIAL, Cargo::ESTADO_VENCIDO])
             ->where('saldo_pendiente', '>', '0.00');
     }
@@ -143,6 +242,133 @@ class RegistrarPago extends Component
     private function limpiarDatosSeleccionados(): void
     {
         $this->inscripcionSeleccionadaId = null;
+        $this->limpiarSeleccionCargosInterno();
+    }
+
+    private function normalizarId($value): ?int
+    {
+        return $this->normalizarInscripcionId($value);
+    }
+
+    private function inscripcionPersistida(int $id): ?Inscripcion
+    {
+        return Inscripcion::query()->find($id);
+    }
+
+    private function consultarCargoElegible(int $cargoId): ?Cargo
+    {
+        $inscripcionId = $this->normalizarId($this->inscripcionSeleccionadaId);
+        if ($inscripcionId === null || ! $this->inscripcionPersistida($inscripcionId)) {
+            return null;
+        }
+
+        return $this->consultaCargosAbiertos($inscripcionId)->find($cargoId);
+    }
+
+    private function normalizarIdsSeleccionados(): array
+    {
+        if (! is_array($this->cargosSeleccionados)) {
+            return [];
+        }
+        $ids = [];
+        foreach ($this->cargosSeleccionados as $value) {
+            $id = $this->normalizarId($value);
+            if ($id !== null) {
+                $ids[$id] = $id;
+            }
+        }
+        return array_values($ids);
+    }
+
+    private function reconciliarSeleccion(): void
+    {
+        $ids = $this->normalizarIdsSeleccionados();
+        $validos = [];
+        foreach ($ids as $id) {
+            $cargo = $this->consultarCargoElegible($id);
+            $importe = is_array($this->importesAplicar) ? ($this->importesAplicar[(string) $id] ?? null) : null;
+            $centavos = $this->importeACentavos($importe);
+            if (! $cargo) {
+                $this->retirarCargoObsoleto($id, 'Un cargo seleccionado ya no está disponible y fue retirado.');
+                continue;
+            }
+            if ($centavos !== null && $centavos > $this->importeACentavos($cargo->saldo_pendiente)) {
+                $this->retirarCargoObsoleto($id, 'El saldo del cargo cambió y fue retirado de la selección.');
+                continue;
+            }
+            if ($centavos === null || $centavos <= 0) {
+                $this->addError('importesAplicar.'.$id, 'Revisa el importe: debe ser positivo y no superar el saldo pendiente actual.');
+                $validos[] = $id;
+                continue;
+            }
+            $validos[] = $id;
+            $this->importesAplicar[(string) $id] = $this->centavosAImporte($centavos);
+        }
+        $this->cargosSeleccionados = $validos;
+        if (! is_array($this->importesAplicar)) {
+            $this->importesAplicar = [];
+        }
+        $this->importesAplicar = array_intersect_key($this->importesAplicar, array_flip(array_map('strval', $validos)));
+    }
+
+    private function retirarCargoObsoleto(int $id, string $mensaje): void
+    {
+        $this->cargosSeleccionados = array_values(array_diff($this->normalizarIdsSeleccionados(), [$id]));
+        if (is_array($this->importesAplicar)) {
+            unset($this->importesAplicar[(string) $id], $this->importesAplicar[$id]);
+        }
+        $this->addError('cargosSeleccionados', $mensaje);
+    }
+
+    private function resumenSeleccion(): array
+    {
+        $total = $restante = 0;
+        $restantes = [];
+        $parciales = false;
+        $cantidadValida = 0;
+        $ids = $this->normalizarIdsSeleccionados();
+        $cargos = empty($ids) ? collect() : Cargo::query()->whereKey($ids)->get()->keyBy(fn (Cargo $cargo) => $cargo->getKey());
+        foreach ($ids as $id) {
+            $cargo = $cargos->get($id);
+            $aplicar = $this->importeACentavos($this->importesAplicar[(string) $id] ?? null);
+            if (! $cargo || $aplicar === null || $aplicar <= 0 || $aplicar > $this->importeACentavos($cargo->saldo_pendiente)) {
+                continue;
+            }
+            $saldo = $this->importeACentavos($cargo->saldo_pendiente);
+            $cantidadValida++;
+            $total += $aplicar;
+            $restante += $saldo - $aplicar;
+            $restantes[$id] = $this->centavosAImporte($saldo - $aplicar);
+            $parciales = $parciales || $aplicar < $saldo;
+        }
+        return ['cantidad' => $cantidadValida, 'total' => $this->centavosAImporte($total), 'moneda' => $this->inscripcionPersistida((int) $this->inscripcionSeleccionadaId)?->moneda ?? 'MXN', 'tieneParciales' => $parciales, 'saldoRestante' => $this->centavosAImporte($restante), 'restantes' => $restantes];
+    }
+
+    private function importeACentavos($importe): ?int
+    {
+        if (! is_string($importe) && ! is_int($importe)) {
+            return null;
+        }
+        $importe = (string) $importe;
+        if (! preg_match('/^(0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/D', $importe, $partes)) {
+            return null;
+        }
+        $enteros = filter_var($partes[1], FILTER_VALIDATE_INT);
+        if ($enteros === false || $enteros > intdiv(PHP_INT_MAX - 99, 100)) {
+            return null;
+        }
+        return ($enteros * 100) + (int) str_pad($partes[2] ?? '', 2, '0');
+    }
+
+    private function centavosAImporte(int $centavos): string
+    {
+        return sprintf('%d.%02d', intdiv($centavos, 100), $centavos % 100);
+    }
+
+    private function limpiarSeleccionCargosInterno(): void
+    {
+        $this->cargosSeleccionados = [];
+        $this->importesAplicar = [];
     }
 
     private function normalizarInscripcionId($value): ?int

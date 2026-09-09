@@ -82,25 +82,57 @@
             </div>
 
             <div class="bg-white rounded-lg shadow overflow-x-auto">
+                @if($cargos->isNotEmpty())
+                    <div class="flex flex-wrap gap-2 items-center justify-between p-4 border-b">
+                        <div class="flex gap-2">
+                            <button type="button" wire:click="seleccionarTodosCargos" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Seleccionar todos</button>
+                            <button type="button" wire:click="limpiarSeleccionCargos" class="px-3 py-2 border rounded text-gray-700 hover:bg-gray-50">Limpiar selección</button>
+                        </div>
+                        @error('cargosSeleccionados') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                @endif
                 <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3 text-left">Concepto</th><th class="p-3 text-left">Periodo</th><th class="p-3 text-left">Emisión</th><th class="p-3 text-left">Vencimiento</th><th class="p-3 text-right">Total original</th><th class="p-3 text-right">Saldo pendiente</th><th class="p-3 text-left">Estado</th></tr></thead>
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="p-3 text-left">Aplicar</th><th class="p-3 text-left">Concepto</th><th class="p-3 text-left">Periodo</th><th class="p-3 text-left">Emisión</th><th class="p-3 text-left">Vencimiento</th><th class="p-3 text-right">Total original</th><th class="p-3 text-right">Saldo pendiente</th><th class="p-3 text-left">Importe a aplicar</th><th class="p-3 text-right">Saldo restante estimado</th><th class="p-3 text-left">Estado</th></tr></thead>
                     <tbody>
                     @forelse($cargos as $cargo)
                         @php($estadoClases=['pendiente'=>'bg-yellow-100 text-yellow-800','parcial'=>'bg-blue-100 text-blue-800','vencido'=>'bg-red-100 text-red-800'])
                         <tr class="border-t" wire:key="cargo-pago-{{ $cargo->cargo_id }}">
+                            <td class="p-3"><input type="checkbox" aria-label="Aplicar cargo {{ $cargo->cargo_id }}" @checked(in_array($cargo->cargo_id, $cargosSeleccionados, true)) wire:click="{{ in_array($cargo->cargo_id, $cargosSeleccionados, true) ? 'deseleccionarCargo' : 'seleccionarCargo' }}({{ $cargo->cargo_id }})" /></td>
                             <td class="p-3">{{ $cargo->conceptoCobro?->nombre ?? $cargo->conceptoCobro?->clave ?? 'Sin concepto' }}</td>
                             <td class="p-3 whitespace-nowrap">{{ $cargo->periodo_anio && $cargo->periodo_mes ? sprintf('%04d-%02d', $cargo->periodo_anio, $cargo->periodo_mes) : 'Sin periodo' }}</td>
                             <td class="p-3 whitespace-nowrap">{{ $cargo->fecha_emision?->format('Y-m-d') ?? 'Sin fecha' }}</td>
                             <td class="p-3 whitespace-nowrap">{{ $cargo->fecha_vencimiento?->format('Y-m-d') ?? 'Sin fecha' }}</td>
                             <td class="p-3 text-right whitespace-nowrap">{{ $cargo->moneda }} ${{ $cargo->total }}</td>
                             <td class="p-3 text-right whitespace-nowrap font-semibold">{{ $cargo->moneda }} ${{ $cargo->saldo_pendiente }}</td>
+                            <td class="p-3 min-w-[12rem]">
+                                @if(in_array($cargo->cargo_id, $cargosSeleccionados, true))
+                                    <input type="text" inputmode="decimal" wire:model.lazy="importesAplicar.{{ $cargo->cargo_id }}" class="w-full rounded border-gray-300" aria-label="Importe a aplicar al cargo {{ $cargo->cargo_id }}" />
+                                    @error('importesAplicar.'.$cargo->cargo_id) <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
+                            </td>
+                            <td class="p-3 text-right whitespace-nowrap">{{ $cargo->moneda }} ${{ $resumenSeleccion['restantes'][$cargo->cargo_id] ?? $cargo->saldo_pendiente }}</td>
                             <td class="p-3"><span class="px-2 py-1 rounded {{ $estadoClases[$cargo->estado] ?? 'bg-gray-100 text-gray-700' }}">{{ ucfirst($cargo->estado) }}</span></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="p-8 text-center text-gray-500">No hay cargos pendientes.</td></tr>
+                        <tr><td colspan="10" class="p-8 text-center text-gray-500">No hay cargos pendientes.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
+                @if($cargos->isNotEmpty())
+                    <div class="p-5 border-t bg-gray-50">
+                        <h3 class="font-semibold text-gray-800">Resumen de la selección</h3>
+                        <dl class="mt-3 grid grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+                            <div><dt class="text-gray-500">Cargos</dt><dd class="font-semibold">{{ $resumenSeleccion['cantidad'] }}</dd></div>
+                            <div><dt class="text-gray-500">Total a aplicar</dt><dd class="font-semibold">{{ $resumenSeleccion['moneda'] }} ${{ $resumenSeleccion['total'] }}</dd></div>
+                            <div><dt class="text-gray-500">Moneda</dt><dd class="font-semibold">{{ $resumenSeleccion['moneda'] }}</dd></div>
+                            <div><dt class="text-gray-500">Pagos parciales</dt><dd class="font-semibold">{{ $resumenSeleccion['tieneParciales'] ? 'Sí' : 'No' }}</dd></div>
+                            <div><dt class="text-gray-500">Saldo restante estimado</dt><dd class="font-semibold">{{ $resumenSeleccion['moneda'] }} ${{ $resumenSeleccion['saldoRestante'] }}</dd></div>
+                        </dl>
+                        <button type="button" wire:click="prepararPago" @disabled($resumenSeleccion['cantidad'] === 0) class="mt-4 px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed">Preparar pago</button>
+                    </div>
+                @endif
             </div>
         @endif
     </div>

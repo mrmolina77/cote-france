@@ -258,6 +258,94 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertDatabaseCount('consecutivos_pago', 0);
     }
 
+    public function test_selects_one_or_many_eligible_charges_and_proposes_full_balances(): void
+    {
+        $first = $this->cargo(['saldo_pendiente' => '10.10']);
+        $second = $this->cargo(['saldo_pendiente' => '20.20']);
+        $third = $this->cargo(['saldo_pendiente' => '30.30']);
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $first->getKey())
+            ->assertSet('cargosSeleccionados', [$first->getKey()])
+            ->assertSet('importesAplicar.'.$first->getKey(), '10.10')
+            ->call('seleccionarTodosCargos')
+            ->assertSet('cargosSeleccionados', [$first->getKey(), $second->getKey(), $third->getKey()])
+            ->assertSee('MXN $60.60');
+    }
+
+    public function test_validates_and_normalizes_partial_amounts_with_exact_remaining_balance(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '100.00']);
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->set('importesAplicar.'.$cargo->getKey(), '33.33')
+            ->assertSet('importesAplicar.'.$cargo->getKey(), '33.33')
+            ->assertSee('MXN $66.67');
+
+        foreach (['0', '0.00', '-1', '1.001', '1e2', '1,000', 'texto', 'INF', 'NAN'] as $invalid) {
+            $component->set('importesAplicar.'.$cargo->getKey(), $invalid)
+                ->assertHasErrors('importesAplicar.'.$cargo->getKey());
+        }
+        $component->set('importesAplicar.'.$cargo->getKey(), ['manipulado'])
+            ->assertHasErrors('importesAplicar.'.$cargo->getKey());
+    }
+
+    public function test_rejects_tampered_ineligible_and_foreign_charge_ids(): void
+    {
+        [$p, $c, $g] = $this->catalogs();
+        $other = $this->enroll($p, $c, $g);
+        $foreign = $this->cargo(['inscripciones_id' => $other->getKey()]);
+        $paid = $this->cargo(['estado' => 'pagado']);
+        $cancelled = $this->cargo(['estado' => 'cancelado']);
+        $zero = $this->cargo(['saldo_pendiente' => '0.00']);
+
+        foreach ([$foreign->getKey(), $paid->getKey(), $cancelled->getKey(), $zero->getKey(), 999999, -1, '1 OR 1=1', ['id' => 1]] as $id) {
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+                ->call('seleccionarCargo', $id)
+                ->assertSet('cargosSeleccionados', [])
+                ->assertHasErrors('cargosSeleccionados');
+        }
+    }
+
+    public function test_deselect_and_enrollment_change_clear_amounts_and_errors(): void
+    {
+        $cargo = $this->cargo();
+        [$p, $c, $g] = $this->catalogs();
+        $other = $this->enroll($p, $c, $g);
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->set('importesAplicar.'.$cargo->getKey(), '0')
+            ->assertHasErrors('importesAplicar.'.$cargo->getKey())
+            ->call('deseleccionarCargo', $cargo->getKey())
+            ->assertSet('cargosSeleccionados', [])->assertSet('importesAplicar', [])->assertHasNoErrors()
+            ->call('seleccionarInscripcion', $other->getKey())
+            ->assertSet('cargosSeleccionados', [])->assertSet('importesAplicar', []);
+    }
+
+    public function test_concurrent_changes_remove_stale_selection_and_new_actions_reauthorize(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '100.00']);
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey());
+        $cargo->update(['saldo_pendiente' => '50.00']);
+        $component->call('prepararPago')->assertSet('cargosSeleccionados', [])->assertSet('importesAplicar', []);
+
+        $this->actingAs($this->user('venta'));
+        foreach (['seleccionarCargo', 'deseleccionarCargo', 'seleccionarTodosCargos', 'limpiarSeleccionCargos', 'prepararPago'] as $method) {
+            try {
+                (new RegistrarPago())->{$method}(...(in_array($method, ['seleccionarCargo', 'deseleccionarCargo'], true) ? [$cargo->getKey()] : []));
+                $this->fail("{$method} no rechazó al usuario.");
+            } catch (AuthorizationException $exception) {
+                $this->assertInstanceOf(AuthorizationException::class, $exception);
+            }
+        }
+    }
+
     private function cargo(array $overrides = []): Cargo
     {
         return Cargo::create(array_merge([
