@@ -15,6 +15,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use ReflectionClass;
@@ -733,6 +736,295 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertSame($beforeCargos, DB::table('cargos')->orderBy('cargo_id')->get()->map(fn ($row) => (array) $row)->all());
         $this->assertDatabaseCount('pagos', 0);
         $this->assertDatabaseCount('consecutivos_pago', 0);
+    }
+
+    public function test_only_active_methods_are_displayed_in_persisted_order(): void
+    {
+        $first = MetodoPago::where('clave', MetodoPago::POR_DEFINIR)->firstOrFail();
+        $last = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $inactive = MetodoPago::where('clave', MetodoPago::CHEQUE_NOMINATIVO)->firstOrFail();
+        $first->update(['orden' => 1, 'nombre' => 'Primero persistido']);
+        $last->update(['orden' => 999, 'nombre' => 'Último persistido']);
+        $inactive->update(['activo' => false, 'nombre' => 'Método oculto']);
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->assertViewHas('metodosPago', fn ($methods) => $methods->first()->is($first)
+                && $methods->last()->is($last) && ! $methods->contains($inactive))
+            ->assertSeeInOrder(['Primero persistido', 'Último persistido'])
+            ->assertDontSee('Método oculto');
+    }
+
+    public function test_tampered_method_identifiers_are_rejected_by_livewire_integration(): void
+    {
+        $cargo = $this->cargo();
+        $inactive = MetodoPago::where('clave', MetodoPago::CHEQUE_NOMINATIVO)->firstOrFail();
+        $inactive->update(['activo' => false]);
+        foreach ([null, '', 'texto', ['id' => 1], 0, -1, 999999, $inactive->getKey()] as $value) {
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+                ->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $value)->call('prepararPago')
+                ->assertHasErrors('metodoPagoId')->assertSet('mostrarConfirmacion', false)
+                ->assertSet('confirmacionFingerprint', null);
+        }
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+    }
+
+    public function test_dynamic_fields_follow_persisted_flags_instead_of_method_key(): void
+    {
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $cash->update(['requiere_banco' => true, 'requiere_referencia' => true]);
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())
+            ->assertSee('Banco')->assertSee('Referencia')->call('prepararPago')
+            ->assertHasErrors(['datosMetodo.banco', 'datosMetodo.referencia']);
+
+        $cash->update(['requiere_banco' => false, 'requiere_referencia' => false]);
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())
+            ->set('datosMetodo', ['banco' => 'inyectado', 'referencia' => 'inyectada'])
+            ->call('prepararPago')->assertSet('datosMetodo', [])->assertSet('mostrarConfirmacion', true);
+    }
+
+    public function test_bank_deposit_requires_exactly_two_sat_digits_and_accepts_valid_data(): void
+    {
+        $cargo = $this->cargo();
+        $deposit = MetodoPago::where('clave', MetodoPago::DEPOSITO_BANCARIO)->firstOrFail();
+        $base = fn () => Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $deposit->getKey())
+            ->set('comprobante', UploadedFile::fake()->create('deposito.pdf', 10, 'application/pdf'));
+
+        $base()->assertSee('Forma de pago SAT')->assertSee('Banco')->assertSee('Referencia')
+            ->assertSee('Comprobante obligatorio');
+        foreach ([null, '', '1', '123', 'AA', ['03']] as $invalid) {
+            $base()->set('datosMetodo', ['forma_pago_sat' => $invalid, 'banco' => 'Banco', 'referencia' => 'DEP-1'])
+                ->call('prepararPago')->assertHasErrors('datosMetodo.forma_pago_sat')->assertSet('mostrarConfirmacion', false);
+        }
+        $base()->set('datosMetodo', ['forma_pago_sat' => '03', 'banco' => 'Banco', 'referencia' => 'DEP-1'])
+            ->call('prepararPago')->assertHasNoErrors()->assertSet('mostrarConfirmacion', true)->assertSee('Revisión del pago');
+    }
+
+    public function test_fixed_sat_value_is_trusted_from_database_and_cannot_be_overridden(): void
+    {
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $cash->update(['clave_forma_pago_sat' => '77', 'requiere_forma_pago_sat' => true]);
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())->assertSee('Forma de pago SAT:')->assertSee('77')
+            ->set('datosMetodo', ['forma_pago_sat' => '99'])->call('prepararPago')
+            ->assertSet('datosMetodo', ['forma_pago_sat' => '77'])->assertSet('mostrarConfirmacion', true)
+            ->assertSee('Forma de pago SAT')->assertSee('77');
+    }
+
+    public function test_cards_require_persisted_fields_validate_last_four_and_discard_hidden_data(): void
+    {
+        $cargo = $this->cargo();
+        foreach ([MetodoPago::TARJETA_CREDITO, MetodoPago::TARJETA_DEBITO] as $key) {
+            $card = MetodoPago::where('clave', $key)->firstOrFail();
+            $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $card->getKey())->call('prepararPago')
+                ->assertHasErrors(['datosMetodo.numero_autorizacion', 'datosMetodo.terminal', 'datosMetodo.ultimos_4_digitos']);
+            foreach (['123', '12345', '12A4'] as $invalid) {
+                $component->set('datosMetodo', ['numero_autorizacion' => 'AUT', 'terminal' => 'T1', 'ultimos_4_digitos' => $invalid])
+                    ->call('prepararPago')->assertHasErrors('datosMetodo.ultimos_4_digitos');
+            }
+            $component->set('datosMetodo', ['numero_autorizacion' => 'AUT', 'terminal' => 'T1', 'ultimos_4_digitos' => '1234', 'banco' => 'oculto'])
+                ->call('prepararPago')->assertSet('datosMetodo', ['numero_autorizacion' => 'AUT', 'terminal' => 'T1', 'ultimos_4_digitos' => '1234'])
+                ->assertSet('mostrarConfirmacion', true);
+        }
+    }
+
+    public function test_advance_application_cannot_be_enabled_by_tampered_dynamic_data(): void
+    {
+        $cargo = $this->cargo();
+        $advance = MetodoPago::where('clave', MetodoPago::APLICACION_ANTICIPO)->firstOrFail();
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $advance->getKey())->set('datosMetodo', ['anticipo_relacionado_id' => 1])
+            ->call('prepararPago')->assertHasErrors('metodoPagoId')->assertSee('se habilitará en el bloque correspondiente')
+            ->assertSet('mostrarConfirmacion', false)->assertSet('datosMetodo', []);
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '100.00']);
+    }
+
+    public function test_received_amount_normalization_and_invalid_values_during_preparation(): void
+    {
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        foreach (['100' => '100.00', '100.5' => '100.50', '100.50' => '100.50', '0.01' => '0.01'] as $input => $expected) {
+            $cargo = $this->cargo(['saldo_pendiente' => $expected, 'total' => $expected]);
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())->set('montoRecibido', $input)->call('prepararPago')
+                ->assertSet('montoRecibido', $expected)->assertSet('mostrarConfirmacion', true);
+            $cargo->delete();
+        }
+        $cargo = $this->cargo();
+        foreach (['0', '0.00', '-1', '1.001', '1e2', '1,000', 'texto', '', ['100'], INF, NAN] as $invalid) {
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())->set('montoRecibido', $invalid)->call('prepararPago')
+                ->assertHasErrors('montoRecibido')->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null);
+        }
+    }
+
+    public function test_multiple_partial_applications_sum_exact_decimal_values(): void
+    {
+        $charges = collect(['10.10', '20.20', '40.40'])->map(fn ($amount) => $this->cargo(['saldo_pendiente' => $amount, 'total' => $amount]));
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarTodosCargos')
+            ->set('importesAplicar.'.$charges[2]->getKey(), '30.30')->set('montoRecibido', '60.60')
+            ->set('metodoPagoId', $cash->getKey())->call('prepararPago')
+            ->assertSet('montoRecibido', '60.60')->assertSet('mostrarConfirmacion', true)
+            ->assertViewHas('resumenSeleccion', fn ($summary) => $summary['total'] === '60.60'
+                && $summary['saldoRestante'] === '10.10' && $summary['restantes'][$charges[2]->getKey()] === '10.10');
+        $component->call('volverAEditar')->set('montoRecibido', '60.59')->call('prepararPago')
+            ->assertHasErrors('montoRecibido')->assertSet('mostrarConfirmacion', false);
+    }
+
+    public function test_payment_date_boundary_and_malformed_values_are_deterministic(): void
+    {
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        foreach (['2026-09-09T12:00', '2026-09-09T12:05'] as $valid) {
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())->set('fechaPago', $valid)->call('prepararPago')
+                ->assertHasNoErrors('fechaPago')->assertSet('mostrarConfirmacion', true);
+        }
+        foreach (['2026-09-09T12:06', '09/09/2026 12:00', '2026-02-30T12:00', '', 'mañana', ['2026-09-09T12:00']] as $invalid) {
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())->set('fechaPago', $invalid)->call('prepararPago')
+                ->assertHasErrors('fechaPago')->assertSet('mostrarConfirmacion', false)->assertDontSee('Revisión del pago');
+        }
+    }
+
+    public function test_observations_are_normalized_bounded_escaped_and_invalidate_review(): void
+    {
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $base = fn () => Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey());
+        $base()->set('observaciones', '  nota  ')->call('prepararPago')->assertSet('observaciones', 'nota');
+        $base()->set('observaciones', '   ')->call('prepararPago')->assertSet('observaciones', null);
+        $base()->set('observaciones', str_repeat('a', 2000))->call('prepararPago')->assertHasNoErrors('observaciones');
+        foreach ([str_repeat('a', 2001), ['manipulada']] as $invalid) {
+            $base()->set('observaciones', $invalid)->call('prepararPago')->assertHasErrors('observaciones')->assertSet('mostrarConfirmacion', false);
+        }
+        $base()->set('observaciones', '<script>alert("x")</script>')->call('prepararPago')
+            ->assertDontSee('<script>alert("x")</script>', false)->assertSet('mostrarConfirmacion', true)
+            ->set('observaciones', 'cambio')->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null);
+    }
+
+    public function test_concurrent_method_responsible_and_enrollment_changes_block_review_without_writes(): void
+    {
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $scenarios = [
+            'método inactivo' => function () use ($cash) { $cash->update(['activo' => false]); },
+            'responsable inactivo' => function () { $this->inscripcion->responsablePago->update(['activo' => false]); },
+            'responsable desvinculado' => function () { $this->inscripcion->update(['responsable_pago_id' => null]); },
+            'inscripción cancelada' => function () { $this->inscripcion->update(['estatus' => 'cancelada']); },
+            'inscripción eliminada' => function () { $this->inscripcion->delete(); },
+        ];
+        foreach ($scenarios as $name => $change) {
+            $this->inscripcion->restore();
+            $this->inscripcion->update(['estatus' => 'activa', 'responsable_pago_id' => ResponsablePago::firstOrFail()->getKey()]);
+            $this->inscripcion->responsablePago->update(['activo' => true]);
+            $cash->update(['activo' => true]);
+            Cargo::query()->delete();
+            $cargo = $this->cargo();
+            $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())->set('observaciones', 'dato conservable');
+            $change();
+            $component->call('prepararPago')->assertSet('mostrarConfirmacion', false)
+                ->assertSet('confirmacionFingerprint', null)->assertHasErrors()
+                ->assertSet('observaciones', 'dato conservable');
+            $this->assertDatabaseCount('pagos', 0);
+            $this->assertDatabaseCount('consecutivos_pago', 0);
+        }
+    }
+
+    public function test_full_review_edit_and_method_change_flow_has_no_financial_persistence(): void
+    {
+        Storage::fake('public');
+        Notification::fake();
+        $first = $this->cargo(['saldo_pendiente' => '40.40', 'total' => '40.40']);
+        $second = $this->cargo(['saldo_pendiente' => '20.20', 'total' => '20.20']);
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $tables = collect(['pagos', 'consecutivos_pago', 'cargos', 'inscripciones', 'responsables_pago', 'metodos_pago'])
+            ->merge(Schema::hasTable('pago_aplicaciones') ? ['pago_aplicaciones'] : [])
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy(DB::raw('1'))->get()->map(fn ($row) => (array) $row)->all()]);
+
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarTodosCargos')
+            ->set('importesAplicar.'.$first->getKey(), '30.30')->set('montoRecibido', '50.50')
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-FLUJO', 'rastreo_spei' => 'SPEI-FLUJO'])
+            ->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'))
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->call('volverAEditar')->set('observaciones', 'edición')
+            ->set('metodoPagoId', $cash->getKey())->assertSet('comprobante', null)->assertSet('datosMetodo', [])
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+
+        foreach ($tables as $table => $before) {
+            $this->assertSame($before, DB::table($table)->orderBy(DB::raw('1'))->get()->map(fn ($row) => (array) $row)->all(), "El flujo modificó {$table}.");
+        }
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertSame('40.40', $first->fresh()->saldo_pendiente);
+        $this->assertSame('20.20', $second->fresh()->saldo_pendiente);
+        Storage::disk('public')->assertDirectoryEmpty('/');
+        Notification::assertNothingSent();
+    }
+
+    public function test_each_applicable_persisted_identifier_produces_a_non_blocking_generic_warning(): void
+    {
+        $cargo = $this->cargo();
+        $cases = [
+            [MetodoPago::TRANSFERENCIA_SPEI, 'referencia', ['banco' => 'Banco', 'referencia' => ' REF-DUP ', 'rastreo_spei' => 'NUEVO-1']],
+            [MetodoPago::TRANSFERENCIA_SPEI, 'rastreo_spei', ['banco' => 'Banco', 'referencia' => 'NUEVA-2', 'rastreo_spei' => ' SPEI-DUP ']],
+            [MetodoPago::CHEQUE_NOMINATIVO, 'numero_cheque', ['banco' => 'Banco', 'numero_cheque' => ' CHQ-DUP ']],
+            [MetodoPago::TARJETA_CREDITO, 'numero_autorizacion', ['numero_autorizacion' => ' AUT-DUP ', 'terminal' => 'T1', 'ultimos_4_digitos' => '1234']],
+        ];
+        foreach ($cases as $index => [$methodKey, $field, $data]) {
+            $method = MetodoPago::where('clave', $methodKey)->firstOrFail();
+            $stored = mb_strtoupper(trim($data[$field]), 'UTF-8');
+            $payment = $this->existingPayment($method, ['folio' => 'PAG-2026-'.(900000 + $index), $field => $stored]);
+            $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $method->getKey())->set('datosMetodo', $data);
+            if ($method->requiere_comprobante) {
+                $component->set('comprobante', UploadedFile::fake()->create('identificador.pdf', 10, 'application/pdf'));
+            }
+            $component->call('prepararPago')->assertSee('identificador coincidente')->assertSet('mostrarConfirmacion', true)
+                ->assertViewHas('advertenciaDuplicidad', fn ($warning) => $warning === 'Existe otro pago activo con una referencia o identificador coincidente. Verifica los datos antes de continuar.');
+            $payment->delete();
+        }
+    }
+
+    public function test_empty_applicable_identifiers_do_not_warn_or_query_other_payment_details(): void
+    {
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $this->existingPayment($cash, ['folio' => 'FOLIO-SENSIBLE', 'monto' => '987.65']);
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())->set('datosMetodo', ['referencia' => '   '])
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)->assertDontSee('identificador coincidente')
+            ->assertDontSee('FOLIO-SENSIBLE')->assertDontSee('987.65');
     }
 
     private function componentWithSelectedCharge(Cargo $cargo)
