@@ -39,6 +39,8 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
     public function test_access_is_restricted_to_admins_at_route_gate_and_mount(): void
     {
+        $this->get('/facturacion/pagos/registrar')->assertRedirect('/login');
+
         $admin = $this->user('admin');
         $this->actingAs($admin)->get('/facturacion/pagos/registrar')->assertOk()->assertSee('Registrar pago');
         $this->assertTrue(Gate::forUser($admin)->allows('manage-pagos'));
@@ -52,8 +54,8 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
         $withoutRole = User::factory()->create(['roles_id' => 999999]);
         $this->assertFalse(Gate::forUser($withoutRole)->allows('manage-pagos'));
-        $this->app['auth']->forgetGuards();
-        $this->get('/facturacion/pagos/registrar')->assertRedirect('/login');
+        $this->actingAs($withoutRole)->get('/facturacion/pagos/registrar')->assertForbidden();
+        Livewire::actingAs($withoutRole)->test(RegistrarPago::class)->assertForbidden();
     }
 
     public function test_navigation_link_is_visible_only_to_authorized_role(): void
@@ -126,12 +128,12 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
             ->assertSee('MXN $35.50');
-        try {
-            $component->call('seleccionarInscripcion', 999999);
-        } catch (\Throwable $exception) {
-            // Livewire converts this abort to a test response in some supported versions.
-        }
-        $component->assertSet('inscripcionSeleccionadaId', null)->assertDontSee('MXN $35.50');
+
+        $component->call('seleccionarInscripcion', 999999)->assertNotFound();
+
+        $component->set('inscripcionSeleccionadaId', 999999)
+            ->assertSet('inscripcionSeleccionadaId', null)
+            ->assertDontSee('MXN $35.50');
     }
 
     public function test_displays_student_course_group_responsible_and_tolerates_optional_nulls(): void
