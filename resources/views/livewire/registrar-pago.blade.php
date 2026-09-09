@@ -74,11 +74,11 @@
             </div>
 
             <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Saldo pendiente</div><div class="text-xl font-semibold">{{ $inscripcion->moneda ?: 'MXN' }} ${{ $saldoPendiente }}</div></div>
-                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Saldo vencido</div><div class="text-xl font-semibold text-red-700">{{ $inscripcion->moneda ?: 'MXN' }} ${{ $saldoVencido }}</div></div>
-                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Cargos abiertos</div><div class="text-xl font-semibold">{{ $cantidadCargosAbiertos }}</div></div>
-                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Cargos vencidos</div><div class="text-xl font-semibold">{{ $cantidadCargosVencidos }}</div></div>
-                <div class="bg-white shadow rounded-lg p-4 col-span-2 lg:col-span-1"><div class="text-xs text-gray-500 uppercase">Próximo vencimiento</div><div class="text-xl font-semibold">{{ $proximoVencimiento ?: 'Sin próximo vencimiento' }}</div></div>
+                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Saldo pendiente</div><div class="text-xl font-semibold">{{ $inscripcion->moneda ?: 'MXN' }} ${{ $resumen['saldoPendiente'] }}</div></div>
+                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Saldo vencido</div><div class="text-xl font-semibold text-red-700">{{ $inscripcion->moneda ?: 'MXN' }} ${{ $resumen['saldoVencido'] }}</div></div>
+                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Cargos abiertos</div><div class="text-xl font-semibold">{{ $resumen['cantidadCargosAbiertos'] }}</div></div>
+                <div class="bg-white shadow rounded-lg p-4"><div class="text-xs text-gray-500 uppercase">Cargos vencidos</div><div class="text-xl font-semibold">{{ $resumen['cantidadCargosVencidos'] }}</div></div>
+                <div class="bg-white shadow rounded-lg p-4 col-span-2 lg:col-span-1"><div class="text-xs text-gray-500 uppercase">Próximo vencimiento</div><div class="text-xl font-semibold">{{ $resumen['proximoVencimiento'] ?: 'Sin próximo vencimiento' }}</div></div>
             </div>
 
             <div class="bg-white rounded-lg shadow overflow-x-auto">

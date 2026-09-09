@@ -24,15 +24,32 @@ class PagosMigrationTest extends PagosTestCase
         $this->assertTrue(Schema::hasTable('consecutivos_pago'));
         $this->assertTrue(Schema::hasColumns('pagos', $columns));
 
-        $sql = DB::selectOne("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pagos'")->sql;
         if (DB::getDriverName() === 'sqlite') {
-            $this->assertMatchesRegularExpression('/"monto"\s+numeric/i', $sql);
-            $this->assertMatchesRegularExpression('/"tipo_cambio"\s+numeric/i', $sql);
+            $columnsSqlite = collect(DB::select("PRAGMA table_info('pagos')"))->keyBy('name');
+            foreach (['monto' => [12, 2], 'tipo_cambio' => [18, 6]] as $column => [$precision, $scale]) {
+                $declaredType = $columnsSqlite[$column]->type;
+                // DECIMAL/NUMERIC declarations must resolve to SQLite NUMERIC affinity.
+                $this->assertMatchesRegularExpression('/(?:decimal|numeric)/i', $declaredType);
+                if (preg_match('/\((\d+)\s*,\s*(\d+)\)/', $declaredType, $matches)) {
+                    $this->assertSame($precision, (int) $matches[1]);
+                    $this->assertSame($scale, (int) $matches[2]);
+                }
+            }
+            $sql = DB::selectOne("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pagos'")->sql;
+            $this->assertStringContainsString('primary key autoincrement', strtolower($sql));
         } else {
-            $this->assertMatchesRegularExpression('/(?:decimal|numeric)\(12,\s*2\)/i', $sql);
-            $this->assertMatchesRegularExpression('/(?:decimal|numeric)\(18,\s*6\)/i', $sql);
+            $numericColumns = collect(DB::select(
+                'SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME IN (?, ?)',
+                [DB::getDatabaseName(), 'pagos', 'monto', 'tipo_cambio']
+            ))->keyBy('COLUMN_NAME');
+            foreach (['monto' => [12, 2], 'tipo_cambio' => [18, 6]] as $column => [$precision, $scale]) {
+                $this->assertContains(strtolower($numericColumns[$column]->DATA_TYPE), ['decimal', 'numeric']);
+                $this->assertSame($precision, (int) $numericColumns[$column]->NUMERIC_PRECISION);
+                $this->assertSame($scale, (int) $numericColumns[$column]->NUMERIC_SCALE);
+            }
         }
-        $this->assertStringContainsString('primary key autoincrement', strtolower($sql));
 
         $attributes = $this->paymentAttributes();
         DB::table('pagos')->insert($attributes);

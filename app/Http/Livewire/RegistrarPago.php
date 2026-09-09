@@ -12,11 +12,6 @@ class RegistrarPago extends Component
 {
     public $busqueda = '';
     public $inscripcionSeleccionadaId;
-    public $saldoPendiente = '0.00';
-    public $saldoVencido = '0.00';
-    public $cantidadCargosAbiertos = 0;
-    public $cantidadCargosVencidos = 0;
-    public $proximoVencimiento;
 
     public function mount(): void
     {
@@ -33,16 +28,16 @@ class RegistrarPago extends Component
         Gate::authorize('manage-pagos');
         $this->limpiarDatosSeleccionados();
 
-        abort_unless(is_int($inscripcionId) || (is_string($inscripcionId) && preg_match('/^[1-9][0-9]*$/D', $inscripcionId)), 404);
+        $inscripcionId = $this->normalizarInscripcionId($inscripcionId);
+        abort_unless($inscripcionId !== null, 404);
 
         $inscripcion = Inscripcion::query()
             ->with(['prospecto', 'cursos', 'grupo', 'responsablePago'])
-            ->find((int) $inscripcionId);
+            ->find($inscripcionId);
 
         abort_unless($inscripcion && $inscripcion->prospecto, 404);
 
         $this->inscripcionSeleccionadaId = $inscripcion->getKey();
-        $this->cargarResumenFinanciero();
     }
 
     public function limpiarSeleccion(): void
@@ -65,24 +60,30 @@ class RegistrarPago extends Component
 
         $inscripcion = null;
         $cargos = collect();
-        if ($this->inscripcionSeleccionadaId) {
+        $resumen = $this->resumenVacio();
+        $inscripcionId = $this->normalizarInscripcionId($this->inscripcionSeleccionadaId);
+        if ($inscripcionId !== null) {
             $inscripcion = Inscripcion::query()
                 ->with(['prospecto', 'cursos', 'grupo', 'responsablePago'])
-                ->find($this->inscripcionSeleccionadaId);
+                ->find($inscripcionId);
 
             if (! $inscripcion || ! $inscripcion->prospecto) {
                 $this->limpiarDatosSeleccionados();
             } else {
-                $cargos = $this->consultaCargosAbiertos()
+                // The cards and table are derived from this single, freshly persisted collection.
+                $cargos = $this->consultaCargosAbiertos($inscripcionId)
                     ->with('conceptoCobro')
                     ->orderByRaw('CASE WHEN estado = ? OR fecha_vencimiento < ? THEN 0 ELSE 1 END', [Cargo::ESTADO_VENCIDO, now()->toDateString()])
                     ->orderBy('fecha_vencimiento')
                     ->orderBy('cargo_id')
                     ->get();
+                $resumen = $this->calcularResumenFinanciero($cargos);
             }
+        } elseif ($this->inscripcionSeleccionadaId !== null) {
+            $this->limpiarDatosSeleccionados();
         }
 
-        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos'));
+        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen'));
     }
 
     private function consultaBusqueda(string $termino): Builder
@@ -104,27 +105,28 @@ class RegistrarPago extends Component
         })->orderBy('inscripciones_id');
     }
 
-    private function consultaCargosAbiertos(): Builder
+    private function consultaCargosAbiertos(int $inscripcionId): Builder
     {
         return Cargo::query()
-            ->where('inscripciones_id', $this->inscripcionSeleccionadaId)
+            ->where('inscripciones_id', $inscripcionId)
             ->whereIn('estado', [Cargo::ESTADO_PENDIENTE, Cargo::ESTADO_PARCIAL, Cargo::ESTADO_VENCIDO])
             ->where('saldo_pendiente', '>', '0.00');
     }
 
-    private function cargarResumenFinanciero(): void
+    private function calcularResumenFinanciero($cargos): array
     {
         $hoy = now()->toDateString();
-        $cargos = $this->consultaCargosAbiertos()->get(['saldo_pendiente', 'estado', 'fecha_vencimiento']);
         $vencidos = $cargos->filter(fn (Cargo $cargo) => $cargo->estado === Cargo::ESTADO_VENCIDO || $cargo->fecha_vencimiento->toDateString() < $hoy);
-
-        $this->saldoPendiente = $this->sumarImportes($cargos->pluck('saldo_pendiente')->all());
-        $this->saldoVencido = $this->sumarImportes($vencidos->pluck('saldo_pendiente')->all());
-        $this->cantidadCargosAbiertos = $cargos->count();
-        $this->cantidadCargosVencidos = $vencidos->count();
         $proximo = $cargos->filter(fn (Cargo $cargo) => $cargo->estado !== Cargo::ESTADO_VENCIDO && $cargo->fecha_vencimiento->toDateString() >= $hoy)
             ->sortBy('fecha_vencimiento')->first();
-        $this->proximoVencimiento = $proximo ? $proximo->fecha_vencimiento->toDateString() : null;
+
+        return [
+            'saldoPendiente' => $this->sumarImportes($cargos->pluck('saldo_pendiente')->all()),
+            'saldoVencido' => $this->sumarImportes($vencidos->pluck('saldo_pendiente')->all()),
+            'cantidadCargosAbiertos' => $cargos->count(),
+            'cantidadCargosVencidos' => $vencidos->count(),
+            'proximoVencimiento' => $proximo?->fecha_vencimiento->toDateString(),
+        ];
     }
 
     private function sumarImportes(array $importes): string
@@ -141,10 +143,27 @@ class RegistrarPago extends Component
     private function limpiarDatosSeleccionados(): void
     {
         $this->inscripcionSeleccionadaId = null;
-        $this->saldoPendiente = '0.00';
-        $this->saldoVencido = '0.00';
-        $this->cantidadCargosAbiertos = 0;
-        $this->cantidadCargosVencidos = 0;
-        $this->proximoVencimiento = null;
+    }
+
+    private function normalizarInscripcionId($value): ?int
+    {
+        if (! is_int($value) && ! (is_string($value) && preg_match('/^[1-9][0-9]*$/D', $value))) {
+            return null;
+        }
+
+        $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return $id === false ? null : $id;
+    }
+
+    private function resumenVacio(): array
+    {
+        return [
+            'saldoPendiente' => '0.00',
+            'saldoVencido' => '0.00',
+            'cantidadCargosAbiertos' => 0,
+            'cantidadCargosVencidos' => 0,
+            'proximoVencimiento' => null,
+        ];
     }
 }
