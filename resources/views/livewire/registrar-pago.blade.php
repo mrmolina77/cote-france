@@ -150,7 +150,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @foreach($configuracionMetodo['campos'] as $campo => $config)
                         @if($campo === 'comprobante')
-                            <div><x-forms.label value="Comprobante (PDF, JPG o PNG; máximo 10 MB)" /><input type="file" wire:model="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="block mt-1 text-sm" />@error('comprobante')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                            <div><x-forms.label value="Comprobante obligatorio (PDF, JPG o PNG; máximo 10 MB)" /><input type="file" wire:model="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="block mt-1 text-sm" />@error('comprobante')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
                         @elseif($campo !== 'anticipo_relacionado_id')
                             <div><x-forms.label :value="$config['etiqueta']" /><x-forms.input type="{{ $config['control'] }}" wire:model.lazy="datosMetodo.{{ $campo }}" maxlength="{{ $config['maximo'] }}" class="w-full mt-1" />@error('datosMetodo.'.$campo)<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
                         @endif

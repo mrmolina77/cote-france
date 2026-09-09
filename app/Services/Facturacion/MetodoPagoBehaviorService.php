@@ -20,7 +20,7 @@ class MetodoPagoBehaviorService
         'requiere_ultimos_4_digitos' => ['campo' => 'ultimos_4_digitos', 'etiqueta' => 'Últimos 4 dígitos', 'control' => 'text', 'maximo' => 4, 'reglas' => ['string', 'regex:/^\d{4}$/D'], 'nullable' => false],
         'requiere_proveedor' => ['campo' => 'proveedor', 'etiqueta' => 'Proveedor', 'control' => 'text', 'maximo' => 120, 'reglas' => ['string', 'max:120'], 'nullable' => false],
         'requiere_anticipo_relacionado' => ['campo' => 'anticipo_relacionado_id', 'etiqueta' => 'Anticipo relacionado', 'control' => 'number', 'maximo' => null, 'reglas' => ['integer', 'min:1'], 'nullable' => false],
-        'requiere_comprobante' => ['campo' => 'comprobante', 'etiqueta' => 'Comprobante', 'control' => 'file', 'maximo' => null, 'reglas' => [], 'nullable' => false],
+        'requiere_comprobante' => ['campo' => 'comprobante', 'etiqueta' => 'Comprobante', 'control' => 'file', 'maximo' => null, 'reglas' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'], 'nullable' => false],
     ];
 
     public function catalogoCampos(): array
