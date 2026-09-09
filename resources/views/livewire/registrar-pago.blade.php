@@ -134,10 +134,52 @@
                             <div><dt class="text-gray-500">Pagos parciales</dt><dd class="font-semibold">{{ $resumenSeleccion['tieneParciales'] ? 'Sí' : 'No' }}</dd></div>
                             <div><dt class="text-gray-500">Saldo restante estimado</dt><dd class="font-semibold">{{ $resumenSeleccion['moneda'] }} ${{ $resumenSeleccion['saldoRestante'] }}</dd></div>
                         </dl>
-                        <button type="button" wire:click="prepararPago" @disabled($resumenSeleccion['cantidad'] === 0) class="mt-4 px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed">Preparar pago</button>
                     </div>
                 @endif
             </div>
+
+            <section class="bg-white rounded-lg shadow p-5 space-y-5">
+                <div><h2 class="text-lg font-semibold text-gray-800">Información del pago</h2><p class="text-sm text-gray-500">Captura los datos para revisar la operación. En este paso no se guardará el pago.</p></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><x-forms.label value="Fecha y hora del pago" /><x-forms.input type="datetime-local" wire:model.lazy="fechaPago" class="w-full mt-1" />@error('fechaPago')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    <div><x-forms.label value="Moneda" /><div class="mt-1 py-2 font-semibold">{{ $inscripcion->moneda }}</div></div>
+                    <div><x-forms.label value="Método de pago" /><select wire:model="metodoPagoId" class="w-full mt-1 rounded border-gray-300"><option value="">Selecciona un método</option>@foreach($metodosPago as $metodo)<option value="{{ $metodo->getKey() }}" @disabled($metodo->requiere_anticipo_relacionado)>{{ $metodo->nombre }}{{ $metodo->requiere_anticipo_relacionado ? ' (próximamente)' : '' }}</option>@endforeach</select>@error('metodoPagoId')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                </div>
+                @if($configuracionMetodo)
+                    @if($configuracionMetodo['forma_pago_sat_fija'])<p class="text-sm"><span class="text-gray-500">Forma de pago SAT:</span> <strong>{{ $configuracionMetodo['forma_pago_sat_fija'] }}</strong></p>@endif
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    @foreach($configuracionMetodo['campos'] as $campo => $config)
+                        @if($campo === 'comprobante')
+                            <div><x-forms.label value="Comprobante (PDF, JPG o PNG; máximo 10 MB)" /><input type="file" wire:model="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="block mt-1 text-sm" />@error('comprobante')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                        @elseif($campo !== 'anticipo_relacionado_id')
+                            <div><x-forms.label :value="$config['etiqueta']" /><x-forms.input type="{{ $config['control'] }}" wire:model.lazy="datosMetodo.{{ $campo }}" maxlength="{{ $config['maximo'] }}" class="w-full mt-1" />@error('datosMetodo.'.$campo)<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                        @endif
+                    @endforeach
+                    </div>
+                @endif
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><x-forms.label value="Importe recibido" /><x-forms.input type="text" inputmode="decimal" wire:model.lazy="montoRecibido" class="w-full mt-1" />@error('montoRecibido')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    <div><x-forms.label value="Observaciones" /><textarea wire:model.lazy="observaciones" maxlength="2000" rows="3" class="w-full mt-1 rounded border-gray-300"></textarea>@error('observaciones')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                </div>
+                @if($advertenciaDuplicidad)<p class="p-3 rounded bg-yellow-50 text-yellow-800">{{ $advertenciaDuplicidad }}</p>@endif
+                <button type="button" wire:click="prepararPago" @disabled($resumenSeleccion['cantidad'] === 0) class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50">Revisar pago</button>
+            </section>
+
+            @if($mostrarConfirmacion && $resumenConfirmacion)
+                <section class="bg-indigo-50 border border-indigo-200 rounded-lg p-5" aria-label="Revisión del pago">
+                    <h2 class="text-lg font-semibold text-indigo-900">Revisión del pago</h2><p class="text-sm text-indigo-700">Confirma que la información sea correcta. El pago todavía no se ha guardado.</p>
+                    <dl class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div><dt class="text-gray-500">Alumno</dt><dd>{{ $resumenConfirmacion['alumno'] }}</dd></div><div><dt class="text-gray-500">Inscripción</dt><dd>#{{ $resumenConfirmacion['inscripcion'] }}</dd></div>
+                        <div><dt class="text-gray-500">Responsable</dt><dd>{{ $resumenConfirmacion['responsable'] }}</dd></div><div><dt class="text-gray-500">Cargos</dt><dd>{{ $resumenConfirmacion['cantidad'] }}</dd></div>
+                        <div><dt class="text-gray-500">Total recibido</dt><dd>{{ $resumenConfirmacion['moneda'] }} ${{ $resumenConfirmacion['totalRecibido'] }}</dd></div><div><dt class="text-gray-500">Total aplicado</dt><dd>{{ $resumenConfirmacion['moneda'] }} ${{ $resumenConfirmacion['totalAplicado'] }}</dd></div>
+                        <div><dt class="text-gray-500">Saldo restante estimado</dt><dd>{{ $resumenConfirmacion['moneda'] }} ${{ $resumenConfirmacion['saldoRestante'] }}</dd></div><div><dt class="text-gray-500">Método</dt><dd>{{ $resumenConfirmacion['metodo'] }}</dd></div>
+                        <div><dt class="text-gray-500">Fecha</dt><dd>{{ $resumenConfirmacion['fecha'] }} ({{ $resumenConfirmacion['zonaHoraria'] }})</dd></div><div><dt class="text-gray-500">Comprobante</dt><dd>{{ $resumenConfirmacion['comprobante'] ? 'Adjunto' : 'No requerido' }}</dd></div>
+                        @foreach($resumenConfirmacion['datos'] as $campo => $valor)<div><dt class="text-gray-500">{{ $configuracionMetodo['campos'][$campo]['etiqueta'] ?? ($campo === 'forma_pago_sat' ? 'Forma de pago SAT' : ucfirst(str_replace('_', ' ', $campo))) }}</dt><dd>{{ $valor }}</dd></div>@endforeach
+                    </dl>
+                    @if($advertenciaDuplicidad)<p class="mt-4 p-3 rounded bg-yellow-100 text-yellow-900">{{ $advertenciaDuplicidad }}</p>@endif
+                    <button type="button" wire:click="volverAEditar" class="mt-4 px-4 py-2 border rounded bg-white text-gray-700">Volver a editar</button>
+                </section>
+            @endif
         @endif
     </div>
 </div>
