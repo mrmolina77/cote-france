@@ -44,9 +44,14 @@ class PagoModelTest extends PagosTestCase
     public function test_scopes_filter_without_modifying_records(): void
     {
         foreach (Pago::ESTADOS as $index => $estado) {
-            Pago::create($this->paymentAttributes(['estado' => $estado, 'folio' => sprintf('PAG-2026-%06d', $index + 1)]));
+            $pago = Pago::create($this->paymentAttributes([
+                'folio' => sprintf('PAG-2026-%06d', $index + 1),
+            ]));
+
+            $pago->forceFill(['estado' => $estado])->save();
         }
         $target = Pago::create($this->paymentAttributes(['folio' => 'PAG-2026-000010']));
+        $estadosAntesDeScopes = Pago::orderBy('pago_id')->pluck('estado', 'pago_id')->all();
 
         $this->assertSame(2, Pago::borradores()->count());
         $this->assertSame(1, Pago::confirmados()->count());
@@ -55,6 +60,10 @@ class PagoModelTest extends PagosTestCase
         $this->assertSame(1, Pago::delAlumno($target->prospectos_id)->count());
         $this->assertSame(1, Pago::deLaInscripcion($target->inscripciones_id)->count());
         $this->assertSame(Pago::ESTADO_BORRADOR, $target->fresh()->estado);
+        $this->assertSame(
+            $estadosAntesDeScopes,
+            Pago::orderBy('pago_id')->pluck('estado', 'pago_id')->all()
+        );
     }
 
     public function test_decimal_casts_are_strings_and_sat_form_is_historical(): void
