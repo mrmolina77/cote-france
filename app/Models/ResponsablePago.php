@@ -45,4 +45,9 @@ class ResponsablePago extends Model
     {
         return $this->hasMany(Inscripcion::class, 'responsable_pago_id', 'responsable_pago_id');
     }
+
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class, 'responsable_pago_id', 'responsable_pago_id');
+    }
 }

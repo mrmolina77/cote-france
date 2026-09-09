@@ -101,6 +101,11 @@ class Inscripcion extends Model
         return $this->hasMany(Cargo::class, 'inscripciones_id', 'inscripciones_id');
     }
 
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class, 'inscripciones_id', 'inscripciones_id');
+    }
+
     /** The canonical, queryable definition of a completed financial setup. */
     public function scopeFinancieramenteConfiguradas(Builder $query): Builder
     {

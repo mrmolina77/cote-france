@@ -65,6 +65,11 @@ class MetodoPago extends Model
         return $query->where('activo', true);
     }
 
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class, 'metodo_pago_id', 'metodo_pago_id');
+    }
+
     public function scopeOrdenados(Builder $query): Builder
     {
         return $query->orderBy('orden')->orderBy('nombre');
