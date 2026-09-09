@@ -11,8 +11,11 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
+use ReflectionClass;
+use ReflectionProperty;
 
 class RegistrarPagoTest extends InscripcionesTestCase
 {
@@ -421,6 +424,158 @@ class RegistrarPagoTest extends InscripcionesTestCase
                 $this->assertInstanceOf(AuthorizationException::class, $exception);
             }
         }
+    }
+
+    public function test_concurrent_paid_status_removes_selected_charge_and_its_amount(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '81.25']);
+        $component = $this->componentWithSelectedCharge($cargo);
+
+        $cargo->update(['estado' => Cargo::ESTADO_PAGADO]);
+
+        $component->call('prepararPago')
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', [])
+            ->assertSee('Un cargo seleccionado ya no está disponible y fue retirado.');
+    }
+
+    public function test_concurrent_cancelled_status_removes_selected_charge_and_its_amount(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '82.25']);
+        $component = $this->componentWithSelectedCharge($cargo);
+
+        $cargo->update(['estado' => Cargo::ESTADO_CANCELADO]);
+
+        $component->call('prepararPago')
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', [])
+            ->assertSee('Un cargo seleccionado ya no está disponible y fue retirado.');
+    }
+
+    public function test_concurrent_enrollment_change_removes_selected_charge_and_its_amount(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '83.25']);
+        $component = $this->componentWithSelectedCharge($cargo);
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $other = $this->enroll($prospecto, $curso, $grupo);
+
+        $cargo->update(['inscripciones_id' => $other->getKey()]);
+
+        $component->call('prepararPago')
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', [])
+            ->assertSee('Un cargo seleccionado ya no está disponible y fue retirado.');
+    }
+
+    public function test_concurrent_currency_change_removes_selected_charge_and_its_amount(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '84.25']);
+        $component = $this->componentWithSelectedCharge($cargo);
+
+        $cargo->update(['moneda' => 'USD']);
+
+        $component->call('prepararPago')
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', [])
+            ->assertSee('Un cargo seleccionado ya no está disponible y fue retirado.');
+    }
+
+    public function test_concurrent_hard_deletion_removes_selected_charge_and_its_amount(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '85.25']);
+        $component = $this->componentWithSelectedCharge($cargo);
+
+        $cargo->delete();
+
+        $component->call('prepararPago')
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', [])
+            ->assertSee('Un cargo seleccionado ya no está disponible y fue retirado.');
+        $this->assertDatabaseMissing('cargos', ['cargo_id' => $cargo->getKey()]);
+    }
+
+    public function test_select_all_keeps_only_eligible_charge_from_mixed_data(): void
+    {
+        $eligible = $this->cargo(['saldo_pendiente' => '47.30']);
+        [$prospecto, $curso, $grupo] = $this->catalogs();
+        $other = $this->enroll($prospecto, $curso, $grupo);
+        $foreign = $this->cargo(['inscripciones_id' => $other->getKey(), 'saldo_pendiente' => '91.00']);
+        $closed = $this->cargo(['estado' => Cargo::ESTADO_PAGADO, 'saldo_pendiente' => '92.00']);
+        $zero = $this->cargo(['saldo_pendiente' => '0.00']);
+        $currency = $this->cargo(['moneda' => 'USD', 'saldo_pendiente' => '93.00']);
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarTodosCargos')
+            ->assertSet('cargosSeleccionados', [$eligible->getKey()])
+            ->assertSet('importesAplicar', [(string) $eligible->getKey() => '47.30'])
+            ->assertViewHas('resumenSeleccion', fn ($resumen) => $resumen === [
+                'cantidad' => 1,
+                'total' => '47.30',
+                'moneda' => 'MXN',
+                'tieneParciales' => false,
+                'saldoRestante' => '0.00',
+                'restantes' => [$eligible->getKey() => '0.00'],
+            ])
+            ->assertDontSee('MXN $91.00')
+            ->assertDontSee('MXN $92.00')
+            ->assertDontSee('USD $93.00');
+
+        $this->assertNotContains($foreign->getKey(), [$eligible->getKey()]);
+        $this->assertNotContains($closed->getKey(), [$eligible->getKey()]);
+        $this->assertNotContains($zero->getKey(), [$eligible->getKey()]);
+        $this->assertNotContains($currency->getKey(), [$eligible->getKey()]);
+    }
+
+    public function test_calculated_and_trusted_values_are_not_public_component_state(): void
+    {
+        $publicProperties = collect((new ReflectionClass(RegistrarPago::class))
+            ->getProperties(ReflectionProperty::IS_PUBLIC))
+            ->pluck('name');
+
+        foreach ([
+            'totalAplicado', 'totalSeleccionado', 'saldoRestante', 'saldoRestanteTotal',
+            'cantidadCargos', 'cantidadSeleccionados', 'tieneParciales', 'pagoParcial',
+            'moneda', 'monedaConfiable', 'resumenSeleccion',
+        ] as $calculatedProperty) {
+            $this->assertNotContains($calculatedProperty, $publicProperties);
+        }
+    }
+
+    public function test_all_selection_actions_only_change_temporary_livewire_state(): void
+    {
+        $first = $this->cargo(['saldo_pendiente' => '61.20']);
+        $second = $this->cargo(['saldo_pendiente' => '38.80']);
+        $beforePagos = DB::table('pagos')->orderBy('pago_id')->get()->map(fn ($row) => (array) $row)->all();
+        $beforeConsecutivos = DB::table('consecutivos_pago')->orderBy('anio')->get()->map(fn ($row) => (array) $row)->all();
+        $beforeCargos = DB::table('cargos')->orderBy('cargo_id')->get()->map(fn ($row) => (array) $row)->all();
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $first->getKey())
+            ->set('importesAplicar.'.$first->getKey(), '20.10')
+            ->call('prepararPago')
+            ->call('deseleccionarCargo', $first->getKey())
+            ->call('seleccionarTodosCargos')
+            ->assertSet('cargosSeleccionados', [$first->getKey(), $second->getKey()])
+            ->call('limpiarSeleccionCargos')
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', []);
+
+        $this->assertSame($beforePagos, DB::table('pagos')->orderBy('pago_id')->get()->map(fn ($row) => (array) $row)->all());
+        $this->assertSame($beforeConsecutivos, DB::table('consecutivos_pago')->orderBy('anio')->get()->map(fn ($row) => (array) $row)->all());
+        $this->assertSame($beforeCargos, DB::table('cargos')->orderBy('cargo_id')->get()->map(fn ($row) => (array) $row)->all());
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+    }
+
+    private function componentWithSelectedCharge(Cargo $cargo)
+    {
+        return Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->assertSet('cargosSeleccionados', [$cargo->getKey()])
+            ->assertSet('importesAplicar.'.$cargo->getKey(), $cargo->saldo_pendiente);
     }
 
     private function cargo(array $overrides = []): Cargo
