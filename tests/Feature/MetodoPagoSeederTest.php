@@ -19,7 +19,7 @@ class MetodoPagoSeederTest extends TestCase
         'TARJETA_DEBITO' => ['Tarjeta de débito', '28', 70, ['requiere_autorizacion', 'requiere_terminal', 'requiere_ultimos_4_digitos']],
         'TARJETA_SERVICIOS' => ['Tarjeta de servicios', '29', 80, ['requiere_autorizacion']],
         'APLICACION_ANTICIPO' => ['Aplicación de anticipo', '30', 90, ['requiere_anticipo_relacionado']],
-        'INTERMEDIARIO_PAGOS' => ['Intermediario de pagos', null, 100, ['requiere_proveedor', 'requiere_referencia', 'requiere_forma_pago_sat']],
+        'INTERMEDIARIO_PAGOS' => ['Intermediario de pagos', '31', 100, ['requiere_proveedor', 'requiere_referencia']],
         'POR_DEFINIR' => ['Por definir', '99', 110, []],
         'DEPOSITO_BANCARIO' => ['Depósito bancario', null, 120, ['requiere_banco', 'requiere_referencia', 'requiere_comprobante', 'requiere_forma_pago_sat']],
     ];

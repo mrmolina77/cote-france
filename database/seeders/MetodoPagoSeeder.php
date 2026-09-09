@@ -19,7 +19,7 @@ class MetodoPagoSeeder extends Seeder
             [MetodoPago::TARJETA_DEBITO, 'Tarjeta de débito', '28', 70, ['requiere_autorizacion', 'requiere_terminal', 'requiere_ultimos_4_digitos']],
             [MetodoPago::TARJETA_SERVICIOS, 'Tarjeta de servicios', '29', 80, ['requiere_autorizacion']],
             [MetodoPago::APLICACION_ANTICIPO, 'Aplicación de anticipo', '30', 90, ['requiere_anticipo_relacionado']],
-            [MetodoPago::INTERMEDIARIO_PAGOS, 'Intermediario de pagos', null, 100, ['requiere_proveedor', 'requiere_referencia', 'requiere_forma_pago_sat']],
+            [MetodoPago::INTERMEDIARIO_PAGOS, 'Intermediario de pagos', '31', 100, ['requiere_proveedor', 'requiere_referencia']],
             [MetodoPago::POR_DEFINIR, 'Por definir', '99', 110, []],
             [MetodoPago::DEPOSITO_BANCARIO, 'Depósito bancario', null, 120, ['requiere_banco', 'requiere_referencia', 'requiere_comprobante', 'requiere_forma_pago_sat']],
         ];
