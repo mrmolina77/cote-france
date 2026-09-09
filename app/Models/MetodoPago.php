@@ -69,4 +69,16 @@ class MetodoPago extends Model
     {
         return $query->orderBy('orden')->orderBy('nombre');
     }
+
+    public function requiereDato(string $dato): bool
+    {
+        $indicador = 'requiere_'.$dato;
+        return array_key_exists($indicador, $this->casts) && (bool) $this->{$indicador};
+    }
+
+    public function tieneFormaPagoSatFija(): bool
+    {
+        return is_string($this->clave_forma_pago_sat)
+            && preg_match('/^\d{2}$/D', $this->clave_forma_pago_sat) === 1;
+    }
 }

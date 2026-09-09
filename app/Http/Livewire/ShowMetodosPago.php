@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Models\MetodoPago;
+use App\Services\Facturacion\MetodoPagoBehaviorService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -14,19 +15,7 @@ class ShowMetodosPago extends Component
 
     private const SORT_COLUMNS = ['metodo_pago_id', 'clave', 'nombre', 'clave_forma_pago_sat', 'activo', 'orden'];
     private const PER_PAGE = [10, 25, 50, 100];
-    public const REQUIREMENT_LABELS = [
-        'requiere_forma_pago_sat' => 'Forma de pago SAT',
-        'requiere_banco' => 'Banco',
-        'requiere_referencia' => 'Referencia',
-        'requiere_numero_cheque' => 'Número de cheque',
-        'requiere_rastreo_spei' => 'Rastreo SPEI',
-        'requiere_autorizacion' => 'Autorización',
-        'requiere_terminal' => 'Terminal',
-        'requiere_ultimos_4_digitos' => 'Últimos 4 dígitos',
-        'requiere_proveedor' => 'Proveedor',
-        'requiere_anticipo_relacionado' => 'Anticipo relacionado',
-        'requiere_comprobante' => 'Comprobante',
-    ];
+    public const REQUIREMENT_LABELS = MetodoPagoBehaviorService::CAMPOS;
 
     protected $listeners = ['activarMetodoPagoConfirmado' => 'activar', 'desactivarMetodoPagoConfirmado' => 'desactivar'];
 
@@ -72,6 +61,7 @@ class ShowMetodosPago extends Component
             'activo' => ['boolean'],
         ];
         foreach (array_keys(self::REQUIREMENT_LABELS) as $field) $rules[$field] = ['boolean'];
+        $rules['requiere_forma_pago_sat'][] = Rule::prohibitedIf(fn () => $this->clave_forma_pago_sat !== '');
         return $rules;
     }
 
@@ -159,7 +149,8 @@ class ShowMetodosPago extends Component
         }
         $query->orderBy($this->sort, $this->direction)->orderBy('nombre', 'asc');
         $perPage = in_array((int) $this->cant, self::PER_PAGE, true) ? (int) $this->cant : 25;
-        return view('livewire.show-metodos-pago', ['metodos' => $query->paginate($perPage), 'requirementLabels' => self::REQUIREMENT_LABELS]);
+        $labels = array_map(fn ($metadata) => $metadata['etiqueta'], self::REQUIREMENT_LABELS);
+        return view('livewire.show-metodos-pago', ['metodos' => $query->paginate($perPage), 'requirementLabels' => $labels]);
     }
 
     private function setActivo($id, bool $activo): void
@@ -178,6 +169,9 @@ class ShowMetodosPago extends Component
         $this->nombre = trim((string) $this->nombre);
         $this->descripcion = trim((string) $this->descripcion);
         $this->clave_forma_pago_sat = trim((string) $this->clave_forma_pago_sat);
+        if ($this->requiere_rastreo_spei) { $this->requiere_banco = true; $this->requiere_referencia = true; }
+        if ($this->requiere_numero_cheque) $this->requiere_banco = true;
+        if ($this->requiere_ultimos_4_digitos) $this->requiere_terminal = true;
     }
 
     private function applyValidated(MetodoPago $metodo, array $validated, bool $includeKey): void

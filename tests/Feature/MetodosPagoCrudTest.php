@@ -355,7 +355,7 @@ class MetodosPagoCrudTest extends TestCase
     {
         $this->actingAs($this->user('admin')); $active = $this->method(['clave' => 'CERO01', 'nombre' => 'Completo', 'clave_forma_pago_sat' => '01', 'activo' => true]); foreach (array_keys(ShowMetodosPago::REQUIREMENT_LABELS) as $field) $active->{$field} = true; $active->save(); $this->method(['clave' => 'VACIO', 'nombre' => 'Vacío', 'clave_forma_pago_sat' => null, 'activo' => false]);
         $test = Livewire::test(ShowMetodosPago::class)->assertSee('CERO01')->assertSee('Completo')->assertSee('01')->assertSee('Sin configurar')->assertSee('Sin datos adicionales')->assertSee('Activo')->assertSee('Inactivo')->assertSee('Editar')->assertSee('Desactivar')->assertSee('Activar')->assertDontSee('requiere_rastreo_spei');
-        foreach (ShowMetodosPago::REQUIREMENT_LABELS as $label) $test->assertSee($label);
+        foreach (ShowMetodosPago::REQUIREMENT_LABELS as $metadata) $test->assertSee($metadata['etiqueta']);
     }
 
     public function test_empty_listing_message_is_rendered(): void { $this->actingAs($this->user('admin')); Livewire::test(ShowMetodosPago::class)->assertSee('No se encontraron métodos de pago.'); }
