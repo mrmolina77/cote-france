@@ -46,19 +46,62 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
     public function test_complete_payment_persists_server_data_application_history_and_paid_state(): void
     {
         $cargo = $this->cargo('30.00');
-        $pago = $this->confirm(['monto' => '30.00', 'moneda' => 'USD', 'estado' => 'borrador'], [$cargo->getKey() => '30.00']);
+        $pago = $this->confirm([
+            'monto' => '30.00', 'inscripciones_id' => 999999, 'prospectos_id' => 999999,
+            'responsable_pago_id' => 999999, 'metodo_pago_id' => 999999, 'moneda' => 'USD',
+            'estado' => 'borrador', 'created_by' => 999999, 'confirmed_by' => 999999,
+            'fecha_confirmacion' => '2000-01-01 00:00:00', 'forma_pago_sat' => '99',
+        ], [$cargo->getKey() => '30.00'])->fresh();
 
+        $this->assertSame($this->inscripcion->getKey(), (int) $pago->inscripciones_id);
+        $this->assertSame((int) $this->inscripcion->prospectos_id, (int) $pago->prospectos_id);
+        $this->assertSame((int) $this->inscripcion->responsable_pago_id, (int) $pago->responsable_pago_id);
+        $this->assertSame($this->metodo->getKey(), (int) $pago->metodo_pago_id);
         $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->estado);
         $this->assertSame('MXN', $pago->moneda);
         $this->assertSame($this->usuario->getKey(), (int) $pago->created_by);
         $this->assertSame($this->usuario->getKey(), (int) $pago->confirmed_by);
-        $this->assertNotNull($pago->fecha_confirmacion);
+        $this->assertTrue($pago->fecha_confirmacion->equalTo(now()));
+        $this->assertSame($this->metodo->clave_forma_pago_sat, $pago->forma_pago_sat);
         $this->assertMatchesRegularExpression('/^PAG-2026-\d{6}$/', $pago->folio);
         $this->assertCount(1, $pago->aplicaciones);
         $this->assertSame('30.00', $pago->aplicaciones[0]->saldo_anterior);
         $this->assertSame('0.00', $pago->aplicaciones[0]->saldo_posterior);
         $this->assertSame('0.00', $cargo->fresh()->saldo_pendiente);
         $this->assertSame(Cargo::ESTADO_PAGADO, $cargo->fresh()->estado);
+    }
+
+    public function test_one_payment_can_fully_pay_one_charge_and_partially_pay_another(): void
+    {
+        $complete = $this->cargo('10.00');
+        $partial = $this->cargo('20.00', ['fecha_vencimiento' => '2026-09-11']);
+
+        $pago = $this->confirm(['monto' => '15.00'], [
+            $complete->getKey() => '10.00',
+            $partial->getKey() => '5.00',
+        ]);
+        $applications = $pago->aplicaciones->keyBy('cargo_id');
+
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertDatabaseCount('pago_aplicaciones', 2);
+        $this->assertSame(['0.00', Cargo::ESTADO_PAGADO], [$complete->fresh()->saldo_pendiente, $complete->fresh()->estado]);
+        $this->assertSame(['15.00', Cargo::ESTADO_PARCIAL], [$partial->fresh()->saldo_pendiente, $partial->fresh()->estado]);
+        $this->assertSame(['10.00', '10.00', '0.00'], [
+            $applications[$complete->getKey()]->importe_aplicado,
+            $applications[$complete->getKey()]->saldo_anterior,
+            $applications[$complete->getKey()]->saldo_posterior,
+        ]);
+        $this->assertSame(['5.00', '20.00', '15.00'], [
+            $applications[$partial->getKey()]->importe_aplicado,
+            $applications[$partial->getKey()]->saldo_anterior,
+            $applications[$partial->getKey()]->saldo_posterior,
+        ]);
+        $this->assertSame('15.00', $pago->monto);
+        $this->assertSame(1500, $applications->sum(function ($application) {
+            [$units, $cents] = explode('.', $application->importe_aplicado);
+
+            return ((int) $units * 100) + (int) $cents;
+        }));
     }
 
     public function test_partial_and_overdue_payments_use_current_balance_and_correct_states(): void
@@ -135,8 +178,19 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
             }
         }
         $cargo = $this->cargo('2.00');
-        $this->expectException(ValidationException::class);
-        $this->confirm(['monto' => '2.00'], ['0'.$cargo->getKey() => '1.00', $cargo->getKey() => '1.00']);
+        $this->assertInvalidChargeIdentifiers($cargo, ['0'.$cargo->getKey() => '1.00', $cargo->getKey() => '1.00']);
+    }
+
+    /** @dataProvider invalidChargeIdentifiers */
+    public function test_rejects_manipulated_charge_identifiers_without_financial_writes($identifier): void
+    {
+        $cargo = $this->cargo('10.00');
+        $this->assertInvalidChargeIdentifiers($cargo, [$identifier => '1.00']);
+    }
+
+    public function invalidChargeIdentifiers(): array
+    {
+        return [['abc'], [0], [-1], ['1.5'], [' 1'], ['1e1']];
     }
 
     public function test_rejects_charge_from_other_enrollment_without_disclosing_it(): void
@@ -157,6 +211,16 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
         $cargo = $this->cargo('10.00');
         $cargo->update(['saldo_pendiente' => '5.00']);
         $this->assertRejected(fn () => $this->confirm(['monto' => '10.00'], [$cargo->getKey() => '10.00']));
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertSame(['5.00', Cargo::ESTADO_PENDIENTE], [$cargo->fresh()->saldo_pendiente, $cargo->fresh()->estado]);
+
+        $pago = $this->confirm(['monto' => '5.00'], [$cargo->getKey() => '5.00']);
+        $this->assertSame('5.00', $pago->aplicaciones->first()->saldo_anterior);
+        $pago->aplicaciones()->delete();
+        $pago->delete();
+        DB::table('consecutivos_pago')->delete();
+        $cargo->forceFill(['saldo_pendiente' => '5.00', 'estado' => Cargo::ESTADO_PENDIENTE])->save();
 
         $this->metodo->update(['activo' => false]);
         $this->assertRejected(fn () => $this->confirm(['monto' => '5.00'], [$cargo->getKey() => '5.00']));
@@ -221,6 +285,22 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
             $this->fail('La operación debió rechazarse.');
         } catch (ValidationException $exception) {
             $this->assertDatabaseCount('pagos', 0);
+        }
+    }
+
+    private function assertInvalidChargeIdentifiers(Cargo $cargo, array $applications): void
+    {
+        $saldo = $cargo->saldo_pendiente;
+        $estado = $cargo->estado;
+        try {
+            $this->confirm(['monto' => '1.00'], $applications);
+            $this->fail('El identificador manipulado debió rechazarse.');
+        } catch (ValidationException $exception) {
+            $this->assertDatabaseCount('pagos', 0);
+            $this->assertDatabaseCount('pago_aplicaciones', 0);
+            $this->assertDatabaseCount('consecutivos_pago', 0);
+            $this->assertSame($saldo, $cargo->fresh()->saldo_pendiente);
+            $this->assertSame($estado, $cargo->fresh()->estado);
         }
     }
 }

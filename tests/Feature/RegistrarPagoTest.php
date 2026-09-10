@@ -85,6 +85,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->assertSee('Revisión del pago');
 
         $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
         $this->assertDatabaseCount('consecutivos_pago', 0);
         $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '60.60']);
     }
