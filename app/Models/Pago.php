@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 
 class Pago extends Model
 {
@@ -41,6 +42,19 @@ class Pago extends Model
         'monto' => 'decimal:2',
         'tipo_cambio' => 'decimal:6',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Pago $pago): void {
+            if (in_array($pago->estado, [
+                self::ESTADO_CONFIRMADO,
+                self::ESTADO_CANCELADO,
+                self::ESTADO_REEMBOLSADO,
+            ], true)) {
+                throw new LogicException('Los pagos con efectos financieros no pueden eliminarse; deben conservarse para auditoría.');
+            }
+        });
+    }
 
     public function inscripcion() { return $this->belongsTo(Inscripcion::class, 'inscripciones_id', 'inscripciones_id'); }
     public function prospecto() { return $this->belongsTo(Prospecto::class, 'prospectos_id', 'prospectos_id'); }

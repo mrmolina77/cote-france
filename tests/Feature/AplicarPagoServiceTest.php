@@ -217,8 +217,8 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
 
         $pago = $this->confirm(['monto' => '5.00'], [$cargo->getKey() => '5.00']);
         $this->assertSame('5.00', $pago->aplicaciones->first()->saldo_anterior);
-        $pago->aplicaciones()->delete();
-        $pago->delete();
+        DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->delete();
+        DB::table('pagos')->where('pago_id', $pago->getKey())->delete();
         DB::table('consecutivos_pago')->delete();
         $cargo->forceFill(['saldo_pendiente' => '5.00', 'estado' => Cargo::ESTADO_PENDIENTE])->save();
 
