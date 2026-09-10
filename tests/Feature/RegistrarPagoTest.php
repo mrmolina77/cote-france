@@ -131,7 +131,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             'saldo_posterior' => '0.00',
         ]);
         $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '0.00', 'estado' => Cargo::ESTADO_PAGADO]);
-        $this->assertSame($pago->folio, session('pago_confirmado.folio'));
+        $this->assertStringContainsString('Pago registrado correctamente. Folio: '.$pago->folio, $component->lastResponse->getContent());
         $consecutivo = DB::table('consecutivos_pago')->where('anio', 2026)->value('ultimo_consecutivo');
 
         $component->call('confirmarPago')->assertHasErrors('confirmacion');
@@ -149,7 +149,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $cargo = $this->cargo(['saldo_pendiente' => '18.25']);
         $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
 
-        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->assertDontSee('Pago registrado correctamente.')
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
             ->call('seleccionarCargo', $cargo->getKey())
@@ -157,15 +157,13 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('prepararPago')->call('confirmarPago');
 
         $folio = Pago::query()->sole()->folio;
-        $this->assertSame($folio, session('pago_confirmado.folio'));
-        $this->assertSame('Pago registrado correctamente.', session('pago_confirmado.mensaje'));
         $this->assertStringContainsString(
             'Pago registrado correctamente. Folio: '.$folio,
-            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->html()
+            $component->lastResponse->getContent()
         );
 
         session()->flash('pago_confirmado', ['mensaje' => '<script>alert(1)</script>', 'folio' => '<b>FOLIO</b>']);
-        $html = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->html();
+        $html = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->lastResponse->getContent();
         $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt; Folio: &lt;b&gt;FOLIO&lt;/b&gt;', $html);
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
     }
@@ -176,7 +174,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $partial = $this->cargo(['total' => '70.70', 'saldo_pendiente' => '70.70']);
         $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
 
-        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())
             ->call('seleccionarTodosCargos')
             ->set('importesAplicar.'.$partial->getKey(), '20.20')
@@ -191,7 +189,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'cargo_id' => $partial->getKey(), 'importe_aplicado' => '20.20', 'saldo_anterior' => '70.70', 'saldo_posterior' => '50.50']);
         $this->assertSame(Cargo::ESTADO_PAGADO, $full->fresh()->estado);
         $this->assertSame(Cargo::ESTADO_PARCIAL, $partial->fresh()->estado);
-        $this->assertSame($pago->folio, session('pago_confirmado.folio'));
+        $this->assertStringContainsString('Pago registrado correctamente. Folio: '.$pago->folio, $component->lastResponse->getContent());
     }
 
     public function test_confirmation_without_a_valid_review_does_not_write_financial_records(): void
