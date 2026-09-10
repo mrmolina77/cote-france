@@ -10,15 +10,18 @@ use App\Models\MetodoPago;
 use App\Models\Pago;
 use App\Models\ResponsablePago;
 use App\Models\User;
+use App\Services\Facturacion\AplicarPagoService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use ReflectionClass;
 use ReflectionProperty;
@@ -104,8 +107,17 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('confirmarPago')
             ->assertSet('mostrarConfirmacion', false)
             ->assertSet('confirmacionFingerprint', null)
+            ->assertSet('busqueda', '')
             ->assertSet('inscripcionSeleccionadaId', null)
             ->assertSet('cargosSeleccionados', [])
+            ->assertSet('importesAplicar', [])
+            ->assertSet('metodoPagoId', null)
+            ->assertSet('datosMetodo', [])
+            ->assertSet('montoRecibido', null)
+            ->assertSet('observaciones', null)
+            ->assertSet('comprobante', null)
+            ->assertSet('fechaPago', '2026-09-09T12:00')
+            ->assertHasNoErrors()
             ->assertSee('Pago registrado correctamente. Folio:');
 
         $pago = Pago::query()->sole();
@@ -119,11 +131,15 @@ class RegistrarPagoTest extends InscripcionesTestCase
             'saldo_posterior' => '0.00',
         ]);
         $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '0.00', 'estado' => Cargo::ESTADO_PAGADO]);
+        $this->assertSame($pago->folio, session('pago_confirmado.folio'));
+        $consecutivo = DB::table('consecutivos_pago')->where('anio', 2026)->value('ultimo_consecutivo');
 
         $component->call('confirmarPago')->assertHasErrors('confirmacion');
         $this->assertDatabaseCount('pagos', 1);
         $this->assertDatabaseCount('pago_aplicaciones', 1);
         $this->assertDatabaseCount('consecutivos_pago', 1);
+        $this->assertSame($consecutivo, DB::table('consecutivos_pago')->where('anio', 2026)->value('ultimo_consecutivo'));
+        $this->assertSame('0.00', $cargo->fresh()->saldo_pendiente);
         $component->assertDontSee('Pago registrado correctamente. Folio:');
     }
 
@@ -1138,6 +1154,250 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->set('metodoPagoId', $cash->getKey())->set('datosMetodo', ['referencia' => '   '])
             ->call('prepararPago')->assertSet('mostrarConfirmacion', true)->assertDontSee('identificador coincidente')
             ->assertDontSee('FOLIO-SENSIBLE')->assertDontSee('987.65');
+    }
+
+    /** @dataProvider invalidReviewStates */
+    public function test_invalid_or_stale_review_fingerprints_cannot_confirm(string $case): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '45.67']);
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $cash->getKey());
+
+        if ($case === 'flag-only') {
+            $component->set('mostrarConfirmacion', true);
+        } else {
+            $component->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+            $valid = $component->get('confirmacionFingerprint');
+            if ($case === 'old') {
+                $component->set('observaciones', 'versión posterior')
+                    ->set('confirmacionFingerprint', $valid)->set('mostrarConfirmacion', true);
+            } else {
+                $fingerprint = ['null' => null, 'empty' => '', 'short' => 'abc', 'fake' => str_repeat('f', 64)][$case];
+                $component->set('confirmacionFingerprint', $fingerprint)->set('mostrarConfirmacion', true);
+            }
+        }
+
+        $component->call('confirmarPago')->assertHasErrors('confirmacion')
+            ->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null)
+            ->assertDontSee('Pago registrado correctamente. Folio:');
+        $this->assertNoFinancialWrites($cargo, '45.67', Cargo::ESTADO_PENDIENTE);
+    }
+
+    public static function invalidReviewStates(): array
+    {
+        return ['null' => ['null'], 'empty' => ['empty'], 'wrong length' => ['short'],
+            'fake sha256' => ['fake'], 'manipulated flag' => ['flag-only'], 'previous version' => ['old']];
+    }
+
+    /** @dataProvider reviewedFieldMutations */
+    public function test_each_change_after_review_invalidates_confirmation(string $field, $value): void
+    {
+        Storage::fake('public');
+        $cargo = $this->cargo(['saldo_pendiente' => '45.67']);
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $cash->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+
+        if ($field === 'comprobante') {
+            $value = UploadedFile::fake()->create('posterior.pdf', 10, 'application/pdf');
+        } elseif ($field === 'metodoPagoId') {
+            $value = MetodoPago::where('clave', MetodoPago::POR_DEFINIR)->value('metodo_pago_id');
+        }
+        $component->set($field, $value)->call('confirmarPago')->assertHasErrors('confirmacion')
+            ->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null)
+            ->assertDontSee('Pago registrado correctamente. Folio:');
+        $this->assertNoFinancialWrites($cargo, '45.67', Cargo::ESTADO_PENDIENTE);
+    }
+
+    public static function reviewedFieldMutations(): array
+    {
+        return [
+            'received amount' => ['montoRecibido', '40.00'], 'charge selection' => ['cargosSeleccionados', []],
+            'applied amount' => ['importesAplicar', ['1' => '1.00']], 'payment method' => ['metodoPagoId', null],
+            'dynamic data' => ['datosMetodo', ['banco' => 'inyectado']], 'date' => ['fechaPago', '2026-09-08T12:00'],
+            'observations' => ['observaciones', 'cambio posterior'], 'receipt' => ['comprobante', null],
+        ];
+    }
+
+    /** @dataProvider concurrentReviewChanges */
+    public function test_concurrent_database_change_between_review_and_confirmation_rolls_back(string $case): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '45.67']);
+        $other = $this->cargo(['saldo_pendiente' => '13.21']);
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $cash->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+
+        if ($case === 'balance') $cargo->update(['saldo_pendiente' => '40.00']);
+        elseif ($case === 'paid') $cargo->update(['estado' => Cargo::ESTADO_PAGADO]);
+        elseif ($case === 'cancelled') $cargo->update(['estado' => Cargo::ESTADO_CANCELADO]);
+        elseif ($case === 'currency') $cargo->update(['moneda' => 'USD']);
+        elseif ($case === 'deleted-charge') $cargo->delete();
+        elseif ($case === 'inactive-method') $cash->update(['activo' => false]);
+        elseif ($case === 'inactive-responsible') $this->inscripcion->responsablePago->update(['activo' => false]);
+        elseif ($case === 'unlinked-responsible') {
+            [$otherProspect] = $this->catalogs();
+            $this->inscripcion->responsablePago->update(['prospectos_id' => $otherProspect->getKey()]);
+        }
+        elseif ($case === 'cancelled-enrollment') $this->inscripcion->update(['estatus' => 'cancelada']);
+        elseif ($case === 'deleted-enrollment') $this->inscripcion->delete();
+        elseif ($case === 'moved') {
+            [$prospecto, $curso, $grupo] = $this->catalogs();
+            $otherEnrollment = $this->enroll($prospecto, $curso, $grupo);
+            $cargo->update(['inscripciones_id' => $otherEnrollment->getKey()]);
+        }
+
+        $component->call('confirmarPago')->assertHasErrors()->assertHasErrors('confirmacion')
+            ->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null)
+            ->assertDontSee('Pago registrado correctamente. Folio:')->assertDontSee('otra inscripción');
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertSame('13.21', $other->fresh()->saldo_pendiente);
+        $this->assertSame(Cargo::ESTADO_PENDIENTE, $other->fresh()->estado);
+        if (in_array($case, ['paid', 'cancelled', 'currency', 'deleted-charge', 'moved'], true)) {
+            $component->assertSet('cargosSeleccionados', [])->assertSet('importesAplicar', []);
+        }
+    }
+
+    public static function concurrentReviewChanges(): array
+    {
+        return array_map(fn ($case) => [$case], ['balance', 'paid', 'cancelled', 'moved', 'currency', 'deleted-charge',
+            'inactive-method', 'inactive-responsible', 'unlinked-responsible', 'cancelled-enrollment', 'deleted-enrollment']);
+    }
+
+    /** @dataProvider dynamicPaymentMethods */
+    public function test_confirmation_persists_only_configured_normalized_dynamic_fields(string $key, array $input, array $expected): void
+    {
+        Storage::fake('public');
+        $cargo = $this->cargo();
+        $method = MetodoPago::where('clave', $key)->firstOrFail();
+        $input['forma_pago_sat'] = '99';
+        $input['numero_cheque'] = 'OCULTO';
+        $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $method->getKey())
+            ->set('datosMetodo', $input);
+        if ($method->requiere_comprobante) {
+            $component->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'));
+        }
+        $component->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->call('confirmarPago')->assertHasNoErrors()->assertSet('comprobante', null);
+
+        $pago = Pago::query()->sole();
+        foreach ($expected as $field => $value) $this->assertSame($value, $pago->{$field});
+        $this->assertSame($method->clave_forma_pago_sat, $pago->forma_pago_sat);
+        $this->assertNull($pago->numero_cheque);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    public static function dynamicPaymentMethods(): array
+    {
+        return [
+            'SPEI' => [MetodoPago::TRANSFERENCIA_SPEI,
+                ['banco' => '  Banco Uno ', 'referencia' => ' REF-1 ', 'rastreo_spei' => ' SPEI-1 '],
+                ['banco' => 'Banco Uno', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1']],
+            'credit card' => [MetodoPago::TARJETA_CREDITO,
+                ['numero_autorizacion' => ' AUT-1 ', 'terminal' => ' T-1 ', 'ultimos_4_digitos' => '1234'],
+                ['numero_autorizacion' => 'AUT-1', 'terminal' => 'T-1', 'ultimos_4_digitos' => '1234']],
+            'debit card' => [MetodoPago::TARJETA_DEBITO,
+                ['numero_autorizacion' => ' AUT-2 ', 'terminal' => ' T-2 ', 'ultimos_4_digitos' => '5678'],
+                ['numero_autorizacion' => 'AUT-2', 'terminal' => 'T-2', 'ultimos_4_digitos' => '5678']],
+            'wallet' => [MetodoPago::MONEDERO_ELECTRONICO,
+                ['proveedor' => ' Proveedor ', 'referencia' => ' WALLET-1 '], ['proveedor' => 'Proveedor', 'referencia' => 'WALLET-1']],
+            'intermediary' => [MetodoPago::INTERMEDIARIO_PAGOS,
+                ['proveedor' => ' Pasarela ', 'referencia' => ' PSP-1 '], ['proveedor' => 'Pasarela', 'referencia' => 'PSP-1']],
+        ];
+    }
+
+    public function test_livewire_confirms_partial_payment_without_changing_overdue_status(): void
+    {
+        $cargo = $this->cargo(['total' => '100.01', 'saldo_pendiente' => '100.01', 'estado' => Cargo::ESTADO_VENCIDO, 'fecha_vencimiento' => '2026-09-01']);
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $this->componentWithSelectedCharge($cargo)->set('importesAplicar.'.$cargo->getKey(), '33.33')
+            ->set('montoRecibido', '33.33')->set('metodoPagoId', $cash->getKey())
+            ->call('prepararPago')->call('confirmarPago')->assertHasNoErrors();
+        $pago = Pago::query()->sole();
+        $this->assertSame('33.33', $pago->monto);
+        $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->estado);
+        $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'cargo_id' => $cargo->getKey(),
+            'importe_aplicado' => '33.33', 'saldo_anterior' => '100.01', 'saldo_posterior' => '66.68']);
+        $this->assertSame('66.68', $cargo->fresh()->saldo_pendiente);
+        $this->assertSame(Cargo::ESTADO_VENCIDO, $cargo->fresh()->estado);
+    }
+
+    /** @dataProvider serviceErrorMappings */
+    public function test_confirmation_maps_service_validation_errors_through_public_flow(string $source, string $target): void
+    {
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $cash->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+        $mock = \Mockery::mock(AplicarPagoService::class);
+        $mock->shouldReceive('confirmar')->once()->andThrow(ValidationException::withMessages([$source => 'Error controlado.']));
+        app()->instance(AplicarPagoService::class, $mock);
+        $component->call('confirmarPago')->assertHasErrors([$target, 'confirmacion'])
+            ->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null)
+            ->assertDontSee('Pago registrado correctamente. Folio:');
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+    }
+
+    public static function serviceErrorMappings(): array
+    {
+        return [
+            ['inscripcion_id', 'inscripcionSeleccionadaId'], ['metodo_pago_id', 'metodoPagoId'], ['monto', 'montoRecibido'],
+            ['aplicaciones', 'cargosSeleccionados'], ['importe aplicado', 'cargosSeleccionados'], ['comprobante', 'comprobante'],
+            ['banco', 'datosMetodo.banco'], ['referencia', 'datosMetodo.referencia'], ['fecha_pago', 'fechaPago'],
+            ['desconocido', 'confirmacion'],
+        ];
+    }
+
+    public function test_unexpected_service_exception_is_generic_and_leaves_no_financial_trace(): void
+    {
+        Log::spy();
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $cash->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+        $mock = \Mockery::mock(AplicarPagoService::class);
+        $mock->shouldReceive('confirmar')->once()->andThrow(new \RuntimeException('detalle interno sensible'));
+        app()->instance(AplicarPagoService::class, $mock);
+
+        $component->call('confirmarPago')->assertHasErrors('confirmacion')
+            ->assertSee('No fue posible registrar el pago. Intenta revisarlo nuevamente.')
+            ->assertDontSee('detalle interno sensible')->assertDontSee('Pago registrado correctamente. Folio:')
+            ->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null);
+        $this->assertNull(session('pago_confirmado'));
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+    }
+
+    public function test_required_receipt_is_only_temporary_and_never_persisted_by_application(): void
+    {
+        Storage::fake('public');
+        $this->assertFalse(Schema::hasTable('archivos_pago'));
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF', 'rastreo_spei' => 'SPEI'])
+            ->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'))
+            ->call('prepararPago')->assertHasNoErrors()->call('confirmarPago')->assertHasNoErrors()
+            ->assertSet('comprobante', null);
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+        $columns = Schema::getColumnListing('pagos');
+        $this->assertNotContains('comprobante', $columns);
+        $this->assertNotContains('ruta_comprobante', $columns);
+        $this->assertFalse(class_exists('App\\Models\\ArchivoPago'));
+    }
+
+    private function assertNoFinancialWrites(Cargo $cargo, string $balance, string $status): void
+    {
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        if ($cargo->fresh()) {
+            $this->assertSame($balance, $cargo->fresh()->saldo_pendiente);
+            $this->assertSame($status, $cargo->fresh()->estado);
+        }
+        $this->assertNull(session('pago_confirmado'));
     }
 
     private function componentWithSelectedCharge(Cargo $cargo)
