@@ -4,6 +4,12 @@
         <div class="bg-white rounded-lg shadow p-5">
             <h1 class="text-2xl font-semibold text-gray-800">Registrar pago</h1>
             <p class="mt-1 text-sm text-gray-500">Consulta la inscripción y sus cargos antes de preparar un pago.</p>
+            @if($mensajeConfirmacion)
+                <p class="mt-4 p-3 rounded bg-green-50 text-green-800" role="status">{{ $mensajeConfirmacion }}</p>
+            @endif
+            @error('confirmacion')
+                <p class="mt-4 p-3 rounded bg-red-50 text-red-700" role="alert">{{ $message }}</p>
+            @enderror
 
             <div class="mt-5">
                 <x-forms.label value="Buscar alumno o inscripción" />
@@ -177,7 +183,13 @@
                         @foreach($resumenConfirmacion['datos'] as $campo => $valor)<div><dt class="text-gray-500">{{ $configuracionMetodo['campos'][$campo]['etiqueta'] ?? ($campo === 'forma_pago_sat' ? 'Forma de pago SAT' : ucfirst(str_replace('_', ' ', $campo))) }}</dt><dd>{{ $valor }}</dd></div>@endforeach
                     </dl>
                     @if($advertenciaDuplicidad)<p class="mt-4 p-3 rounded bg-yellow-100 text-yellow-900">{{ $advertenciaDuplicidad }}</p>@endif
-                    <button type="button" wire:click="volverAEditar" class="mt-4 px-4 py-2 border rounded bg-white text-gray-700">Volver a editar</button>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button type="button" wire:click="confirmarPago" wire:loading.attr="disabled" wire:target="confirmarPago" class="px-4 py-2 rounded bg-green-700 text-white hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span wire:loading.remove wire:target="confirmarPago">Confirmar y registrar pago</span>
+                            <span wire:loading wire:target="confirmarPago">Procesando...</span>
+                        </button>
+                        <button type="button" wire:click="volverAEditar" wire:loading.attr="disabled" wire:target="confirmarPago" class="px-4 py-2 border rounded bg-white text-gray-700 disabled:opacity-50">Volver a editar</button>
+                    </div>
                 </section>
             @endif
         @endif

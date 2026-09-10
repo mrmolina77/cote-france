@@ -90,6 +90,53 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '60.60']);
     }
 
+    public function test_reviewed_payment_can_be_confirmed_only_once_and_clears_the_form(): void
+    {
+        $cargo = $this->cargo(['saldo_pendiente' => '60.60']);
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $efectivo->getKey())
+            ->call('prepararPago')
+            ->assertSee('Confirmar y registrar pago')
+            ->call('confirmarPago')
+            ->assertSet('mostrarConfirmacion', false)
+            ->assertSet('confirmacionFingerprint', null)
+            ->assertSet('inscripcionSeleccionadaId', null)
+            ->assertSet('cargosSeleccionados', [])
+            ->assertSee('Pago registrado correctamente. Folio:');
+
+        $pago = Pago::query()->sole();
+        $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->estado);
+        $this->assertNotEmpty($pago->folio);
+        $this->assertDatabaseHas('pago_aplicaciones', [
+            'pago_id' => $pago->getKey(),
+            'cargo_id' => $cargo->getKey(),
+            'importe_aplicado' => '60.60',
+            'saldo_anterior' => '60.60',
+            'saldo_posterior' => '0.00',
+        ]);
+        $this->assertDatabaseHas('cargos', ['cargo_id' => $cargo->getKey(), 'saldo_pendiente' => '0.00', 'estado' => Cargo::ESTADO_PAGADO]);
+
+        $component->call('confirmarPago')->assertHasErrors('confirmacion');
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertDatabaseCount('pago_aplicaciones', 1);
+    }
+
+    public function test_confirmation_without_a_valid_review_does_not_write_financial_records(): void
+    {
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('confirmarPago')
+            ->assertHasErrors('confirmacion')
+            ->assertDontSee('Pago registrado correctamente. Folio:');
+
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+    }
+
     public function test_transfer_requires_server_configured_fields_and_temporary_receipt(): void
     {
         $cargo = $this->cargo();
