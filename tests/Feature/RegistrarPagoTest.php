@@ -123,6 +123,59 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $component->call('confirmarPago')->assertHasErrors('confirmacion');
         $this->assertDatabaseCount('pagos', 1);
         $this->assertDatabaseCount('pago_aplicaciones', 1);
+        $this->assertDatabaseCount('consecutivos_pago', 1);
+        $component->assertDontSee('Pago registrado correctamente. Folio:');
+    }
+
+    public function test_success_is_server_flash_with_the_persisted_escaped_folio(): void
+    {
+        $this->assertFalse((new ReflectionClass(RegistrarPago::class))->hasProperty('mensajeConfirmacion'));
+        $cargo = $this->cargo(['saldo_pendiente' => '18.25']);
+        $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->assertDontSee('Pago registrado correctamente.')
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $efectivo->getKey())
+            ->call('prepararPago')->call('confirmarPago');
+
+        $folio = Pago::query()->sole()->folio;
+        $this->assertSame($folio, session('pago_confirmado.folio'));
+        $this->assertSame('Pago registrado correctamente.', session('pago_confirmado.mensaje'));
+        $this->assertStringContainsString(
+            'Pago registrado correctamente. Folio: '.$folio,
+            Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->html()
+        );
+
+        session()->flash('pago_confirmado', ['mensaje' => '<script>alert(1)</script>', 'folio' => '<b>FOLIO</b>']);
+        $html = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)->html();
+        $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt; Folio: &lt;b&gt;FOLIO&lt;/b&gt;', $html);
+        $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
+    }
+
+    public function test_livewire_confirmation_applies_full_and_partial_amounts_exactly(): void
+    {
+        $full = $this->cargo(['total' => '30.30', 'saldo_pendiente' => '30.30']);
+        $partial = $this->cargo(['total' => '70.70', 'saldo_pendiente' => '70.70']);
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarTodosCargos')
+            ->set('importesAplicar.'.$partial->getKey(), '20.20')
+            ->set('montoRecibido', '50.50')->set('metodoPagoId', $cash->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->call('confirmarPago')->assertHasNoErrors()->assertSee('Pago registrado correctamente. Folio:');
+
+        $pago = Pago::query()->sole();
+        $this->assertSame('50.50', $pago->monto);
+        $this->assertDatabaseCount('pago_aplicaciones', 2);
+        $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'cargo_id' => $full->getKey(), 'importe_aplicado' => '30.30', 'saldo_anterior' => '30.30', 'saldo_posterior' => '0.00']);
+        $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'cargo_id' => $partial->getKey(), 'importe_aplicado' => '20.20', 'saldo_anterior' => '70.70', 'saldo_posterior' => '50.50']);
+        $this->assertSame(Cargo::ESTADO_PAGADO, $full->fresh()->estado);
+        $this->assertSame(Cargo::ESTADO_PARCIAL, $partial->fresh()->estado);
+        $this->assertSame($pago->folio, session('pago_confirmado.folio'));
     }
 
     public function test_confirmation_without_a_valid_review_does_not_write_financial_records(): void
@@ -267,15 +320,23 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
     public function test_public_actions_reauthorize_independently(): void
     {
-        $this->actingAs($this->user('venta'));
-        foreach ([['seleccionarInscripcion', [$this->inscripcion->getKey()]], ['limpiarSeleccion', []], ['updatedBusqueda', []], ['render', []]] as [$method, $arguments]) {
-            try {
-                (new RegistrarPago())->{$method}(...$arguments);
-                $this->fail("{$method} no rechazó al usuario.");
-            } catch (AuthorizationException $exception) {
-                $this->assertInstanceOf(AuthorizationException::class, $exception);
+        $users = collect(['venta', 'profe', 'alum'])->map(fn ($role) => $this->user($role));
+        $users->push(User::factory()->create(['roles_id' => 999999]));
+
+        foreach ($users as $user) {
+            $this->actingAs($user);
+            foreach ([['seleccionarInscripcion', [$this->inscripcion->getKey()]], ['limpiarSeleccion', []], ['updatedBusqueda', []], ['confirmarPago', []], ['render', []]] as [$method, $arguments]) {
+                try {
+                    (new RegistrarPago())->{$method}(...$arguments);
+                    $this->fail("{$method} no rechazó al usuario.");
+                } catch (AuthorizationException $exception) {
+                    $this->assertInstanceOf(AuthorizationException::class, $exception);
+                }
             }
         }
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
     }
 
     public function test_payment_hooks_and_actions_reauthorize_independently(): void
@@ -754,6 +815,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             'totalAplicado', 'totalSeleccionado', 'saldoRestante', 'saldoRestanteTotal',
             'cantidadCargos', 'cantidadSeleccionados', 'tieneParciales', 'pagoParcial',
             'moneda', 'monedaConfiable', 'resumenSeleccion',
+            'mensajeConfirmacion',
         ] as $calculatedProperty) {
             $this->assertNotContains($calculatedProperty, $publicProperties);
         }

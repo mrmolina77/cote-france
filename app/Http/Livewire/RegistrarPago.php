@@ -34,7 +34,6 @@ class RegistrarPago extends Component
     public $comprobante;
     public $mostrarConfirmacion = false;
     public $confirmacionFingerprint;
-    public $mensajeConfirmacion;
 
     public function mount(): void
     {
@@ -225,6 +224,7 @@ class RegistrarPago extends Component
     public function prepararPago(): void
     {
         Gate::authorize('manage-pagos');
+        session()->forget('pago_confirmado');
         $this->mostrarConfirmacion = false;
         $this->confirmacionFingerprint = null;
         $this->resetErrorBag();
@@ -292,7 +292,7 @@ class RegistrarPago extends Component
     {
         Gate::authorize('manage-pagos');
         $this->resetErrorBag('confirmacion');
-        $this->mensajeConfirmacion = null;
+        session()->forget('pago_confirmado');
 
         if ($this->mostrarConfirmacion !== true
             || ! is_string($this->confirmacionFingerprint)
@@ -349,7 +349,10 @@ class RegistrarPago extends Component
 
         $folio = (string) $pago->folio;
         $this->limpiarFormularioTrasExito();
-        $this->mensajeConfirmacion = 'Pago registrado correctamente. Folio: '.$folio;
+        session()->flash('pago_confirmado', [
+            'mensaje' => 'Pago registrado correctamente.',
+            'folio' => $folio,
+        ]);
     }
 
     public function render()

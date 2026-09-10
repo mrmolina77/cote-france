@@ -4,8 +4,8 @@
         <div class="bg-white rounded-lg shadow p-5">
             <h1 class="text-2xl font-semibold text-gray-800">Registrar pago</h1>
             <p class="mt-1 text-sm text-gray-500">Consulta la inscripción y sus cargos antes de preparar un pago.</p>
-            @if($mensajeConfirmacion)
-                <p class="mt-4 p-3 rounded bg-green-50 text-green-800" role="status">{{ $mensajeConfirmacion }}</p>
+            @if(is_array(session('pago_confirmado')))
+                <p class="mt-4 p-3 rounded bg-green-50 text-green-800" role="status">{{ session('pago_confirmado.mensaje') }} Folio: {{ session('pago_confirmado.folio') }}</p>
             @endif
             @error('confirmacion')
                 <p class="mt-4 p-3 rounded bg-red-50 text-red-700" role="alert">{{ $message }}</p>
