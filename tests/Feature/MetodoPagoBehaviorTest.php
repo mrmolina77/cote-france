@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -297,7 +298,8 @@ class MetodoPagoBehaviorTest extends TestCase
     public function test_forma_sat_seleccionable_acepta_solo_dos_digitos($valor, bool $valido): void
     {
         $metodo = MetodoPago::where('clave', MetodoPago::DEPOSITO_BANCARIO)->firstOrFail();
-        $datos = ['banco' => 'Banco', 'referencia' => 'Referencia', 'comprobante' => 'archivo'];
+        $comprobante = UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf');
+        $datos = ['banco' => 'Banco', 'referencia' => 'Referencia', 'comprobante' => $comprobante];
         if ($valor !== '__ausente__') $datos['forma_pago_sat'] = $valor;
         $valido
             ? $this->assertSame('03', $this->service->validarYNormalizarParaNuevoPago($metodo->getKey(), $datos)['datos']['forma_pago_sat'])
@@ -344,13 +346,14 @@ class MetodoPagoBehaviorTest extends TestCase
 
     public function test_cambios_de_metodo_conservan_solo_campos_nuevamente_aplicables(): void
     {
-        $spei = ['banco' => ' Banco ', 'referencia' => ' REF ', 'rastreo_spei' => 'SPEI', 'comprobante' => 'archivo'];
+        $comprobante = UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf');
+        $spei = ['banco' => ' Banco ', 'referencia' => ' REF ', 'rastreo_spei' => 'SPEI', 'comprobante' => $comprobante];
         $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
         $this->assertSame(['forma_pago_sat' => '01'], $this->service->validarYNormalizarParaNuevoPago($efectivo->getKey(), $spei)['datos']);
 
         $deposito = MetodoPago::where('clave', MetodoPago::DEPOSITO_BANCARIO)->firstOrFail();
         $depositoDatos = $spei + ['forma_pago_sat' => '03'];
-        $this->assertSame(['forma_pago_sat' => '03', 'banco' => 'Banco', 'referencia' => 'REF', 'comprobante' => 'archivo'], $this->service->validarYNormalizarParaNuevoPago($deposito->getKey(), $depositoDatos)['datos']);
+        $this->assertSame(['forma_pago_sat' => '03', 'banco' => 'Banco', 'referencia' => 'REF', 'comprobante' => $comprobante], $this->service->validarYNormalizarParaNuevoPago($deposito->getKey(), $depositoDatos)['datos']);
 
         $tarjeta = MetodoPago::where('clave', MetodoPago::TARJETA_DEBITO)->firstOrFail();
         $datosTarjeta = ['numero_autorizacion' => ' A ', 'terminal' => ' T ', 'ultimos_4_digitos' => '1234', 'proveedor' => 'oculto'];

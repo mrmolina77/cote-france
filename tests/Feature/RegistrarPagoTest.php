@@ -101,7 +101,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $component->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1', 'proveedor' => 'inyectado'])
             ->set('comprobante', UploadedFile::fake()->create('comprobante.pdf', 100, 'application/pdf'))
             ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
-            ->assertSet('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1']);
+            ->assertSet('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1', 'forma_pago_sat' => '03']);
     }
 
     public function test_required_receipt_errors_use_the_visible_property_and_validate_type_and_size(): void
@@ -139,7 +139,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->assertSet('datosMetodo', [])->assertSet('comprobante', null)->assertHasNoErrors()
             ->set('datosMetodo', ['banco' => 'inyectado', 'referencia' => 'oculta'])
             ->set('comprobante', UploadedFile::fake()->create('inyectado.pdf', 20, 'application/pdf'))
-            ->call('prepararPago')->assertSet('datosMetodo', [])->assertSet('comprobante', null)
+            ->call('prepararPago')->assertSet('datosMetodo', ['forma_pago_sat' => '01'])->assertSet('comprobante', null)
             ->assertSet('mostrarConfirmacion', true);
     }
 
@@ -747,7 +747,10 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $last->update(['orden' => 999, 'nombre' => 'Último persistido']);
         $inactive->update(['activo' => false, 'nombre' => 'Método oculto']);
 
+        $cargo = $this->cargo();
         Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
             ->assertViewHas('metodosPago', fn ($methods) => $methods->first()->is($first)
                 && $methods->last()->is($last) && ! $methods->contains($inactive))
             ->assertSeeInOrder(['Primero persistido', 'Último persistido'])
@@ -788,7 +791,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
             ->set('metodoPagoId', $cash->getKey())
             ->set('datosMetodo', ['banco' => 'inyectado', 'referencia' => 'inyectada'])
-            ->call('prepararPago')->assertSet('datosMetodo', [])->assertSet('mostrarConfirmacion', true);
+            ->call('prepararPago')->assertSet('datosMetodo', ['forma_pago_sat' => '01'])->assertSet('mostrarConfirmacion', true);
     }
 
     public function test_bank_deposit_requires_exactly_two_sat_digits_and_accepts_valid_data(): void
@@ -837,7 +840,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
                     ->call('prepararPago')->assertHasErrors('datosMetodo.ultimos_4_digitos');
             }
             $component->set('datosMetodo', ['numero_autorizacion' => 'AUT', 'terminal' => 'T1', 'ultimos_4_digitos' => '1234', 'banco' => 'oculto'])
-                ->call('prepararPago')->assertSet('datosMetodo', ['numero_autorizacion' => 'AUT', 'terminal' => 'T1', 'ultimos_4_digitos' => '1234'])
+                ->call('prepararPago')->assertSet('datosMetodo', ['numero_autorizacion' => 'AUT', 'terminal' => 'T1', 'ultimos_4_digitos' => '1234', 'forma_pago_sat' => $card->clave_forma_pago_sat])
                 ->assertSet('mostrarConfirmacion', true);
         }
     }

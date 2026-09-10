@@ -27,6 +27,7 @@ abstract class InscripcionesTestCase extends TestCase
         $this->createSchema();
         ConceptoCobro::create(['clave' => 'INSCRIPCION', 'nombre' => 'Inscripción', 'activo' => true]);
         ConceptoCobro::create(['clave' => 'MENSUALIDAD', 'nombre' => 'Mensualidad', 'activo' => true]);
+        (new \Database\Seeders\MetodoPagoSeeder())->run();
     }
 
     protected function user(string $code): User

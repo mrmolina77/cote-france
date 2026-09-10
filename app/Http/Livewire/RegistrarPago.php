@@ -83,7 +83,14 @@ class RegistrarPago extends Component
     }
 
     public function updatedFechaPago(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
-    public function updatedMontoRecibido(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
+    public function updatedMontoRecibido(): void
+    {
+        Gate::authorize('manage-pagos');
+        if (is_float($this->montoRecibido) && ! is_finite($this->montoRecibido)) {
+            $this->montoRecibido = 'invalid';
+        }
+        $this->invalidarConfirmacion();
+    }
     public function updatedObservaciones(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
     public function updatedComprobante(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
 
@@ -236,6 +243,9 @@ class RegistrarPago extends Component
             return;
         }
 
+        if (is_float($this->montoRecibido) && ! is_finite($this->montoRecibido)) {
+            $this->montoRecibido = 'invalid';
+        }
         $fecha = $this->validarFechaPago();
         $monto = $this->importeACentavos($this->montoRecibido);
         if ($monto === null || $monto <= 0) $this->addError('montoRecibido', 'El importe recibido debe ser mayor a 0.00 y tener máximo dos decimales.');
