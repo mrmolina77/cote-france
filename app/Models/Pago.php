@@ -51,6 +51,7 @@ class Pago extends Model
     public function cancelledBy() { return $this->belongsTo(User::class, 'cancelled_by', 'id'); }
     public function anticipoRelacionado() { return $this->belongsTo(self::class, 'anticipo_relacionado_id', 'pago_id'); }
     public function pagosRelacionadosComoAnticipo() { return $this->hasMany(self::class, 'anticipo_relacionado_id', 'pago_id'); }
+    public function aplicaciones() { return $this->hasMany(PagoAplicacion::class, 'pago_id', 'pago_id'); }
 
     public function scopeBorradores(Builder $query): Builder { return $query->where('estado', self::ESTADO_BORRADOR); }
     public function scopeConfirmados(Builder $query): Builder { return $query->where('estado', self::ESTADO_CONFIRMADO); }

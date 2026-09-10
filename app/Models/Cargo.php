@@ -81,6 +81,11 @@ class Cargo extends Model
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
 
+    public function aplicacionesPago()
+    {
+        return $this->hasMany(PagoAplicacion::class, 'cargo_id', 'cargo_id');
+    }
+
     public function scopePendientes(Builder $query): Builder
     {
         return $query->where('estado', self::ESTADO_PENDIENTE);
