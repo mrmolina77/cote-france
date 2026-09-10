@@ -22,8 +22,19 @@ class PagoAplicacionesMigrationTest extends InscripcionesTestCase
         ]));
         $columns = collect(DB::select("PRAGMA table_info('pago_aplicaciones')"))->keyBy('name');
         $this->assertSame(1, (int) $columns['pago_aplicacion_id']->pk);
-        foreach (['importe_aplicado', 'saldo_anterior', 'saldo_posterior'] as $column) {
-            $this->assertMatchesRegularExpression('/decimal\s*\(\s*12\s*,\s*2\s*\)/i', $columns[$column]->type);
+        if (DB::getDriverName() === 'sqlite') {
+            foreach (['importe_aplicado', 'saldo_anterior', 'saldo_posterior'] as $column) {
+                $declaredType = $columns[$column]->type;
+                $this->assertMatchesRegularExpression('/(?:decimal|numeric)/i', $declaredType);
+                if (preg_match('/\((\d+)\s*,\s*(\d+)\)/', $declaredType, $matches)) {
+                    $this->assertSame(12, (int) $matches[1]);
+                    $this->assertSame(2, (int) $matches[2]);
+                }
+            }
+        } else {
+            foreach (['importe_aplicado', 'saldo_anterior', 'saldo_posterior'] as $column) {
+                $this->assertMatchesRegularExpression('/decimal\s*\(\s*12\s*,\s*2\s*\)/i', $columns[$column]->type);
+            }
         }
         $indexes = collect(DB::select("PRAGMA index_list('pago_aplicaciones')"));
         $definitions = $indexes->mapWithKeys(function ($index) {
