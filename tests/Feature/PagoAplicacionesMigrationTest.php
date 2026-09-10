@@ -26,8 +26,19 @@ class PagoAplicacionesMigrationTest extends InscripcionesTestCase
             $this->assertMatchesRegularExpression('/decimal\s*\(\s*12\s*,\s*2\s*\)/i', $columns[$column]->type);
         }
         $indexes = collect(DB::select("PRAGMA index_list('pago_aplicaciones')"));
-        $this->assertTrue($indexes->contains(fn ($index) => (bool) $index->unique));
-        $this->assertGreaterThanOrEqual(2, $indexes->count());
+        $definitions = $indexes->mapWithKeys(function ($index) {
+            $escapedName = str_replace("'", "''", $index->name);
+            $columns = collect(DB::select("PRAGMA index_info('{$escapedName}')"))
+                ->sortBy('seqno')->pluck('name')->all();
+
+            return [$index->name => ['unique' => (bool) $index->unique, 'columns' => $columns]];
+        });
+        $this->assertTrue($definitions->contains(
+            fn (array $index) => $index['unique'] && $index['columns'] === ['pago_id', 'cargo_id']
+        ));
+        $this->assertTrue($definitions->contains(
+            fn (array $index) => ! $index['unique'] && $index['columns'] === ['cargo_id']
+        ));
     }
 
     public function test_foreign_keys_restrict_and_payment_charge_pair_is_unique(): void
