@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Cargo;
 use App\Models\Inscripcion;
 use App\Models\Pago;
+use App\Services\Facturacion\AplicarPagoService;
 use App\Services\Facturacion\MetodoPagoBehaviorService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -33,6 +34,7 @@ class RegistrarPago extends Component
     public $comprobante;
     public $mostrarConfirmacion = false;
     public $confirmacionFingerprint;
+    public $mensajeConfirmacion;
 
     public function mount(): void
     {
@@ -285,6 +287,70 @@ class RegistrarPago extends Component
     }
 
     public function volverAEditar(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
+
+    public function confirmarPago(): void
+    {
+        Gate::authorize('manage-pagos');
+        $this->resetErrorBag('confirmacion');
+        $this->mensajeConfirmacion = null;
+
+        if ($this->mostrarConfirmacion !== true
+            || ! is_string($this->confirmacionFingerprint)
+            || strlen($this->confirmacionFingerprint) !== 64
+            || ! hash_equals($this->confirmacionFingerprint, $this->fingerprintEstado())) {
+            $this->invalidarConfirmacion();
+            $this->addError('confirmacion', 'La revisión ya no es válida. Revisa nuevamente el pago antes de confirmarlo.');
+            return;
+        }
+
+        // Invalidate first so that this component instance cannot submit the same
+        // reviewed operation twice, even if a repeated browser event is delivered.
+        $this->invalidarConfirmacion();
+
+        $inscripcionId = $this->normalizarId($this->inscripcionSeleccionadaId);
+        $metodoId = $this->normalizarId($this->metodoPagoId);
+        $usuarioId = auth()->id();
+        if ($inscripcionId === null || $metodoId === null || ! is_int($usuarioId)) {
+            $this->addError('confirmacion', 'No fue posible validar la operación. Revisa nuevamente el pago.');
+            return;
+        }
+
+        $aplicaciones = [];
+        foreach ($this->normalizarIdsSeleccionados() as $cargoId) {
+            $aplicaciones[(string) $cargoId] = is_array($this->importesAplicar)
+                ? ($this->importesAplicar[(string) $cargoId] ?? null)
+                : null;
+        }
+        $datosPago = is_array($this->datosMetodo) ? $this->datosMetodo : [];
+        $datosPago['comprobante'] = $this->comprobante;
+        $datosPago['fecha_pago'] = $this->fechaPago;
+        $datosPago['zona_horaria'] = config('app.timezone');
+        $datosPago['monto'] = $this->montoRecibido;
+        $datosPago['observaciones'] = $this->observaciones;
+
+        try {
+            $pago = app(AplicarPagoService::class)->confirmar(
+                $inscripcionId,
+                $metodoId,
+                $datosPago,
+                $aplicaciones,
+                $usuarioId
+            );
+        } catch (ValidationException $exception) {
+            $this->copiarErroresConfirmacion($exception);
+            $this->reconciliarSeleccion();
+            $this->addError('confirmacion', 'El pago no pudo confirmarse porque la información vigente cambió o dejó de ser válida. Revisa la operación.');
+            return;
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('confirmacion', 'No fue posible registrar el pago. Intenta revisarlo nuevamente.');
+            return;
+        }
+
+        $folio = (string) $pago->folio;
+        $this->limpiarFormularioTrasExito();
+        $this->mensajeConfirmacion = 'Pago registrado correctamente. Folio: '.$folio;
+    }
 
     public function render()
     {
@@ -616,6 +682,40 @@ class RegistrarPago extends Component
             }
             foreach ($mensajes as $mensaje) $this->addError($destino, $mensaje);
         }
+    }
+
+    private function copiarErroresConfirmacion(ValidationException $exception): void
+    {
+        foreach ($exception->errors() as $campo => $mensajes) {
+            if ($campo === 'inscripcion_id') $destino = 'inscripcionSeleccionadaId';
+            elseif ($campo === 'metodo_pago_id') $destino = 'metodoPagoId';
+            elseif ($campo === 'monto') $destino = 'montoRecibido';
+            elseif ($campo === 'aplicaciones' || $campo === 'importe aplicado') $destino = 'cargosSeleccionados';
+            elseif ($campo === 'comprobante') $destino = 'comprobante';
+            elseif (str_starts_with($campo, 'datosMetodo.')) $destino = $campo;
+            elseif (in_array($campo, array_column($this->servicioMetodos()->catalogoCampos(), 'campo'), true)) $destino = 'datosMetodo.'.$campo;
+            elseif ($campo === 'fecha_pago' || $campo === 'zona_horaria') $destino = 'fechaPago';
+            else $destino = 'confirmacion';
+            foreach ($mensajes as $mensaje) $this->addError($destino, $mensaje);
+        }
+    }
+
+    private function limpiarFormularioTrasExito(): void
+    {
+        $this->busqueda = '';
+        $this->inscripcionSeleccionadaId = null;
+        $this->cargosSeleccionados = [];
+        $this->importesAplicar = [];
+        $this->metodoPagoId = null;
+        $this->datosMetodo = [];
+        $this->montoRecibido = null;
+        $this->observaciones = null;
+        $this->comprobante = null;
+        $this->confirmacionFingerprint = null;
+        $this->mostrarConfirmacion = false;
+        $this->fechaPago = now()->format('Y-m-d\TH:i');
+        $this->resetErrorBag();
+        $this->resetValidation();
     }
 
     private function advertenciaDuplicidad(): ?string
