@@ -166,7 +166,7 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         $this->assertCancellationFails($pago, $first, '5.00');
 
         $this->assertSame('5.00', $corrupted->fresh()->saldo_pendiente);
-        $this->assertSame($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
+        $this->assertEquals($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
     }
 
     /** @dataProvider corruptedApplicationBalances */
@@ -213,7 +213,7 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         } catch (QueryException $exception) {
             $this->assertSame(['5.00', '5.00'], [$first->fresh()->saldo_pendiente, $second->fresh()->saldo_pendiente]);
             $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
-            $this->assertSame($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
+            $this->assertEquals($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
         }
     }
 
@@ -281,7 +281,7 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         } catch (ValidationException $exception) {
             $this->assertSame($expectedBalance, $valid->fresh()->saldo_pendiente);
             $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
-            $this->assertSame(
+            $this->assertEquals(
                 $applications,
                 DB::table('pago_aplicaciones')
                     ->where('pago_id', $pago->getKey())

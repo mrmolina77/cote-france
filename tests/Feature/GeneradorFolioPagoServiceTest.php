@@ -47,7 +47,7 @@ class GeneradorFolioPagoServiceTest extends PagosTestCase
         $pago->forceFill(['estado' => Pago::ESTADO_CANCELADO])->save();
         $this->assertSame(Pago::ESTADO_CANCELADO, $pago->fresh()->estado);
         $this->assertSame('PAG-2026-000002', $this->service->generar('2026-06-01', 'UTC'));
-        $pago->delete();
+        DB::table('pagos')->where('pago_id', $pago->getKey())->delete();
         $this->assertSame('PAG-2026-000003', $this->service->generar('2026-06-01', 'UTC'));
     }
 
