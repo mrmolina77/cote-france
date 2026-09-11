@@ -60,6 +60,9 @@
                 </a>
             @endcan
             @can('manage-pagos')
+                <a href="{{ route('facturacion.pagos.index') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.pagos.index') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
+                    <i class="fas fa-money-check-alt mr-3"></i>Pagos
+                </a>
                 <a href="{{ route('facturacion.pagos.registrar') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.pagos.registrar') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-cash-register mr-3"></i>Registrar pago
                 </a>
