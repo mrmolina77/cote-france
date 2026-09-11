@@ -198,6 +198,58 @@ class ShowPagosTest extends InscripcionesTestCase
             ->assertSee($boundary->folio)->assertDontSee($outside->folio);
     }
 
+    public function test_inverted_date_range_is_ignored_and_can_be_corrected_without_losing_other_filters(): void
+    {
+        $admin = $this->user('admin');
+        $methods = MetodoPago::query()->take(2)->get();
+        $selectedMethod = (string) $methods[0]->getKey();
+        $olderMatch = $this->pago($admin, [
+            'folio' => 'RANGO-INVERTIDO-COINCIDE-ANTIGUO',
+            'estado' => Pago::ESTADO_CONFIRMADO,
+            'metodo_pago_id' => $methods[0]->getKey(),
+            'fecha_pago' => '2026-09-01 12:00:00',
+        ]);
+        $newerMatch = $this->pago($admin, [
+            'folio' => 'RANGO-INVERTIDO-COINCIDE-NUEVO',
+            'estado' => Pago::ESTADO_CONFIRMADO,
+            'metodo_pago_id' => $methods[0]->getKey(),
+            'fecha_pago' => '2026-09-10 12:00:00',
+        ]);
+        $otherState = $this->pago($admin, [
+            'folio' => 'RANGO-INVERTIDO-OTRO-ESTADO',
+            'estado' => Pago::ESTADO_BORRADOR,
+            'metodo_pago_id' => $methods[0]->getKey(),
+            'fecha_pago' => '2026-09-10 12:00:00',
+        ]);
+        $otherMethod = $this->pago($admin, [
+            'folio' => 'RANGO-INVERTIDO-OTRO-METODO',
+            'estado' => Pago::ESTADO_CONFIRMADO,
+            'metodo_pago_id' => $methods[1]->getKey(),
+            'fecha_pago' => '2026-09-10 12:00:00',
+        ]);
+
+        $component = Livewire::actingAs($admin)->test(ShowPagos::class)
+            ->set('estado', Pago::ESTADO_CONFIRMADO)
+            ->set('metodoPagoId', $selectedMethod)
+            ->set('fechaDesde', '2026-09-11')
+            ->set('fechaHasta', '2026-09-05')
+            ->assertHasErrors('fechaHasta')
+            ->assertSee('La fecha hasta debe ser posterior o igual a la fecha desde.')
+            ->assertSee($olderMatch->folio)->assertSee($newerMatch->folio)
+            ->assertDontSee($otherState->folio)->assertDontSee($otherMethod->folio)
+            ->assertSet('estado', Pago::ESTADO_CONFIRMADO)
+            ->assertSet('metodoPagoId', $selectedMethod);
+
+        $component->set('fechaDesde', '2026-09-05')
+            ->set('fechaHasta', '2026-09-11')
+            ->assertHasNoErrors('fechaHasta')
+            ->assertDontSee('La fecha hasta debe ser posterior o igual a la fecha desde.')
+            ->assertDontSee($olderMatch->folio)->assertSee($newerMatch->folio)
+            ->assertDontSee($otherState->folio)->assertDontSee($otherMethod->folio)
+            ->assertSet('estado', Pago::ESTADO_CONFIRMADO)
+            ->assertSet('metodoPagoId', $selectedMethod);
+    }
+
     public function test_pagination_whitelist_and_every_filter_resets_page(): void
     {
         $admin = $this->user('admin');
@@ -385,8 +437,11 @@ class ShowPagosTest extends InscripcionesTestCase
         $admin = $this->user('admin');
         ['pago' => $pago, 'cargos' => $cargos, 'applications' => $apps] = $this->crearPagoConfirmadoConAplicaciones($admin);
         $original = $pago->only(['folio', 'confirmed_by']); $confirmedAt = $pago->fecha_confirmacion->toDateTimeString();
-        $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $pago->getKey())
-            ->set('motivoCancelacion', '  Error de captura  ')->call('confirmarCancelacion')->assertHasNoErrors()
+        $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $pago->getKey());
+        $originalToken = $component->get('cancelacionToken');
+        $this->assertIsString($originalToken);
+        $this->assertNotSame('', $originalToken);
+        $component->set('motivoCancelacion', '  Error de captura  ')->call('confirmarCancelacion')->assertHasNoErrors()
             ->assertSet('mostrarModalCancelacion', false)->assertSet('pagoCancelarId', null)
             ->assertSet('motivoCancelacion', '')->assertSet('cancelacionToken', null)
             ->assertSee('El pago '.$pago->folio.' fue cancelado correctamente.')->assertDontSee('>Cancelar</button>', false);
@@ -403,9 +458,14 @@ class ShowPagosTest extends InscripcionesTestCase
         $this->assertEquals($apps, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
         $this->assertFalse(session()->has('show-pagos.cancelacion-token.'.$admin->getKey()));
         $cancelledState = $this->financialState([$pago], $cargos);
-        $component->set('pagoCancelarId', $pago->getKey())->set('mostrarModalCancelacion', true)
-            ->set('motivoCancelacion', 'segunda')->call('confirmarCancelacion')->assertHasErrors('pagoCancelarId');
+        $component->set('pagoCancelarId', $pago->getKey())
+            ->set('cancelacionToken', $originalToken)
+            ->set('mostrarModalCancelacion', true)
+            ->set('motivoCancelacion', 'Segundo intento válido')
+            ->assertSet('cancelacionToken', $originalToken)
+            ->call('confirmarCancelacion')->assertHasErrors('pagoCancelarId');
         $this->assertSame($cancelledState, $this->financialState([$pago], $cargos));
+        $this->assertFalse(session()->has('show-pagos.cancelacion-token.'.$admin->getKey()));
     }
 
     public function test_stale_state_and_service_failure_leave_records_consistent(): void
