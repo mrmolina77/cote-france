@@ -269,12 +269,26 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
 
     private function assertCancellationFails(Pago $pago, Cargo $valid, string $expectedBalance): void
     {
+        $applications = DB::table('pago_aplicaciones')
+            ->where('pago_id', $pago->getKey())
+            ->orderBy('pago_aplicacion_id')
+            ->get()
+            ->toArray();
+
         try {
             app(CancelarPagoService::class)->cancelar($pago->getKey(), 'Motivo', $this->usuario->getKey());
             $this->fail('La restauración insegura debió rechazarse.');
         } catch (ValidationException $exception) {
             $this->assertSame($expectedBalance, $valid->fresh()->saldo_pendiente);
             $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
+            $this->assertSame(
+                $applications,
+                DB::table('pago_aplicaciones')
+                    ->where('pago_id', $pago->getKey())
+                    ->orderBy('pago_aplicacion_id')
+                    ->get()
+                    ->toArray()
+            );
         }
     }
 
