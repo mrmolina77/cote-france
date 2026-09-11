@@ -5,12 +5,26 @@ Los comprobantes definitivos se almacenan exclusivamente en el disco `local`, ba
 descarga autenticada entrega los bytes. Los temporales de Livewire también se fijan
 al disco `local`, bajo `storage/app/livewire-tmp`.
 
-La escritura física ocurre dentro del flujo coordinado de confirmación. Si falla la
-transacción después de escribir, la aplicación intenta eliminar únicamente el archivo
-nuevo. La base de datos y el filesystem no ofrecen una transacción distribuida: una
+La validación efectiva es compartida por la preparación, la confirmación y la
+persistencia: se inspecciona el MIME del contenido, se exige una extensión coherente,
+un tamaño entre 1 byte y 10240 KB y un temporal todavía válido. La revisión de la
+interfaz incluye un SHA-256 del contenido, no sólo nombre y tamaño.
+
+La escritura física ocurre dentro del flujo coordinado de confirmación. La ruta
+aleatoria se comunica al coordinador antes de abrir el stream. Así, un `put()` falso,
+una escritura parcial, un error de `exists()`, del registro de metadatos o uno posterior
+en la transacción intentan eliminar exclusivamente esa ruta. Los streams se cierran en
+todos los caminos y un error de limpieza se reporta sin sustituir la excepción original.
+La base de datos y el filesystem no ofrecen una transacción distribuida: una
 terminación abrupta del proceso entre ambas operaciones todavía podría dejar un archivo
 huérfano sin metadatos; nunca produce un pago confirmado sin su registro de archivo en
 una ejecución que alcance el manejo de errores.
+
+Los PDF positivos de la suite son documentos mínimos reproducibles con catálogo,
+árbol de páginas, tabla `xref`, `trailer` y `startxref`; el caso del límite exacto añade
+únicamente espacio en blanco permitido después de `%%EOF`. Las imágenes de prueba son
+PNG/JPEG decodificables. Su estructura se comprueba en la suite sin incorporar una
+dependencia de producción para generarlos.
 
 ## Comprobación manual en desarrollo
 

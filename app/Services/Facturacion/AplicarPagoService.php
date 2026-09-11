@@ -32,9 +32,9 @@ class AplicarPagoService
         array $importesPorCargo,
         int $usuarioId
     ): Pago {
-        $archivoNuevo = null;
+        $rutaArchivoNuevo = null;
         try {
-            return DB::transaction(function () use ($inscripcionId, $metodoPagoId, $datosPago, $importesPorCargo, $usuarioId, &$archivoNuevo) {
+            return DB::transaction(function () use ($inscripcionId, $metodoPagoId, $datosPago, $importesPorCargo, $usuarioId, &$rutaArchivoNuevo) {
             $inscripcion = Inscripcion::query()->with(['prospecto', 'responsablePago'])->find($inscripcionId);
             if (! $inscripcion || ! $inscripcion->prospecto || $inscripcion->estatus === 'cancelada') {
                 throw ValidationException::withMessages(['inscripcion_id' => 'La inscripción seleccionada no está disponible.']);
@@ -150,7 +150,9 @@ class AplicarPagoService
             }
 
             if ($comprobante instanceof UploadedFile) {
-                $archivoNuevo = $this->archivos->guardar($pago, $comprobante, $usuarioId);
+                $this->archivos->guardar($pago, $comprobante, $usuarioId, function (string $ruta) use (&$rutaArchivoNuevo): void {
+                    $rutaArchivoNuevo = $ruta;
+                });
             }
 
             return $pago->load(['aplicaciones', 'archivos']);
@@ -158,7 +160,7 @@ class AplicarPagoService
         } catch (\Throwable $error) {
             // DB y filesystem no comparten transacción. Si el proceso continúa,
             // se compensa únicamente el objeto creado por este intento.
-            if ($archivoNuevo !== null) $this->archivos->eliminarNuevo($archivoNuevo, $error);
+            if ($rutaArchivoNuevo !== null) $this->archivos->eliminarRutaNueva($rutaArchivoNuevo, $error);
             throw $error;
         }
     }
