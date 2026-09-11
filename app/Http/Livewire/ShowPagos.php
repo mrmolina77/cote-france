@@ -159,6 +159,7 @@ class ShowPagos extends Component
         $detalle = $this->pagoDetalleId ? Pago::query()->with([
             'prospecto', 'responsablePago', 'metodoPago', 'confirmedBy', 'cancelledBy',
             'aplicaciones.cargo.conceptoCobro',
+            'archivos.createdBy',
         ])->find($this->normalizarId($this->pagoDetalleId)) : null;
         $pagoCancelar = $this->pagoCancelarId ? Pago::query()->with(['prospecto', 'metodoPago'])->find($this->normalizarId($this->pagoCancelarId)) : null;
 
