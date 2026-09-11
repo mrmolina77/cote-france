@@ -48,22 +48,23 @@ class ArchivoPagoService
         ];
     }
 
-    public function guardar(Pago $pago, UploadedFile $archivo, int $usuarioId): ArchivoPago
+    public function guardar(Pago $pago, UploadedFile $archivo, int $usuarioId, ?callable $alAsignarRuta = null): ArchivoPago
     {
         $datos = $this->validar($archivo);
         $ruta = self::DIRECTORIO.'/'.date('Y/m').'/'.bin2hex(random_bytes(20)).'.'.$datos['extension'];
-        $stream = fopen($archivo->getRealPath(), 'rb');
-        if ($stream === false) throw new RuntimeException('No fue posible leer el comprobante temporal.');
-        try {
-            $guardado = Storage::disk(self::DISCO)->put($ruta, $stream, ['visibility' => 'private']);
-        } finally {
-            fclose($stream);
-        }
-        if ($guardado !== true || ! Storage::disk(self::DISCO)->exists($ruta)) {
-            throw new RuntimeException('No fue posible guardar el comprobante privado.');
+        if ($alAsignarRuta !== null) {
+            $alAsignarRuta($ruta);
         }
 
+        $stream = null;
         try {
+            $stream = fopen($archivo->getRealPath(), 'rb');
+            if ($stream === false) throw new RuntimeException('No fue posible leer el comprobante temporal.');
+            $guardado = Storage::disk(self::DISCO)->put($ruta, $stream, ['visibility' => 'private']);
+            if ($guardado !== true || ! Storage::disk(self::DISCO)->exists($ruta)) {
+                throw new RuntimeException('No fue posible guardar el comprobante privado.');
+            }
+
             $modelo = new ArchivoPago();
             $modelo->forceFill([
                 'pago_id' => $pago->getKey(), 'nombre_original' => $datos['nombre_original'],
@@ -72,16 +73,25 @@ class ArchivoPagoService
             ])->save();
             return $modelo;
         } catch (\Throwable $error) {
-            $this->eliminarCompensacion($ruta, $error);
+            // Cuando existe coordinador, éste compensa también los errores posteriores
+            // de la transacción. Sin coordinador, guardar() sigue siendo seguro por sí solo.
+            if ($alAsignarRuta === null) $this->eliminarRutaNueva($ruta, $error);
             throw $error;
+        } finally {
+            if (is_resource($stream)) fclose($stream);
         }
     }
 
     public function eliminarNuevo(ArchivoPago $archivo, \Throwable $errorPrincipal): void
     {
         if ($archivo->disco === self::DISCO && $this->rutaPermitida($archivo->ruta)) {
-            $this->eliminarCompensacion($archivo->ruta, $errorPrincipal);
+            $this->eliminarRutaNueva($archivo->ruta, $errorPrincipal);
         }
+    }
+
+    public function eliminarRutaNueva(string $ruta, \Throwable $errorPrincipal): void
+    {
+        if ($this->rutaPermitida($ruta)) $this->eliminarCompensacion($ruta, $errorPrincipal);
     }
 
     public function rutaPermitida(string $ruta): bool
@@ -93,11 +103,22 @@ class ArchivoPagoService
 
     private function sanearNombre(string $nombre, string $extension): string
     {
-        $nombre = preg_replace('/[\\x00-\\x1F\\x7F\\\/\\\\]+/u', '_', $nombre) ?? '';
-        $nombre = preg_replace('/\.{2,}/', '_', $nombre) ?? '';
+        // Un delimitador alternativo evita que '/' pueda cerrar accidentalmente
+        // el patrón PHP. Los separadores y todos los controles quedan neutralizados.
+        $nombre = preg_replace('~[\x00-\x1F\x7F/\\\\]+~u', '_', $nombre) ?? '';
+        $nombre = preg_replace('~\.{2,}~u', '_', $nombre) ?? '';
         $nombre = trim($nombre, " .\t\n\r\0\x0B");
         if ($nombre === '') $nombre = 'comprobante.'.$extension;
-        return mb_substr($nombre, 0, 240);
+
+        $sufijo = '.'.strtolower((string) pathinfo($nombre, PATHINFO_EXTENSION));
+        $extensionesNombre = $extension === 'jpg' ? ['jpg', 'jpeg'] : [$extension];
+        if ($sufijo === '.' || ! in_array(substr($sufijo, 1), $extensionesNombre, true)) {
+            $sufijo = '.'.$extension;
+        }
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+        $maximoBase = 240 - mb_strlen($sufijo, 'UTF-8');
+
+        return mb_substr($base, 0, max(1, $maximoBase), 'UTF-8').$sufijo;
     }
 
     private function eliminarCompensacion(string $ruta, \Throwable $errorPrincipal): void

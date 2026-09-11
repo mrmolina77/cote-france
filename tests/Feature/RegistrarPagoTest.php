@@ -214,7 +214,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->assertHasErrors(['datosMetodo.banco', 'datosMetodo.referencia', 'datosMetodo.rastreo_spei']);
 
         $component->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1', 'proveedor' => 'inyectado'])
-            ->set('comprobante', UploadedFile::fake()->create('comprobante.pdf', 100, 'application/pdf'))
+            ->set('comprobante', $this->validPdfUpload('comprobante.pdf'))
             ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
             ->assertSet('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-1', 'rastreo_spei' => 'SPEI-1', 'forma_pago_sat' => '03']);
     }
@@ -236,7 +236,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('prepararPago')->assertHasErrors('comprobante')->assertSet('mostrarConfirmacion', false)
             ->set('comprobante', UploadedFile::fake()->create('grande.pdf', 10241, 'application/pdf'))
             ->call('prepararPago')->assertHasErrors('comprobante')->assertSet('mostrarConfirmacion', false)
-            ->set('comprobante', UploadedFile::fake()->create('valido.pdf', 100, 'application/pdf'))
+            ->set('comprobante', $this->validPdfUpload('valido.pdf'))
             ->call('prepararPago')->assertHasNoErrors('comprobante')->assertSet('mostrarConfirmacion', true);
     }
 
@@ -249,11 +249,11 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
             ->set('metodoPagoId', $spei->getKey())->call('prepararPago')
             ->assertHasErrors(['datosMetodo.banco', 'datosMetodo.referencia', 'datosMetodo.rastreo_spei', 'comprobante'])
-            ->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'))
+            ->set('comprobante', $this->validPdfUpload('temporal.pdf'))
             ->set('metodoPagoId', $efectivo->getKey())
             ->assertSet('datosMetodo', [])->assertSet('comprobante', null)->assertHasNoErrors()
             ->set('datosMetodo', ['banco' => 'inyectado', 'referencia' => 'oculta'])
-            ->set('comprobante', UploadedFile::fake()->create('inyectado.pdf', 20, 'application/pdf'))
+            ->set('comprobante', $this->validPdfUpload('inyectado.pdf'))
             ->call('prepararPago')->assertSet('datosMetodo', ['forma_pago_sat' => '01'])->assertSet('comprobante', null)
             ->assertSet('mostrarConfirmacion', true);
     }
@@ -283,7 +283,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $base = fn () => Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
             ->set('metodoPagoId', $spei->getKey())
-            ->set('comprobante', UploadedFile::fake()->create('comprobante.pdf', 20, 'application/pdf'));
+            ->set('comprobante', $this->validPdfUpload('comprobante.pdf'));
 
         $base()->set('datosMetodo', ['banco' => 'Banco Uno', 'referencia' => 'NUEVA', 'rastreo_spei' => 'NUEVO'])
             ->call('prepararPago')->assertDontSee('identificador coincidente')->assertSet('mostrarConfirmacion', true);
@@ -925,7 +925,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $base = fn () => Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
             ->set('metodoPagoId', $deposit->getKey())
-            ->set('comprobante', UploadedFile::fake()->create('deposito.pdf', 10, 'application/pdf'));
+            ->set('comprobante', $this->validPdfUpload('deposito.pdf'));
 
         $base()->assertSee('Forma de pago SAT')->assertSee('Banco')->assertSee('Referencia')
             ->assertSee('Comprobante obligatorio');
@@ -1100,7 +1100,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->set('importesAplicar.'.$first->getKey(), '30.30')->set('montoRecibido', '50.50')
             ->set('metodoPagoId', $spei->getKey())
             ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-FLUJO', 'rastreo_spei' => 'SPEI-FLUJO'])
-            ->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'))
+            ->set('comprobante', $this->validPdfUpload('temporal.pdf'))
             ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
             ->call('volverAEditar')->set('observaciones', 'edición')
             ->set('metodoPagoId', $cash->getKey())->assertSet('comprobante', null)->assertSet('datosMetodo', [])
@@ -1134,7 +1134,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
                 ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
                 ->set('metodoPagoId', $method->getKey())->set('datosMetodo', $data);
             if ($method->requiere_comprobante) {
-                $component->set('comprobante', UploadedFile::fake()->create('identificador.pdf', 10, 'application/pdf'));
+                $component->set('comprobante', $this->validPdfUpload('identificador.pdf'));
             }
             $component->call('prepararPago')->assertSee('identificador coincidente')->assertSet('mostrarConfirmacion', true)
                 ->assertViewHas('advertenciaDuplicidad', fn ($warning) => $warning === 'Existe otro pago activo con una referencia o identificador coincidente. Verifica los datos antes de continuar.');
@@ -1197,7 +1197,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
 
         if ($field === 'comprobante') {
-            $value = UploadedFile::fake()->create('posterior.pdf', 10, 'application/pdf');
+            $value = $this->validPdfUpload('posterior.pdf');
         } elseif ($field === 'metodoPagoId') {
             $value = MetodoPago::where('clave', MetodoPago::POR_DEFINIR)->value('metodo_pago_id');
         }
@@ -1426,7 +1426,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
     private function validPdfUpload(string $name): UploadedFile
     {
         $path = tempnam(sys_get_temp_dir(), 'pago-pdf-');
-        file_put_contents($path, "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF");
+        file_put_contents($path, base64_decode('JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAxMCAxMF0gPj4KZW5kb2JqCnhyZWYKMCA0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK'));
 
         return new UploadedFile($path, $name, null, UPLOAD_ERR_OK, true);
     }

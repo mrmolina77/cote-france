@@ -5,9 +5,13 @@ namespace App\Services\Facturacion;
 use App\Models\MetodoPago;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\UploadedFile;
 
 class MetodoPagoBehaviorService
 {
+    public function __construct(private ?ArchivoPagoService $archivos = null)
+    {
+    }
     /** Única fuente de metadatos para los datos variables de un pago. */
     public const CAMPOS = [
         'requiere_forma_pago_sat' => ['campo' => 'forma_pago_sat', 'etiqueta' => 'Forma de pago SAT', 'control' => 'text', 'maximo' => 2, 'reglas' => ['string', 'regex:/^\d{2}$/D'], 'nullable' => false],
@@ -63,6 +67,10 @@ class MetodoPagoBehaviorService
             $normalizados,
             $this->reglasValidacion($metodo)
         )->validate();
+
+        if (($validados['comprobante'] ?? null) instanceof UploadedFile) {
+            ($this->archivos ?? app(ArchivoPagoService::class))->validar($validados['comprobante']);
+        }
 
         $formaSat = $this->resolverFormaPagoSat($metodo, $normalizados['forma_pago_sat'] ?? null);
         if ($formaSat !== null) {

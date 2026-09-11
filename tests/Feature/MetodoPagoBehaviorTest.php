@@ -298,7 +298,7 @@ class MetodoPagoBehaviorTest extends TestCase
     public function test_forma_sat_seleccionable_acepta_solo_dos_digitos($valor, bool $valido): void
     {
         $metodo = MetodoPago::where('clave', MetodoPago::DEPOSITO_BANCARIO)->firstOrFail();
-        $comprobante = UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf');
+        $comprobante = $this->validPdfUpload('doc.pdf');
         $datos = ['banco' => 'Banco', 'referencia' => 'Referencia', 'comprobante' => $comprobante];
         if ($valor !== '__ausente__') $datos['forma_pago_sat'] = $valor;
         $valido
@@ -346,7 +346,7 @@ class MetodoPagoBehaviorTest extends TestCase
 
     public function test_cambios_de_metodo_conservan_solo_campos_nuevamente_aplicables(): void
     {
-        $comprobante = UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf');
+        $comprobante = $this->validPdfUpload('doc.pdf');
         $spei = ['banco' => ' Banco ', 'referencia' => ' REF ', 'rastreo_spei' => 'SPEI', 'comprobante' => $comprobante];
         $efectivo = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
         $this->assertSame(['forma_pago_sat' => '01'], $this->service->validarYNormalizarParaNuevoPago($efectivo->getKey(), $spei)['datos']);
@@ -406,4 +406,12 @@ class MetodoPagoBehaviorTest extends TestCase
     {
         return require database_path('migrations/2026_09_08_000001_create_metodos_pago_table.php');
     }
+    private function validPdfUpload(string $name): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'metodo-pdf-');
+        file_put_contents($path, base64_decode('JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAxMCAxMF0gPj4KZW5kb2JqCnhyZWYKMCA0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK'));
+
+        return new UploadedFile($path, $name, null, UPLOAD_ERR_OK, true);
+    }
+
 }
