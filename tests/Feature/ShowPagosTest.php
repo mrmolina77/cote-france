@@ -64,13 +64,10 @@ class ShowPagosTest extends InscripcionesTestCase
     {
         $admin = $this->user('admin');
         $pago = $this->pago($admin, ['folio' => 'VISIBLE-SOLO-ADMIN']);
-        $venta = $this->user('venta');
-        $this->assertFalse(Gate::forUser($venta)->allows('cancel-pagos'));
-        $html = view('livewire.show-pagos', [
-            'pagos' => Pago::paginate(10), 'metodos' => MetodoPago::all(), 'detalle' => null, 'pagoCancelar' => null,
-        ])->with('errors', session()->get('errors', new \Illuminate\Support\ViewErrorBag()))->render();
-        $this->assertStringContainsString($pago->folio, $html);
-        $this->assertStringNotContainsString('>Cancelar</button>', $html);
+        Gate::define('cancel-pagos', fn () => false);
+        $component = Livewire::actingAs($admin)->test(ShowPagos::class);
+        $component->assertSee($pago->folio);
+        $component->assertDontSee('>Cancelar</button>', false);
     }
 
     /** @dataProvider searchCases */
@@ -223,7 +220,7 @@ class ShowPagosTest extends InscripcionesTestCase
         $pago = $this->pago($admin, ['folio' => $xss, 'referencia' => $xss, 'observaciones' => $xss, 'estado' => Pago::ESTADO_CANCELADO]);
         DB::table('pagos')->where('pago_id', $pago->getKey())->update(['motivo_cancelacion' => $xss, 'cancelled_by' => $admin->getKey(), 'fecha_cancelacion' => now()]);
         session()->flash('status', $xss);
-        $html = Livewire::actingAs($admin)->test(ShowPagos::class)->call('verDetalle', $pago->getKey())->html();
+        $html = Livewire::actingAs($admin)->test(ShowPagos::class)->call('verDetalle', $pago->getKey())->lastResponse->json('effects.html');
         $this->assertStringNotContainsString($xss, $html);
         $this->assertGreaterThanOrEqual(5, substr_count($html, '&lt;script&gt;alert(1)&lt;/script&gt;'));
     }
@@ -248,7 +245,7 @@ class ShowPagosTest extends InscripcionesTestCase
         $a = $this->pago($admin); $b = $this->pago($admin);
         $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $a->getKey());
         $tokenA = $component->get('cancelacionToken');
-        $component->set('motivoCancelacion', 'anterior')->addError('motivoCancelacion', 'error')
+        $component->set('motivoCancelacion', '')->call('confirmarCancelacion')->assertHasErrors('motivoCancelacion')
             ->call('prepararCancelacion', $b->getKey())->assertSet('pagoCancelarId', $b->getKey())
             ->assertSet('motivoCancelacion', '')->assertHasNoErrors()->assertSet('mostrarModalCancelacion', true);
         $this->assertNotSame($tokenA, $component->get('cancelacionToken'));
@@ -259,7 +256,7 @@ class ShowPagosTest extends InscripcionesTestCase
     {
         $admin = $this->user('admin'); $pago = $this->pago($admin);
         $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $pago->getKey())
-            ->set('motivoCancelacion', 'x')->addError('motivoCancelacion', 'error')->call('cerrarCancelacion')
+            ->set('motivoCancelacion', '')->call('confirmarCancelacion')->assertHasErrors('motivoCancelacion')->call('cerrarCancelacion')
             ->assertSet('pagoCancelarId', null)->assertSet('motivoCancelacion', '')->assertSet('cancelacionToken', null)
             ->assertSet('mostrarModalCancelacion', false)->assertHasNoErrors();
         $this->assertFalse(session()->has('show-pagos.cancelacion-token.'.$admin->getKey()));
@@ -362,7 +359,7 @@ class ShowPagosTest extends InscripcionesTestCase
         $this->assertSame(Pago::ESTADO_REEMBOLSADO, $pago->fresh()->estado);
         $this->assertSame(['15.00', '0.00'], $cargos->map(fn ($c) => $c->fresh()->saldo_pendiente)->all());
         $this->assertEquals($apps, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
-        $this->assertStringNotContainsString('Stack trace', $component->html());
+        $this->assertStringNotContainsString('Stack trace', $component->lastResponse->getContent());
     }
 
     public function test_component_and_view_expose_no_payment_deletion(): void
