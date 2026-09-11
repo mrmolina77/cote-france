@@ -195,7 +195,7 @@ class ShowPagos extends Component
             $fecha = is_string($valor) && preg_match('/^\d{4}-\d{2}-\d{2}$/D', $valor) === 1
                 ? \DateTimeImmutable::createFromFormat('!Y-m-d', $valor)
                 : false;
-            $esValida = $valor === '' || $valor === null || ($fecha !== false && $fecha->format('Y-m-d') === $valor);
+            $esValida = $valor === '' || ($fecha !== false && $fecha->format('Y-m-d') === $valor);
             if (! $esValida) {
                 $validas = false;
                 if ($mostrarErrores) $this->addError($campo, $etiqueta.' debe ser una fecha real con formato AAAA-MM-DD.');
