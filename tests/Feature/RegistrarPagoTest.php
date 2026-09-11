@@ -1268,6 +1268,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
     public function test_confirmation_persists_only_configured_normalized_dynamic_fields(string $key, array $input, array $expected): void
     {
         Storage::fake('public');
+        Storage::fake('local');
         $cargo = $this->cargo();
         $method = MetodoPago::where('clave', $key)->firstOrFail();
         $input['forma_pago_sat'] = '99';
@@ -1275,7 +1276,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $component = $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $method->getKey())
             ->set('datosMetodo', $input);
         if ($method->requiere_comprobante) {
-            $component->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'));
+            $component->set('comprobante', $this->validPdfUpload('temporal.pdf'));
         }
         $component->call('prepararPago')->assertSet('mostrarConfirmacion', true)
             ->call('confirmarPago')->assertHasNoErrors()->assertSet('comprobante', null);
@@ -1285,6 +1286,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertSame($method->clave_forma_pago_sat, $pago->forma_pago_sat);
         $this->assertNull($pago->numero_cheque);
         $this->assertSame([], Storage::disk('public')->allFiles());
+        if ($method->requiere_comprobante) $this->assertCount(1, Storage::disk('local')->allFiles('archivos_pago'));
     }
 
     public static function dynamicPaymentMethods(): array
@@ -1367,23 +1369,27 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
     }
 
-    public function test_required_receipt_is_only_temporary_and_never_persisted_by_application(): void
+    public function test_required_receipt_is_persisted_privately_with_metadata(): void
     {
         Storage::fake('public');
-        $this->assertFalse(Schema::hasTable('archivos_pago'));
+        Storage::fake('local');
+        $this->assertTrue(Schema::hasTable('archivos_pago'));
         $cargo = $this->cargo();
         $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
         $this->componentWithSelectedCharge($cargo)->set('metodoPagoId', $spei->getKey())
             ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF', 'rastreo_spei' => 'SPEI'])
-            ->set('comprobante', UploadedFile::fake()->create('temporal.pdf', 20, 'application/pdf'))
+            ->set('comprobante', $this->validPdfUpload('temporal.pdf'))
             ->call('prepararPago')->assertHasNoErrors()->call('confirmarPago')->assertHasNoErrors()
             ->assertSet('comprobante', null);
         $this->assertDatabaseCount('pagos', 1);
+        $this->assertDatabaseCount('archivos_pago', 1);
+        $ruta = DB::table('archivos_pago')->value('ruta');
+        Storage::disk('local')->assertExists($ruta);
         $this->assertSame([], Storage::disk('public')->allFiles());
         $columns = Schema::getColumnListing('pagos');
         $this->assertNotContains('comprobante', $columns);
         $this->assertNotContains('ruta_comprobante', $columns);
-        $this->assertFalse(class_exists('App\\Models\\ArchivoPago'));
+        $this->assertTrue(class_exists('App\\Models\\ArchivoPago'));
     }
 
     private function assertNoFinancialWrites(Cargo $cargo, string $balance, string $status): void
@@ -1415,6 +1421,14 @@ class RegistrarPagoTest extends InscripcionesTestCase
             'subtotal' => '100.00', 'descuento' => '0.00', 'recargo' => '0.00', 'impuestos' => '0.00',
             'total' => '100.00', 'saldo_pendiente' => '100.00', 'estado' => 'pendiente', 'origen' => 'manual',
         ], $overrides));
+    }
+
+    private function validPdfUpload(string $name): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'pago-pdf-');
+        file_put_contents($path, "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF");
+
+        return new UploadedFile($path, $name, null, UPLOAD_ERR_OK, true);
     }
 
     private function existingPayment(MetodoPago $metodo, array $overrides = []): Pago

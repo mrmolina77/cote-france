@@ -782,9 +782,11 @@ class RegistrarPago extends Component
     {
         $archivo = null;
         if (is_object($this->comprobante)) {
+            $rutaTemporal = method_exists($this->comprobante, 'getRealPath') ? $this->comprobante->getRealPath() : null;
             $archivo = [
                 method_exists($this->comprobante, 'getClientOriginalName') ? $this->comprobante->getClientOriginalName() : null,
                 method_exists($this->comprobante, 'getSize') ? $this->comprobante->getSize() : null,
+                is_string($rutaTemporal) && is_file($rutaTemporal) ? hash_file('sha256', $rutaTemporal) : null,
             ];
         }
         $estado = [

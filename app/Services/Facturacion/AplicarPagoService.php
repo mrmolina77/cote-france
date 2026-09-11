@@ -10,12 +10,14 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\UploadedFile;
 
 class AplicarPagoService
 {
     public function __construct(
         private MetodoPagoBehaviorService $metodos,
-        private GeneradorFolioPagoService $folios
+        private GeneradorFolioPagoService $folios,
+        private ArchivoPagoService $archivos
     ) {
     }
 
@@ -30,7 +32,9 @@ class AplicarPagoService
         array $importesPorCargo,
         int $usuarioId
     ): Pago {
-        return DB::transaction(function () use ($inscripcionId, $metodoPagoId, $datosPago, $importesPorCargo, $usuarioId) {
+        $archivoNuevo = null;
+        try {
+            return DB::transaction(function () use ($inscripcionId, $metodoPagoId, $datosPago, $importesPorCargo, $usuarioId, &$archivoNuevo) {
             $inscripcion = Inscripcion::query()->with(['prospecto', 'responsablePago'])->find($inscripcionId);
             if (! $inscripcion || ! $inscripcion->prospecto || $inscripcion->estatus === 'cancelada') {
                 throw ValidationException::withMessages(['inscripcion_id' => 'La inscripción seleccionada no está disponible.']);
@@ -45,6 +49,11 @@ class AplicarPagoService
             $metodo = $resultadoMetodo['metodo'];
             if ($metodo->requiere_anticipo_relacionado) {
                 throw ValidationException::withMessages(['metodo_pago_id' => 'La aplicación de anticipos se habilitará en el bloque correspondiente.']);
+            }
+            $comprobante = $resultadoMetodo['datos']['comprobante'] ?? null;
+            if ($comprobante instanceof UploadedFile) {
+                // Se repite al guardar para detectar temporales vencidos o modificados.
+                $this->archivos->validar($comprobante);
             }
 
             [$ids, $importes] = $this->normalizarAplicaciones($importesPorCargo);
@@ -140,8 +149,18 @@ class AplicarPagoService
                 $cargo->forceFill(['saldo_pendiente' => $this->deCentavos($posterior), 'estado' => $estado])->save();
             }
 
-            return $pago->load('aplicaciones');
-        });
+            if ($comprobante instanceof UploadedFile) {
+                $archivoNuevo = $this->archivos->guardar($pago, $comprobante, $usuarioId);
+            }
+
+            return $pago->load(['aplicaciones', 'archivos']);
+            });
+        } catch (\Throwable $error) {
+            // DB y filesystem no comparten transacción. Si el proceso continúa,
+            // se compensa únicamente el objeto creado por este intento.
+            if ($archivoNuevo !== null) $this->archivos->eliminarNuevo($archivoNuevo, $error);
+            throw $error;
+        }
     }
 
     private function normalizarAplicaciones(array $aplicaciones): array
