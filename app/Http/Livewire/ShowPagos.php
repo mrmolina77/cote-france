@@ -217,7 +217,7 @@ class ShowPagos extends Component
 
     private function crearTokenCancelacion(int $pagoId, int $usuarioId): string
     {
-        $contenido = implode('|', [$pagoId, $usuarioId, 'cancelar-pago', time()]);
+        $contenido = implode('|', [$pagoId, $usuarioId, 'cancelar-pago', now()->timestamp]);
         $contenidoCodificado = rtrim(strtr(base64_encode($contenido), '+/', '-_'), '=');
         $token = $contenidoCodificado.'.'.hash_hmac('sha256', $contenidoCodificado, (string) config('app.key'));
         session()->put($this->claveTokenCancelacion($usuarioId), hash('sha256', $token));
@@ -243,8 +243,8 @@ class ShowPagos extends Component
         return hash_equals((string) $pagoId, $partes[0])
             && hash_equals((string) $usuarioId, $partes[1])
             && hash_equals('cancelar-pago', $partes[2])
-            && $emitido <= time()
-            && $emitido >= time() - self::CANCELACION_TOKEN_TTL;
+            && $emitido <= now()->timestamp
+            && $emitido >= now()->timestamp - self::CANCELACION_TOKEN_TTL;
     }
 
     private function olvidarTokenCancelacion(): void
