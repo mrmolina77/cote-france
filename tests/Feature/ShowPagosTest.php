@@ -20,6 +20,12 @@ use ReflectionClass;
 
 class ShowPagosTest extends InscripcionesTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Carbon::setTestNow('2026-09-11 12:00:00');
+    }
+
     protected function tearDown(): void
     {
         Carbon::setTestNow();
@@ -63,11 +69,24 @@ class ShowPagosTest extends InscripcionesTestCase
     public function test_non_admin_cannot_see_cancel_button(): void
     {
         $admin = $this->user('admin');
+        $nonAdmin = $this->user('venta');
         $pago = $this->pago($admin, ['folio' => 'VISIBLE-SOLO-ADMIN']);
-        Gate::define('cancel-pagos', fn () => false);
-        $component = Livewire::actingAs($admin)->test(ShowPagos::class);
-        $component->assertSee($pago->folio);
-        $component->assertDontSee('>Cancelar</button>', false);
+        $viewData = [
+            'pagos' => Pago::query()->paginate(10),
+            'metodos' => MetodoPago::query()->ordenados()->get(),
+            'detalle' => null,
+            'pagoCancelar' => null,
+        ];
+        $this->withViewErrors([]);
+
+        $this->actingAs($nonAdmin);
+        $nonAdminHtml = view('livewire.show-pagos', $viewData)->render();
+        $this->assertStringContainsString($pago->folio, $nonAdminHtml);
+        $this->assertStringNotContainsString('>Cancelar</button>', $nonAdminHtml);
+
+        $this->actingAs($admin);
+        $adminHtml = view('livewire.show-pagos', $viewData)->render();
+        $this->assertStringContainsString('>Cancelar</button>', $adminHtml);
     }
 
     /** @dataProvider searchCases */
@@ -129,7 +148,8 @@ class ShowPagosTest extends InscripcionesTestCase
         $tieHigh = $this->pago($admin, ['folio' => 'TIE-HIGH', 'metodo_pago_id' => $methods[1]->getKey(), 'fecha_pago' => '2026-09-10 10:00:00']);
         Livewire::actingAs($admin)->test(ShowPagos::class)
             ->assertSeeInOrder([$tieHigh->folio, $tieLow->folio, $older->folio])
-            ->set('metodoPagoId', (string) $methods[0]->getKey())->assertSee($tieLow->folio)->assertDontSee($tieHigh->folio)
+            ->set('metodoPagoId', (string) $methods[0]->getKey())->assertSet('metodoPagoId', (string) $methods[0]->getKey())
+            ->assertSee($tieLow->folio)->assertDontSee($tieHigh->folio)
             ->set('metodoPagoId', "1 OR 1=1")->assertSee($tieHigh->folio)
             ->set('estado', "confirmado' OR 1=1 --")->assertSee($older->folio)->assertSee($tieHigh->folio);
     }
@@ -155,7 +175,7 @@ class ShowPagosTest extends InscripcionesTestCase
     }
 
     /** @dataProvider invalidDates */
-    public function test_impossible_dates_are_safe(string $field, string $date): void
+    public function test_invalid_dates_and_non_text_values_are_safe(string $field, $date): void
     {
         $admin = $this->user('admin');
         $pago = $this->pago($admin, ['folio' => 'STILL-LISTED']);
@@ -165,7 +185,25 @@ class ShowPagosTest extends InscripcionesTestCase
 
     public function invalidDates(): array
     {
-        return [['fechaDesde', '2026-02-30'], ['fechaHasta', '2026-13-01'], ['fechaDesde', '2026-04-31'], ['fechaHasta', 'mañana']];
+        return [
+            ['fechaDesde', '2026-02-30'], ['fechaHasta', '2026-13-01'], ['fechaDesde', '2026-04-31'],
+            ['fechaHasta', 'mañana'], ['fechaDesde', '11-09-2026'], ['fechaHasta', '2026-9-1'],
+            ['fechaDesde', 20260911], ['fechaHasta', ['2026-09-11']], ['fechaDesde', null],
+        ];
+    }
+
+    public function test_date_validation_handles_leap_years_equal_boundaries_and_error_cleanup(): void
+    {
+        $admin = $this->user('admin');
+        $boundary = $this->pago($admin, ['folio' => 'BOUNDARY-DATE', 'fecha_pago' => '2024-02-29 23:59:59']);
+        $outside = $this->pago($admin, ['folio' => 'OUTSIDE-DATE', 'fecha_pago' => '2024-03-01 00:00:00']);
+
+        Livewire::actingAs($admin)->test(ShowPagos::class)
+            ->set('fechaDesde', '2023-02-29')->assertHasErrors('fechaDesde')
+            ->set('fechaDesde', '2024-02-29')->assertHasNoErrors('fechaDesde')
+            ->set('fechaHasta', '2024-02-29')->assertHasNoErrors(['fechaDesde', 'fechaHasta'])
+            ->assertSet('fechaDesde', '2024-02-29')->assertSet('fechaHasta', '2024-02-29')
+            ->assertSee($boundary->folio)->assertDontSee($outside->folio);
     }
 
     public function test_pagination_whitelist_and_every_filter_resets_page(): void
@@ -176,6 +214,9 @@ class ShowPagosTest extends InscripcionesTestCase
             Livewire::actingAs($admin)->test(ShowPagos::class)->set('porPagina', $size)->assertSet('porPagina', $size);
         }
         Livewire::actingAs($admin)->test(ShowPagos::class)->set('porPagina', 999)->assertSet('porPagina', 10);
+        $pagination = Livewire::actingAs($admin)->test(ShowPagos::class)->set('porPagina', 10);
+        $pagination->assertSee('PAGE-11')->assertDontSee('PAGE-01')->call('gotoPage', 2)
+            ->assertSet('page', 2)->assertSee('PAGE-01')->assertDontSee('PAGE-11');
         foreach (['busqueda' => 'x', 'estado' => Pago::ESTADO_CONFIRMADO, 'metodoPagoId' => 'todos', 'fechaDesde' => '2026-01-01', 'fechaHasta' => '2026-12-31'] as $field => $value) {
             Livewire::actingAs($admin)->test(ShowPagos::class)->call('gotoPage', 2)->set($field, $value)->assertSet('page', 1);
         }
@@ -262,6 +303,28 @@ class ShowPagosTest extends InscripcionesTestCase
         $this->assertFalse(session()->has('show-pagos.cancelacion-token.'.$admin->getKey()));
     }
 
+    public function test_confirmation_without_preparation_and_token_reuse_after_close_are_rejected(): void
+    {
+        $admin = $this->user('admin');
+        ['pago' => $pago, 'cargos' => $cargos] = $this->crearPagoConfirmadoConAplicaciones($admin);
+        $before = $this->financialState([$pago], $cargos);
+
+        Livewire::actingAs($admin)->test(ShowPagos::class)
+            ->set('pagoCancelarId', $pago->getKey())->set('mostrarModalCancelacion', true)
+            ->set('motivoCancelacion', 'Sin preparación')->call('confirmarCancelacion')
+            ->assertHasErrors('pagoCancelarId');
+        $this->assertSame($before, $this->financialState([$pago], $cargos));
+
+        $component = Livewire::actingAs($admin)->test(ShowPagos::class)
+            ->call('prepararCancelacion', $pago->getKey());
+        $token = $component->get('cancelacionToken');
+        $component->call('cerrarCancelacion')->set('pagoCancelarId', $pago->getKey())
+            ->set('cancelacionToken', $token)->set('mostrarModalCancelacion', true)
+            ->set('motivoCancelacion', 'Token reutilizado')->call('confirmarCancelacion')
+            ->assertHasErrors('pagoCancelarId');
+        $this->assertSame($before, $this->financialState([$pago], $cargos));
+    }
+
     /** @dataProvider invalidReasons */
     public function test_invalid_reasons_do_not_change_real_financial_records($reason): void
     {
@@ -291,32 +354,37 @@ class ShowPagosTest extends InscripcionesTestCase
     public function test_tokens_reject_substitution_other_user_other_payment_and_tampering(): void
     {
         $admin = $this->user('admin'); $otherAdmin = $this->user('admin');
-        $a = $this->pago($admin); $b = $this->pago($admin);
+        ['pago' => $a, 'cargos' => $cargosA] = $this->crearPagoConfirmadoConAplicaciones($admin);
+        ['pago' => $b, 'cargos' => $cargosB] = $this->crearPagoConfirmadoConAplicaciones($admin);
         $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $a->getKey());
         $token = $component->get('cancelacionToken');
+        $alteredToken = substr($token, 0, -1).(substr($token, -1) === '0' ? '1' : '0');
+        $before = $this->financialState([$a, $b], $cargosA->concat($cargosB));
         foreach ([
-            [$b->getKey(), $token], [$a->getKey(), ''], [$a->getKey(), $token.'x'], [$a->getKey(), preg_replace('/.$/', '0', $token)],
+            [$b->getKey(), $token], [$a->getKey(), ''], [$a->getKey(), $token.'x'], [$a->getKey(), $alteredToken],
         ] as [$id, $badToken]) {
             $component->set('pagoCancelarId', $id)->set('cancelacionToken', $badToken)->set('motivoCancelacion', 'Motivo válido')
                 ->call('confirmarCancelacion')->assertHasErrors('pagoCancelarId');
+            $this->assertSame($before, $this->financialState([$a, $b], $cargosA->concat($cargosB)));
         }
         Livewire::actingAs($otherAdmin)->test(ShowPagos::class)->set('pagoCancelarId', $a->getKey())
             ->set('cancelacionToken', $token)->set('mostrarModalCancelacion', true)->set('motivoCancelacion', 'Motivo válido')
             ->call('confirmarCancelacion')->assertHasErrors('pagoCancelarId');
-        $this->assertSame(Pago::ESTADO_CONFIRMADO, $a->fresh()->estado);
-        $this->assertSame(Pago::ESTADO_CONFIRMADO, $b->fresh()->estado);
+        $this->assertSame($before, $this->financialState([$a, $b], $cargosA->concat($cargosB)));
     }
 
     public function test_token_expires_without_sleep_and_test_clock_is_restored(): void
     {
-        $admin = $this->user('admin'); $pago = $this->pago($admin);
+        $admin = $this->user('admin');
+        ['pago' => $pago, 'cargos' => $cargos] = $this->crearPagoConfirmadoConAplicaciones($admin);
+        $before = $this->financialState([$pago], $cargos);
         Carbon::setTestNow('2026-09-11 10:00:00');
         try {
             $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $pago->getKey());
             Carbon::setTestNow('2026-09-11 10:30:01');
             $component->set('motivoCancelacion', 'Motivo válido')->call('confirmarCancelacion')->assertHasErrors('pagoCancelarId');
-            $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
-        } finally { Carbon::setTestNow(); }
+            $this->assertSame($before, $this->financialState([$pago], $cargos));
+        } finally { Carbon::setTestNow('2026-09-11 12:00:00'); }
     }
 
     public function test_real_livewire_cancellation_restores_balances_and_preserves_audit_and_applications(): void
@@ -342,10 +410,10 @@ class ShowPagosTest extends InscripcionesTestCase
         $this->assertSame([Cargo::ESTADO_PENDIENTE, Cargo::ESTADO_VENCIDO], $cargos->map(fn ($c) => $c->fresh()->estado)->all());
         $this->assertEquals($apps, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
         $this->assertFalse(session()->has('show-pagos.cancelacion-token.'.$admin->getKey()));
+        $cancelledState = $this->financialState([$pago], $cargos);
         $component->set('pagoCancelarId', $pago->getKey())->set('mostrarModalCancelacion', true)
             ->set('motivoCancelacion', 'segunda')->call('confirmarCancelacion')->assertHasErrors('pagoCancelarId');
-        $this->assertSame(['20.00', '10.00'], $cargos->map(fn ($c) => $c->fresh()->saldo_pendiente)->all());
-        $this->assertDatabaseCount('pago_aplicaciones', count($apps));
+        $this->assertSame($cancelledState, $this->financialState([$pago], $cargos));
     }
 
     public function test_stale_state_and_service_failure_leave_records_consistent(): void
@@ -354,8 +422,10 @@ class ShowPagosTest extends InscripcionesTestCase
         ['pago' => $pago, 'cargos' => $cargos, 'applications' => $apps] = $this->crearPagoConfirmadoConAplicaciones($admin);
         $component = Livewire::actingAs($admin)->test(ShowPagos::class)->call('prepararCancelacion', $pago->getKey());
         DB::table('pagos')->where('pago_id', $pago->getKey())->update(['estado' => Pago::ESTADO_REEMBOLSADO]);
+        $beforeAttempt = $this->financialState([$pago], $cargos);
         $component->set('motivoCancelacion', 'Estado obsoleto')->call('confirmarCancelacion')
             ->assertHasErrors('pagoCancelarId')->assertDontSee('cancelado correctamente');
+        $this->assertSame($beforeAttempt, $this->financialState([$pago], $cargos));
         $this->assertSame(Pago::ESTADO_REEMBOLSADO, $pago->fresh()->estado);
         $this->assertSame(['15.00', '0.00'], $cargos->map(fn ($c) => $c->fresh()->saldo_pendiente)->all());
         $this->assertEquals($apps, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
@@ -388,6 +458,17 @@ class ShowPagosTest extends InscripcionesTestCase
         ], [$cargos[0]->getKey() => '5.00', $cargos[1]->getKey() => '10.00'], $admin->getKey())->load('metodoPago');
 
         return ['pago' => $pago, 'cargos' => $cargos, 'applications' => DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray()];
+    }
+
+    private function financialState(iterable $pagos, iterable $cargos): array
+    {
+        $paymentIds = collect($pagos)->map(fn (Pago $pago) => $pago->getKey())->values();
+
+        return [
+            'pagos' => DB::table('pagos')->whereIn('pago_id', $paymentIds)->orderBy('pago_id')->get()->map(fn ($row) => (array) $row)->all(),
+            'cargos' => DB::table('cargos')->whereIn('cargo_id', collect($cargos)->pluck('cargo_id'))->orderBy('cargo_id')->get()->map(fn ($row) => (array) $row)->all(),
+            'aplicaciones' => DB::table('pago_aplicaciones')->whereIn('pago_id', $paymentIds)->orderBy('pago_aplicacion_id')->get()->map(fn ($row) => (array) $row)->all(),
+        ];
     }
 
     private function pago(User $usuario, array $changes = []): Pago
