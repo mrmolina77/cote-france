@@ -13,8 +13,8 @@
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
                         <x-select wire:model="estado" aria-label="Estado"><option value="todos">Todos los estados</option>@foreach(\App\Models\Pago::ESTADOS as $valor)<option value="{{ $valor }}">{{ ucfirst($valor) }}</option>@endforeach</x-select>
                         <x-select wire:model="metodoPagoId" aria-label="Método de pago"><option value="todos">Todos los métodos</option>@foreach($metodos as $metodo)<option value="{{ $metodo->metodo_pago_id }}">{{ $metodo->nombre }}</option>@endforeach</x-select>
-                        <x-forms.input type="date" wire:model="fechaDesde" title="Fecha de pago desde" />
-                        <x-forms.input type="date" wire:model="fechaHasta" title="Fecha de pago hasta" />
+                        <div><x-forms.input type="date" wire:model="fechaDesde" title="Fecha de pago desde" />@error('fechaDesde')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror</div>
+                        <div><x-forms.input type="date" wire:model="fechaHasta" title="Fecha de pago hasta" />@error('fechaHasta')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror</div>
                         <a href="{{ route('facturacion.pagos.registrar') }}" class="text-center rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Registrar pago</a>
                     </div>
                 </div>
