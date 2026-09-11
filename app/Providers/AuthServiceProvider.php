@@ -44,5 +44,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-pagos', function ($user) {
             return optional($user->role)->roles_codigo === 'admin';
         });
+
+        Gate::define('cancel-pagos', function ($user) {
+            return optional($user->role)->roles_codigo === 'admin';
+        });
     }
 }

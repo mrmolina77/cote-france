@@ -9,6 +9,7 @@ use App\Http\Livewire\ShowConceptosCobro;
 use App\Http\Livewire\ShowMetodosPago;
 use App\Http\Livewire\ShowCargos;
 use App\Http\Livewire\RegistrarPago;
+use App\Http\Livewire\ShowPagos;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
 use App\Http\Livewire\ShowProspectos;
@@ -122,6 +123,13 @@ Route::middleware([
     'can:manage-pagos',
 ])->get('/facturacion/pagos/registrar', RegistrarPago::class)
     ->name('facturacion.pagos.registrar');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'can:manage-pagos',
+])->get('/facturacion/pagos', ShowPagos::class)
+    ->name('facturacion.pagos.index');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),

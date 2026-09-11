@@ -151,6 +151,11 @@
         @endcan
 
         @can('manage-pagos')
+            <x-layout.aside-link href="{{ route('facturacion.pagos.index') }}"
+                                 :active="request()->routeIs('facturacion.pagos.index')"
+                                 icon="fas fa-money-check-alt text-emerald-400 hover:text-emerald-200">
+                Pagos
+            </x-layout.aside-link>
             <x-layout.aside-link href="{{ route('facturacion.pagos.registrar') }}"
                                  :active="request()->routeIs('facturacion.pagos.registrar')"
                                  icon="fas fa-cash-register text-green-400 hover:text-green-200">
