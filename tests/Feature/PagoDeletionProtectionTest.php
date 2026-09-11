@@ -27,6 +27,8 @@ class PagoDeletionProtectionTest extends PagosTestCase
             [Pago::ESTADO_CONFIRMADO, 'delete'],
             [Pago::ESTADO_CONFIRMADO, 'deleteOrFail'],
             [Pago::ESTADO_CANCELADO, 'delete'],
+            [Pago::ESTADO_CANCELADO, 'deleteOrFail'],
+            [Pago::ESTADO_REEMBOLSADO, 'delete'],
             [Pago::ESTADO_REEMBOLSADO, 'deleteOrFail'],
         ];
     }

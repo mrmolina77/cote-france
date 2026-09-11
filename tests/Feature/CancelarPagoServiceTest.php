@@ -9,9 +9,11 @@ use App\Models\PagoAplicacion;
 use App\Models\ResponsablePago;
 use App\Services\Facturacion\AplicarPagoService;
 use App\Services\Facturacion\CancelarPagoService;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 class CancelarPagoServiceTest extends InscripcionesTestCase
 {
@@ -146,6 +148,107 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         $invalid->forceFill(['saldo_pendiente' => '5.00', 'estado' => Cargo::ESTADO_CANCELADO])->save();
         $this->assertCancellationFails($pago, $valid, '5.00');
         $this->assertDatabaseCount('pago_aplicaciones', 2);
+    }
+
+    public function test_rejects_application_to_charge_from_another_enrollment_without_any_changes(): void
+    {
+        $first = $this->cargo('10.00');
+        $corrupted = $this->cargo('10.00');
+        $pago = $this->confirm('10.00', [$first->getKey() => '5.00', $corrupted->getKey() => '5.00']);
+        [, $curso, $grupo] = $this->catalogs();
+        $otherEnrollment = $this->enroll($this->inscripcion->prospecto, $curso, $grupo);
+
+        // Simula corrupción persistida que AplicarPagoService no permitiría crear.
+        DB::table('cargos')->where('cargo_id', $corrupted->getKey())
+            ->update(['inscripciones_id' => $otherEnrollment->getKey()]);
+        $applications = DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray();
+
+        $this->assertCancellationFails($pago, $first, '5.00');
+
+        $this->assertSame('5.00', $corrupted->fresh()->saldo_pendiente);
+        $this->assertSame($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
+    }
+
+    /** @dataProvider corruptedApplicationBalances */
+    public function test_rejects_corrupted_application_balances_without_changes(string $column, string $value): void
+    {
+        $cargo = $this->cargo('10.00');
+        $pago = $this->confirm('5.00', [$cargo->getKey() => '5.00']);
+        // Simula corrupción de la fotografía contable almacenada.
+        DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->update([$column => $value]);
+
+        $this->assertCancellationFails($pago, $cargo, '5.00');
+        $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), $column => $value]);
+    }
+
+    public function corruptedApplicationBalances(): array
+    {
+        return [['saldo_anterior', '11.00'], ['saldo_posterior', '4.00']];
+    }
+
+    public function test_rejects_when_application_sum_differs_from_payment_amount(): void
+    {
+        $cargo = $this->cargo('10.00');
+        $pago = $this->confirm('5.00', [$cargo->getKey() => '5.00']);
+        // Simula corrupción conservando internamente coherente la fotografía de la aplicación.
+        DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->update([
+            'importe_aplicado' => '4.00', 'saldo_anterior' => '9.00', 'saldo_posterior' => '5.00',
+        ]);
+
+        $this->assertCancellationFails($pago, $cargo, '5.00');
+        $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'importe_aplicado' => '4.00']);
+    }
+
+    public function test_missing_cancelling_user_foreign_key_rolls_back_all_changes(): void
+    {
+        DB::statement('PRAGMA foreign_keys = ON');
+        $first = $this->cargo('10.00');
+        $second = $this->cargo('10.00');
+        $pago = $this->confirm('10.00', [$first->getKey() => '5.00', $second->getKey() => '5.00']);
+        $applications = DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray();
+
+        try {
+            app(CancelarPagoService::class)->cancelar($pago->getKey(), 'Usuario inexistente', 999999);
+            $this->fail('La llave foránea debió impedir la cancelación.');
+        } catch (QueryException $exception) {
+            $this->assertSame(['5.00', '5.00'], [$first->fresh()->saldo_pendiente, $second->fresh()->saldo_pendiente]);
+            $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
+            $this->assertSame($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
+        }
+    }
+
+    public function test_confirmed_payment_with_applications_cannot_be_deleted_and_applications_remain(): void
+    {
+        $cargo = $this->cargo('10.00');
+        $pago = $this->confirm('5.00', [$cargo->getKey() => '5.00']);
+
+        foreach (['delete', 'deleteOrFail'] as $method) {
+            try {
+                $pago->{$method}();
+                $this->fail('El pago confirmado con aplicaciones no debe eliminarse.');
+            } catch (LogicException $exception) {
+                $this->assertDatabaseHas('pagos', ['pago_id' => $pago->getKey()]);
+                $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'cargo_id' => $cargo->getKey()]);
+            }
+        }
+    }
+
+    public function test_charges_are_queried_in_stable_order_before_locking(): void
+    {
+        $higher = $this->cargo('5.00');
+        $lower = $this->cargo('5.00');
+        $pago = $this->confirm('10.00', [$higher->getKey() => '5.00', $lower->getKey() => '5.00']);
+        $queries = [];
+        DB::listen(function ($query) use (&$queries): void {
+            if (str_contains($query->sql, 'from "cargos"') && str_contains($query->sql, 'where "cargo_id" in')) {
+                $queries[] = $query->sql;
+            }
+        });
+
+        app(CancelarPagoService::class)->cancelar($pago->getKey(), 'Orden estable', $this->usuario->getKey());
+
+        $this->assertCount(1, $queries);
+        $this->assertStringContainsString('order by "cargo_id" asc', $queries[0]);
     }
 
     public function test_cancelled_folio_stays_reserved_and_counter_advances(): void
