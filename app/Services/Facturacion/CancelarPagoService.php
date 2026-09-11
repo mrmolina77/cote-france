@@ -57,6 +57,9 @@ class CancelarPagoService
                 if (! $cargo || $cargo->estado === Cargo::ESTADO_CANCELADO) {
                     throw ValidationException::withMessages(['pago_id' => 'Uno o más cargos no permiten restaurar el pago de forma segura.']);
                 }
+                if ((int) $cargo->inscripciones_id !== (int) $pago->inscripciones_id) {
+                    throw ValidationException::withMessages(['pago_id' => 'Uno o más cargos no pertenecen a la inscripción del pago.']);
+                }
                 $saldo = $this->aCentavos($cargo->saldo_pendiente);
                 $importe = $this->aCentavos($aplicacion->importe_aplicado);
                 $saldoAnterior = $this->aCentavos($aplicacion->saldo_anterior);
