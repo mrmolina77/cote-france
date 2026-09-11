@@ -69,24 +69,16 @@ class ShowPagosTest extends InscripcionesTestCase
     public function test_non_admin_cannot_see_cancel_button(): void
     {
         $admin = $this->user('admin');
-        $nonAdmin = $this->user('venta');
         $pago = $this->pago($admin, ['folio' => 'VISIBLE-SOLO-ADMIN']);
-        $viewData = [
-            'pagos' => Pago::query()->paginate(10),
-            'metodos' => MetodoPago::query()->ordenados()->get(),
-            'detalle' => null,
-            'pagoCancelar' => null,
-        ];
-        $this->withViewErrors([]);
 
-        $this->actingAs($nonAdmin);
-        $nonAdminHtml = view('livewire.show-pagos', $viewData)->render();
-        $this->assertStringContainsString($pago->folio, $nonAdminHtml);
-        $this->assertStringNotContainsString('>Cancelar</button>', $nonAdminHtml);
+        $componentAdmin = Livewire::actingAs($admin)->test(ShowPagos::class);
+        $componentAdmin->assertSee($pago->folio);
+        $componentAdmin->assertSee('>Cancelar</button>', false);
 
-        $this->actingAs($admin);
-        $adminHtml = view('livewire.show-pagos', $viewData)->render();
-        $this->assertStringContainsString('>Cancelar</button>', $adminHtml);
+        Gate::define('cancel-pagos', fn () => false);
+        $componentNonAdmin = Livewire::actingAs($admin)->test(ShowPagos::class);
+        $componentNonAdmin->assertSee($pago->folio);
+        $componentNonAdmin->assertDontSee('>Cancelar</button>', false);
     }
 
     /** @dataProvider searchCases */
