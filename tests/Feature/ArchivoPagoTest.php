@@ -9,21 +9,29 @@ use App\Services\Facturacion\ArchivoPagoService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\ArchivoPagoFixtures;
 
 class ArchivoPagoTest extends InscripcionesTestCase
 {
-    private const PDF_BASE64 = 'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAxMCAxMF0gPj4KZW5kb2JqCnhyZWYKMCA0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK';
+    use ArchivoPagoFixtures;
+
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('local');
     }
 
+    protected function tearDown(): void
+    {
+        $this->limpiarTemporalesArchivoPago();
+        parent::tearDown();
+    }
+
     /** @dataProvider archivosValidos */
-    public function test_valida_contenido_real_y_persiste_en_ubicacion_privada(string $nombre, string $base64, string $mime): void
+    public function test_valida_contenido_real_y_persiste_en_ubicacion_privada(string $nombre, string $fixture, string $mime): void
     {
         $pago = $this->pago();
-        $archivo = $this->upload($nombre, base64_decode($base64));
+        $archivo = $this->archivoFixture($fixture, $nombre);
 
         $guardado = app(ArchivoPagoService::class)->guardar($pago, $archivo, $this->user('admin')->getKey());
 
@@ -38,10 +46,26 @@ class ArchivoPagoTest extends InscripcionesTestCase
     public static function archivosValidos(): array
     {
         return [
-            'pdf' => ['recibo.pdf', self::PDF_BASE64, 'application/pdf'],
-            'png' => ['recibo.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'image/png'],
-            'jpeg' => ['recibo.jpeg', '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAEf/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'image/jpeg'],
+            'pdf' => ['recibo.pdf', 'comprobante.pdf', 'application/pdf'],
+            'png' => ['recibo.png', 'comprobante.png.base64', 'image/png'],
+            'jpeg' => ['recibo.jpeg', 'comprobante.jpeg.base64', 'image/jpeg'],
         ];
+    }
+
+    /** @dataProvider fixturesImagen */
+    public function test_fixture_de_imagen_se_decodifica_completo_con_gd(string $fixture, string $funcion): void
+    {
+        $archivo = $this->archivoFixture($fixture);
+        $imagen = $funcion($archivo->getRealPath());
+        $this->assertNotFalse($imagen, 'GD debe poder decodificar todos los bytes de '.$fixture);
+        $this->assertSame(2, imagesx($imagen));
+        $this->assertSame(2, imagesy($imagen));
+        imagedestroy($imagen);
+    }
+
+    public static function fixturesImagen(): array
+    {
+        return [['comprobante.png.base64', 'imagecreatefrompng'], ['comprobante.jpeg.base64', 'imagecreatefromjpeg']];
     }
 
     /** @dataProvider archivosInvalidos */
@@ -65,7 +89,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $service = app(ArchivoPagoService::class);
         $pago = $this->pago();
         $usuario = $this->user('admin');
-        $contenido = base64_decode(self::PDF_BASE64);
+        $contenido = file_get_contents(base_path('tests/Fixtures/archivos_pago/comprobante.pdf'));
         $a = $service->guardar($pago, $this->upload("../malo\r\n.pdf", $contenido), $usuario->getKey());
         $b = $service->guardar($pago, $this->upload("../malo\r\n.pdf", $contenido), $usuario->getKey());
 
@@ -81,7 +105,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
     public function test_conserva_nombres_reconocibles_unicode_y_extension_al_sanear(string $original, string $esperado): void
     {
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $this->pago(), $this->upload($original, base64_decode(self::PDF_BASE64)), $this->user('admin')->getKey()
+            $this->pago(), $this->archivoFixture('comprobante.pdf', $original), $this->user('admin')->getKey()
         );
 
         $this->assertSame($esperado, $archivo->nombre_original);
@@ -94,9 +118,22 @@ class ArchivoPagoTest extends InscripcionesTestCase
             'normal' => ['Estado de cuenta septiembre.pdf', 'Estado de cuenta septiembre.pdf'],
             'unicode' => ['Comprobante José_日本.pdf', 'Comprobante José_日本.pdf'],
             'controles y traversal' => ["../carpeta\\mal\0\r\n.pdf", '__carpeta_mal_.pdf'],
-            'vacío tras sanear' => ["\0\r\n", 'comprobante.pdf'],
             'largo conserva extensión' => [str_repeat('á', 300).'.pdf', str_repeat('á', 118).'.pdf'],
         ];
+    }
+
+    public function test_rechaza_nombre_sin_extension_antes_de_sanear_y_no_persiste(): void
+    {
+        try {
+            app(ArchivoPagoService::class)->guardar(
+                $this->pago(), $this->archivoFixture('comprobante.pdf', "\0\r\n"), $this->user('admin')->getKey()
+            );
+            $this->fail('El nombre sin una extensión permitida debió rechazarse.');
+        } catch (ValidationException $error) {
+            $this->assertArrayHasKey('comprobante', $error->errors());
+        }
+        $this->assertDatabaseCount('archivos_pago', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('archivos_pago'));
     }
 
     public function test_rechaza_pdf_con_cabecera_pero_sin_estructura(): void
@@ -108,7 +145,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
     public function test_nombre_unicode_largo_respeta_limite_en_bytes_y_extension(): void
     {
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $this->pago(), $this->upload(str_repeat('🧾', 100).'.pdf', base64_decode(self::PDF_BASE64)),
+            $this->pago(), $this->archivoFixture('comprobante.pdf', str_repeat('🧾', 100).'.pdf'),
             $this->user('admin')->getKey()
         );
 
@@ -117,16 +154,25 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $this->assertSame(1, preg_match('//u', $archivo->nombre_original));
     }
 
-    public function test_acepta_limite_exacto_y_rechaza_un_byte_adicional(): void
+    public function test_acepta_pdf_valido_del_limite_exacto_con_cierre_al_final(): void
     {
-        // El espacio en blanco tras %%EOF es válido según la gramática PDF.
-        $pdf = base64_decode(self::PDF_BASE64);
-        $limite = $pdf.str_repeat("\n", ArchivoPagoService::MAXIMO_BYTES - strlen($pdf));
-        $this->assertSame(ArchivoPagoService::MAXIMO_BYTES, app(ArchivoPagoService::class)
-            ->validar($this->upload('limite.pdf', $limite))['tamano_bytes']);
+        $pdf = $this->pdfConTamanoExacto(ArchivoPagoService::MAXIMO_BYTES);
+        $archivo = $this->archivoDesdeContenido('limite.pdf', $pdf);
+
+        $this->assertSame(ArchivoPagoService::MAXIMO_BYTES, filesize($archivo->getRealPath()));
+        $this->assertStringEndsWith("%%EOF\n", $pdf);
+        $this->assertSame(ArchivoPagoService::MAXIMO_BYTES, app(ArchivoPagoService::class)->validar($archivo)['tamano_bytes']);
+    }
+
+    public function test_rechaza_pdf_valido_de_un_byte_sobre_el_limite_por_tamano(): void
+    {
+        $pdf = $this->pdfConTamanoExacto(ArchivoPagoService::MAXIMO_BYTES + 1);
+        $archivo = $this->archivoDesdeContenido('exceso.pdf', $pdf);
+        $this->assertSame(ArchivoPagoService::MAXIMO_BYTES + 1, filesize($archivo->getRealPath()));
+        $this->assertStringEndsWith("%%EOF\n", $pdf);
 
         $this->expectException(ValidationException::class);
-        app(ArchivoPagoService::class)->validar($this->upload('exceso.pdf', $limite.'0'));
+        app(ArchivoPagoService::class)->validar($archivo);
     }
 
     public function test_fk_impide_borrar_pago_con_evidencia_y_usuario_es_nullable(): void
@@ -134,7 +180,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $usuario = $this->user('admin');
         $pago = $this->pago();
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $pago, $this->upload('evidencia.pdf', base64_decode(self::PDF_BASE64)), $usuario->getKey()
+            $pago, $this->archivoFixture('comprobante.pdf', 'evidencia.pdf'), $usuario->getKey()
         );
         $usuario->delete();
         $this->assertNull($archivo->fresh()->created_by);
@@ -156,7 +202,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $pago = $this->pago();
         $otro = $this->pago();
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $pago, $this->upload('comprobante.pdf', base64_decode(self::PDF_BASE64)), $admin->getKey()
+            $pago, $this->archivoFixture('comprobante.pdf'), $admin->getKey()
         );
         $url = route('facturacion.pagos.archivos.descargar', [$pago, $archivo]);
 
@@ -173,7 +219,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $this->assertFalse($response->headers->hasCacheControlDirective('public'));
         $this->assertStringContainsString('attachment', $response->headers->get('content-disposition'));
         $this->assertStringContainsString('comprobante.pdf', $response->headers->get('content-disposition'));
-        $this->assertSame(base64_decode(self::PDF_BASE64), $response->streamedContent());
+        $this->assertSame(file_get_contents(base_path('tests/Fixtures/archivos_pago/comprobante.pdf')), $response->streamedContent());
         $this->actingAs($admin)->get(route('facturacion.pagos.archivos.descargar', [$otro, $archivo]))->assertNotFound();
         $this->actingAs($admin)->get(route('facturacion.pagos.archivos.descargar', [$pago->getKey(), 999999]))->assertNotFound();
         Storage::disk('local')->delete($archivo->ruta);
@@ -212,8 +258,6 @@ class ArchivoPagoTest extends InscripcionesTestCase
 
     private function upload(string $nombre, string $contenido): UploadedFile
     {
-        $ruta = tempnam(sys_get_temp_dir(), 'archivo-pago-');
-        file_put_contents($ruta, $contenido);
-        return new UploadedFile($ruta, $nombre, null, UPLOAD_ERR_OK, true);
+        return $this->archivoDesdeContenido($nombre, $contenido);
     }
 }

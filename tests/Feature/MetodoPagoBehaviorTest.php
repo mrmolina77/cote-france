@@ -16,9 +16,12 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use Tests\TestCase;
+use Tests\Support\ArchivoPagoFixtures;
 
 class MetodoPagoBehaviorTest extends TestCase
 {
+    use ArchivoPagoFixtures;
+
     private MetodoPagoBehaviorService $service;
 
     protected function setUp(): void
@@ -30,6 +33,12 @@ class MetodoPagoBehaviorTest extends TestCase
         $this->migration()->up();
         $this->seed(MetodoPagoSeeder::class);
         $this->service = new MetodoPagoBehaviorService();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->limpiarTemporalesArchivoPago();
+        parent::tearDown();
     }
 
     public function test_catalogo_cubre_cada_indicador_una_vez(): void
@@ -408,10 +417,7 @@ class MetodoPagoBehaviorTest extends TestCase
     }
     private function validPdfUpload(string $name): UploadedFile
     {
-        $path = tempnam(sys_get_temp_dir(), 'metodo-pdf-');
-        file_put_contents($path, base64_decode('JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAxMCAxMF0gPj4KZW5kb2JqCnhyZWYKMCA0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK'));
-
-        return new UploadedFile($path, $name, null, UPLOAD_ERR_OK, true);
+        return $this->pdfValido($name);
     }
 
 }
