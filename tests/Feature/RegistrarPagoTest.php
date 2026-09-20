@@ -25,9 +25,12 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use ReflectionClass;
 use ReflectionProperty;
+use Tests\Support\ArchivoPagoFixtures;
 
 class RegistrarPagoTest extends InscripcionesTestCase
 {
+    use ArchivoPagoFixtures;
+
     private $inscripcion;
     private $concepto;
 
@@ -45,6 +48,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
     protected function tearDown(): void
     {
+        $this->limpiarTemporalesArchivoPago();
         Carbon::setTestNow();
         parent::tearDown();
     }
@@ -238,6 +242,38 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('prepararPago')->assertHasErrors('comprobante')->assertSet('mostrarConfirmacion', false)
             ->set('comprobante', $this->validPdfUpload('valido.pdf'))
             ->call('prepararPago')->assertHasNoErrors('comprobante')->assertSet('mostrarConfirmacion', true);
+    }
+
+    /** @dataProvider comprobantesConContenidoInvalido */
+    public function test_preparacion_rechaza_contenido_invalido_sin_resumen_ni_archivo_definitivo(string $nombre, string $contenido): void
+    {
+        Storage::fake('local');
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF', 'rastreo_spei' => 'SPEI'])
+            ->set('comprobante', $this->archivoDesdeContenido($nombre, $contenido))
+            ->call('prepararPago')->assertHasErrors('comprobante')->assertSet('mostrarConfirmacion', false)
+            ->assertViewHas('resumenConfirmacion', fn ($resumen) => $resumen === null);
+
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('archivos_pago', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('archivos_pago'));
+    }
+
+    public static function comprobantesConContenidoInvalido(): array
+    {
+        $pdf = file_get_contents(__DIR__.'/../Fixtures/archivos_pago/comprobante.pdf');
+
+        return [
+            'PDF con extensión incompatible' => ['comprobante.jpg', $pdf],
+            'archivo vacío' => ['comprobante.pdf', ''],
+            'contenido falso' => ['comprobante.pdf', "%PDF-1.4\nesto no es un documento\n%%EOF\n"],
+        ];
     }
 
     public function test_method_change_clears_dynamic_errors_receipt_and_injected_hidden_fields(): void
@@ -1425,10 +1461,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
     private function validPdfUpload(string $name): UploadedFile
     {
-        $path = tempnam(sys_get_temp_dir(), 'pago-pdf-');
-        file_put_contents($path, base64_decode('JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAxMCAxMF0gPj4KZW5kb2JqCnhyZWYKMCA0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA0IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxODQKJSVFT0YK'));
-
-        return new UploadedFile($path, $name, null, UPLOAD_ERR_OK, true);
+        return $this->pdfValido($name);
     }
 
     private function existingPayment(MetodoPago $metodo, array $overrides = []): Pago

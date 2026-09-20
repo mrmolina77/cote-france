@@ -27,10 +27,32 @@ huérfano sin metadatos; nunca produce un pago confirmado sin su registro de arc
 una ejecución que alcance el manejo de errores.
 
 Los PDF positivos de la suite son documentos mínimos reproducibles con catálogo,
-árbol de páginas, tabla `xref`, `trailer` y `startxref`; el caso del límite exacto añade
-únicamente espacio en blanco permitido después de `%%EOF`. Las imágenes de prueba son
-PNG/JPEG decodificables. Su estructura se comprueba en la suite sin incorporar una
-dependencia de producción para generarlos.
+árbol de páginas, tabla `xref`, `trailer` y `startxref`. El documento de exactamente
+10240 KB coloca el relleno dentro de un `stream`, declara su longitud, recalcula todos
+los offsets y termina físicamente en `%%EOF`; existe otro documento estructuralmente
+válido de un byte adicional para aislar el rechazo por tamaño. Los tamaños se consultan
+en los archivos temporales reales, no en metadatos simulados de `UploadedFile::fake()`.
+
+Los fixtures pequeños están en `tests/Fixtures/archivos_pago`, no contienen datos
+personales y se comparten entre las pruebas del servicio, Livewire y métodos de pago.
+El JPEG defectuoso anterior fue sustituido por una imagen RGB 2 × 2 generada con GD.
+PNG y JPEG se abren mediante sus decodificadores GD (`imagecreatefrompng` y
+`imagecreatefromjpeg`), de modo que la evidencia no se limita a `finfo` o
+`getimagesize()`. Ambos se versionan como texto base64 y se decodifican estrictamente
+a temporales físicos, evitando parches binarios incompatibles con la herramienta de
+revisión. El PDF se comprueba por su estructura, offsets y lectura del cierre.
+Estos controles no agregan Python ni dependencias de producción a PHPUnit y los
+temporales creados por los helpers se eliminan en `tearDown()`.
+
+## Estado de verificación de este correctivo (20/09/2026)
+
+Se ejecutaron las comprobaciones autónomas de sintaxis PHP, tamaños físicos, ubicación
+de `startxref`, cierre al final y decodificación con GD. En el entorno de corrección PHP
+estaba disponible, pero el directorio `vendor/` no estaba instalado y la red no permitió
+descargar Composer/Pillow; por ello los comandos Artisan/PHPUnit quedan pendientes y no
+se presentan resultados históricos como si correspondieran a este cambio. La
+verificación externa con Pillow y un lector PDF también queda pendiente en un entorno
+que disponga de esas herramientas; PHPUnit no depende de ellas.
 
 ## Comprobación manual en desarrollo
 
