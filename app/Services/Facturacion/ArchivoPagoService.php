@@ -35,6 +35,9 @@ class ArchivoPagoService
         if (! is_string($mime) || ! isset(self::EXTENSIONES[$mime])) {
             $this->invalido('El contenido del comprobante debe ser PDF, JPEG o PNG válido.');
         }
+        if (! $this->contenidoValido($archivo->getRealPath(), $mime)) {
+            $this->invalido('El contenido del comprobante debe ser PDF, JPEG o PNG válido.');
+        }
         $extensionCliente = strtolower((string) pathinfo($archivo->getClientOriginalName(), PATHINFO_EXTENSION));
         if (! in_array($extensionCliente, self::EXTENSIONES[$mime], true)) {
             $this->invalido('La extensión del comprobante no corresponde con su contenido.');
@@ -116,9 +119,47 @@ class ArchivoPagoService
             $sufijo = '.'.$extension;
         }
         $base = pathinfo($nombre, PATHINFO_FILENAME);
-        $maximoBase = 240 - mb_strlen($sufijo, 'UTF-8');
+        // nombre_original es VARCHAR(255). Limitamos por bytes (no por caracteres)
+        // para que Unicode de hasta cuatro bytes tampoco desborde MySQL/MariaDB y
+        // reservamos siempre el sufijo validado de descarga.
+        $maximoBase = 240 - strlen($sufijo);
 
-        return mb_substr($base, 0, max(1, $maximoBase), 'UTF-8').$sufijo;
+        $base = mb_strcut($base, 0, max(1, $maximoBase), 'UTF-8');
+        if ($base === '') $base = 'comprobante';
+
+        return $base.$sufijo;
+    }
+
+    private function contenidoValido(string $ruta, string $mime): bool
+    {
+        if ($mime !== 'application/pdf') {
+            $imagen = @getimagesize($ruta);
+
+            return is_array($imagen) && ($imagen['mime'] ?? null) === $mime
+                && ($imagen[0] ?? 0) > 0 && ($imagen[1] ?? 0) > 0;
+        }
+
+        $stream = fopen($ruta, 'rb');
+        if ($stream === false) return false;
+        try {
+            $tamano = filesize($ruta);
+            if (! is_int($tamano) || $tamano < 20) return false;
+            $inicio = fread($stream, min(1024, $tamano));
+            if (! is_string($inicio) || ! str_starts_with($inicio, '%PDF-')) return false;
+            fseek($stream, max(0, $tamano - 2048));
+            $final = stream_get_contents($stream);
+            if (! is_string($final) || ! str_contains($final, '%%EOF')
+                || preg_match('/startxref\s+(\d+)\s+%%EOF\s*$/sD', $final, $coincidencia) !== 1) return false;
+            $offset = (int) $coincidencia[1];
+            if ($offset < 0 || $offset >= $tamano || fseek($stream, $offset) !== 0) return false;
+            $xref = fread($stream, min(512, $tamano - $offset));
+
+            // PDF 1.5 también permite que startxref apunte a un objeto de flujo XRef.
+            return is_string($xref) && (str_starts_with($xref, 'xref')
+                || preg_match('/^\d+\s+\d+\s+obj\b.*\/Type\s*\/XRef\b/s', $xref) === 1);
+        } finally {
+            fclose($stream);
+        }
     }
 
     private function eliminarCompensacion(string $ruta, \Throwable $errorPrincipal): void
