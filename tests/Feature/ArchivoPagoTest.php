@@ -95,8 +95,26 @@ class ArchivoPagoTest extends InscripcionesTestCase
             'unicode' => ['Comprobante José_日本.pdf', 'Comprobante José_日本.pdf'],
             'controles y traversal' => ["../carpeta\\mal\0\r\n.pdf", '__carpeta_mal_.pdf'],
             'vacío tras sanear' => ["\0\r\n", 'comprobante.pdf'],
-            'largo conserva extensión' => [str_repeat('á', 300).'.pdf', str_repeat('á', 236).'.pdf'],
+            'largo conserva extensión' => [str_repeat('á', 300).'.pdf', str_repeat('á', 118).'.pdf'],
         ];
+    }
+
+    public function test_rechaza_pdf_con_cabecera_pero_sin_estructura(): void
+    {
+        $this->expectException(ValidationException::class);
+        app(ArchivoPagoService::class)->validar($this->upload('falso.pdf', "%PDF-1.4\ncontenido inventado\n%%EOF\n"));
+    }
+
+    public function test_nombre_unicode_largo_respeta_limite_en_bytes_y_extension(): void
+    {
+        $archivo = app(ArchivoPagoService::class)->guardar(
+            $this->pago(), $this->upload(str_repeat('🧾', 100).'.pdf', base64_decode(self::PDF_BASE64)),
+            $this->user('admin')->getKey()
+        );
+
+        $this->assertLessThanOrEqual(240, strlen($archivo->nombre_original));
+        $this->assertStringEndsWith('.pdf', $archivo->nombre_original);
+        $this->assertSame(1, preg_match('//u', $archivo->nombre_original));
     }
 
     public function test_acepta_limite_exacto_y_rechaza_un_byte_adicional(): void

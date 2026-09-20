@@ -7,8 +7,14 @@ al disco `local`, bajo `storage/app/livewire-tmp`.
 
 La validación efectiva es compartida por la preparación, la confirmación y la
 persistencia: se inspecciona el MIME del contenido, se exige una extensión coherente,
-un tamaño entre 1 byte y 10240 KB y un temporal todavía válido. La revisión de la
+un tamaño entre 1 byte y 10240 KB y un temporal todavía válido. Además, los PDF deben
+tener cabecera, cierre, `startxref` y tabla `xref` coherentes, y las imágenes deben
+poder decodificarse con dimensiones positivas. La revisión de la
 interfaz incluye un SHA-256 del contenido, no sólo nombre y tamaño.
+
+El nombre presentado al descargar se neutraliza sin intervenir en la ruta física. Se
+preserva la extensión validada y el límite se aplica en bytes UTF-8 (no solamente en
+caracteres), para respetar el tamaño de la columna también con nombres Unicode.
 
 La escritura física ocurre dentro del flujo coordinado de confirmación. La ruta
 aleatoria se comunica al coordinador antes de abrir el stream. Así, un `put()` falso,
