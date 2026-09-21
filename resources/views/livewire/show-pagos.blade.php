@@ -33,7 +33,7 @@
                             <td class="px-3 py-3 border-t whitespace-nowrap">{{ $pago->moneda }} ${{ $pago->monto }}</td>
                             <td class="px-3 py-3 border-t"><span class="px-2 py-1 rounded {{ $estadoClases[$pago->estado] ?? 'bg-gray-100' }}">{{ ucfirst($pago->estado) }}</span></td>
                             <td class="px-3 py-3 border-t">{{ $pago->confirmedBy?->name ?: '—' }}</td>
-                            <td class="px-3 py-3 border-t whitespace-nowrap"><button type="button" wire:click="verDetalle({{ $pago->pago_id }})" class="text-indigo-700 hover:underline">Detalle</button>@if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO) @can('cancel-pagos')<button type="button" wire:click="prepararCancelacion({{ $pago->pago_id }})" class="ml-3 text-red-700 hover:underline">Cancelar</button>@endcan @endif</td>
+                            <td class="px-3 py-3 border-t whitespace-nowrap"><a href="{{ route('facturacion.estado-cuenta', $pago->inscripciones_id) }}" class="mr-3 text-indigo-700 hover:underline">Estado de cuenta</a><button type="button" wire:click="verDetalle({{ $pago->pago_id }})" class="text-indigo-700 hover:underline">Detalle</button>@if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO) @can('cancel-pagos')<button type="button" wire:click="prepararCancelacion({{ $pago->pago_id }})" class="ml-3 text-red-700 hover:underline">Cancelar</button>@endcan @endif</td>
                         </tr>
                     @empty<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">No se encontraron pagos.</td></tr>@endforelse</tbody>
                 </table>
@@ -45,7 +45,7 @@
     <x-dialog-modal wire:model="mostrarModalDetalle">
         <x-slot name="title">Detalle del pago</x-slot>
         <x-slot name="content">@if($detalle)<div class="space-y-4 text-sm">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div><a href="{{ route('facturacion.estado-cuenta', $detalle->inscripciones_id) }}" class="text-indigo-700 hover:underline">Abrir estado de cuenta</a></div><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div><strong>Folio:</strong> {{ $detalle->folio }}</div><div><strong>Estado:</strong> {{ ucfirst($detalle->estado) }}</div><div><strong>Fecha:</strong> {{ optional($detalle->fecha_pago)->format('Y-m-d H:i:s') }} {{ $detalle->zona_horaria }}</div>
                 <div><strong>Alumno:</strong> {{ $detalle->prospecto?->prospectos_nombres }} {{ $detalle->prospecto?->prospectos_apellidos }}</div><div><strong>Inscripción:</strong> #{{ $detalle->inscripciones_id }}</div><div><strong>Responsable:</strong> {{ $detalle->responsablePago?->nombre_razon_social ?: '—' }}</div>
                 <div><strong>Método:</strong> {{ $detalle->metodoPago?->nombre ?: '—' }}</div><div><strong>Monto:</strong> {{ $detalle->moneda }} ${{ $detalle->monto }}</div><div><strong>Confirmó:</strong> {{ $detalle->confirmedBy?->name ?: '—' }} / {{ optional($detalle->fecha_confirmacion)->format('Y-m-d H:i:s') ?: '—' }}</div>

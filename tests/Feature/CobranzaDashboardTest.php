@@ -60,6 +60,7 @@ class CobranzaDashboardTest extends InscripcionesTestCase
         $this->inscripcion->forceFill(['estatus' => 'cancelada'])->save();
         $response = $this->actingAs($this->admin)->get(route('facturacion.cobranza'));
         $response->assertOk()->assertSee('Cobranza')->assertSee('Movimientos de pago')
+            ->assertSee('Estado de cuenta')
             ->assertSee('Cobrado este mes')->assertSee('Pendiente')->assertSee('Vencido')
             ->assertSee('Estudiantes activos')->assertSee('Pagos por confirmar')->assertSee('Pagos cancelados')
             ->assertSee('$0.00 MXN')->assertSee('No se encontraron movimientos');
