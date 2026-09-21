@@ -63,14 +63,14 @@ class MetodoPagoBehaviorService
         $metodo = $this->seleccionarActivo($metodoPagoId);
         $normalizados = $this->normalizarDatos($metodo, $datos);
 
+        if (($normalizados['comprobante'] ?? null) instanceof UploadedFile) {
+            ($this->archivos ?? app(ArchivoPagoService::class))->validar($normalizados['comprobante']);
+        }
+
         $validados = Validator::make(
             $normalizados,
             $this->reglasValidacion($metodo)
         )->validate();
-
-        if (($validados['comprobante'] ?? null) instanceof UploadedFile) {
-            ($this->archivos ?? app(ArchivoPagoService::class))->validar($validados['comprobante']);
-        }
 
         $formaSat = $this->resolverFormaPagoSat($metodo, $normalizados['forma_pago_sat'] ?? null);
         if ($formaSat !== null) {

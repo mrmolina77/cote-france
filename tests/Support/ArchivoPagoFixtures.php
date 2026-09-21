@@ -49,7 +49,10 @@ trait ArchivoPagoFixtures
         }
         $this->temporalesArchivoPago[] = $ruta;
 
-        return new UploadedFile($ruta, $nombre, null, UPLOAD_ERR_OK, true);
+        $file = new UploadedFile($ruta, $nombre, null, UPLOAD_ERR_OK, true);
+        $file->name = $file->getClientOriginalName();
+
+        return $file;
     }
 
     /** Crea un PDF cuyo último byte pertenece a %%EOF; el relleno vive en un stream. */

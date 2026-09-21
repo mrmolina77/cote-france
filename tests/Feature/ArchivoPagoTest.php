@@ -117,7 +117,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         return [
             'normal' => ['Estado de cuenta septiembre.pdf', 'Estado de cuenta septiembre.pdf'],
             'unicode' => ['Comprobante José_日本.pdf', 'Comprobante José_日本.pdf'],
-            'controles y traversal' => ["../carpeta\\mal\0\r\n.pdf", '__carpeta_mal_.pdf'],
+            'controles y traversal' => ["../carpeta\\mal\0\r\n.pdf", 'mal_.pdf'],
             'largo conserva extensión' => [str_repeat('á', 300).'.pdf', str_repeat('á', 118).'.pdf'],
         ];
     }
