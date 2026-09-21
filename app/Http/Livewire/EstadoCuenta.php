@@ -85,7 +85,7 @@ class EstadoCuenta extends Component
                 return strcmp($a, $b);
             });
             $resumen = $calculador->calcular($cargos);
-            $pagos = $inscripcion->pagos()->with(['metodoPago', 'confirmedBy', 'aplicaciones.cargo.conceptoCobro'])
+            $pagos = $inscripcion->pagos()->with(['metodoPago', 'confirmedBy', 'aplicaciones.cargo.conceptoCobro', 'comprobantePago'])
                 ->orderByDesc('fecha_pago')->orderByDesc('pago_id')->get();
         } else {
             $termino = mb_substr(trim(is_string($this->busqueda) ? $this->busqueda : ''), 0, self::BUSQUEDA_MAXIMA);
