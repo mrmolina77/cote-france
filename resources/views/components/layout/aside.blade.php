@@ -124,33 +124,18 @@
             </x-layout.aside-link>
         @endif
 
-        @can('manage-conceptos-cobro')
-            <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Configuración</div>
-            <x-layout.aside-link href="{{ route('configuracion.conceptos-cobro') }}"
-                                 :active="request()->routeIs('configuracion.conceptos-cobro')"
-                                 icon="fas fa-file-invoice-dollar text-teal-400 hover:text-teal-200">
-                Conceptos de cobro
-            </x-layout.aside-link>
-        @endcan
-
-        @can('manage-metodos-pago')
-            <x-layout.aside-link href="{{ route('configuracion.metodos-pago') }}"
-                                 :active="request()->routeIs('configuracion.metodos-pago')"
-                                 icon="fas fa-credit-card text-cyan-400 hover:text-cyan-200">
-                Métodos de pago
-            </x-layout.aside-link>
-        @endcan
-
         @can('manage-cargos')
-            <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Facturación</div>
+            <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Facturación y pagos</div>
+            <x-layout.aside-link href="{{ route('facturacion.cobranza') }}"
+                                 :active="request()->routeIs('facturacion.cobranza')"
+                                 icon="fas fa-chart-line text-emerald-400 hover:text-emerald-200">
+                Cobranza
+            </x-layout.aside-link>
             <x-layout.aside-link href="{{ route('facturacion.cargos') }}"
                                  :active="request()->routeIs('facturacion.cargos')"
                                  icon="fas fa-receipt text-emerald-400 hover:text-emerald-200">
                 Cargos
             </x-layout.aside-link>
-        @endcan
-
-        @can('manage-pagos')
             <x-layout.aside-link href="{{ route('facturacion.pagos.index') }}"
                                  :active="request()->routeIs('facturacion.pagos.index')"
                                  icon="fas fa-money-check-alt text-emerald-400 hover:text-emerald-200">
@@ -160,6 +145,16 @@
                                  :active="request()->routeIs('facturacion.pagos.registrar')"
                                  icon="fas fa-cash-register text-green-400 hover:text-green-200">
                 Registrar pago
+            </x-layout.aside-link>
+            <x-layout.aside-link href="{{ route('configuracion.conceptos-cobro') }}"
+                                 :active="request()->routeIs('configuracion.conceptos-cobro', 'configuracion.metodos-pago')"
+                                 icon="fas fa-cog text-cyan-400 hover:text-cyan-200">
+                Configuración
+            </x-layout.aside-link>
+            <x-layout.aside-link href="{{ route('configuracion.metodos-pago') }}"
+                                 :active="request()->routeIs('configuracion.metodos-pago')"
+                                 icon="fas fa-credit-card text-cyan-400 hover:text-cyan-200">
+                Métodos de pago
             </x-layout.aside-link>
         @endcan
     </nav>
