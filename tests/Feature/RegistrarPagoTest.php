@@ -267,7 +267,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
     public static function comprobantesConContenidoInvalido(): array
     {
-        $pdf = file_get_contents(__DIR__.'/../Fixtures/archivos_pago/comprobante.pdf');
+        $pdf = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
 
         return [
             'PDF con extensión incompatible' => ['comprobante.jpg', $pdf],
@@ -355,6 +355,44 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
             ->set('metodoPagoId', $efectivo->getKey())->call('prepararPago')->assertSet('mostrarConfirmacion', true)
             ->set('observaciones', 'modificada')->assertSet('mostrarConfirmacion', false);
+    }
+
+    public function test_sustituir_comprobante_por_otro_del_mismo_nombre_y_tamano_invalida_revision(): void
+    {
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $original = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
+        $distinto = str_replace('(Comprobante)', '(XXXXXXXXXXX)', $original);
+        $this->assertSame(strlen($original), strlen($distinto));
+        $this->assertNotSame(hash('sha256', $original), hash('sha256', $distinto));
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF', 'rastreo_spei' => 'SPEI'])
+            ->set('comprobante', $this->archivoDesdeContenido('igual.pdf', $original))
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->set('comprobante', $this->archivoDesdeContenido('igual.pdf', $distinto))
+            ->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null);
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+    }
+
+    public function test_hash_del_servidor_rechaza_sustitucion_aunque_cliente_conserve_revision_anterior(): void
+    {
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $original = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
+        $distinto = str_replace('(Comprobante)', '(XXXXXXXXXXX)', $original);
+        $component = Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF', 'rastreo_spei' => 'SPEI'])
+            ->set('comprobante', $this->archivoDesdeContenido('igual.pdf', $original))->call('prepararPago');
+        $fingerprint = $component->get('confirmacionFingerprint');
+        $component->set('comprobante', $this->archivoDesdeContenido('igual.pdf', $distinto))
+            ->set('confirmacionFingerprint', $fingerprint)->set('mostrarConfirmacion', true)
+            ->call('confirmarPago')->assertHasErrors('confirmacion')->assertDontSee('Pago registrado correctamente.');
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
     }
 
     public function test_navigation_link_is_visible_only_to_authorized_role(): void
