@@ -10,6 +10,7 @@ use App\Http\Livewire\ShowMetodosPago;
 use App\Http\Livewire\ShowCargos;
 use App\Http\Livewire\RegistrarPago;
 use App\Http\Livewire\ShowPagos;
+use App\Http\Livewire\ShowCobranza;
 use App\Http\Controllers\DescargarArchivoPagoController;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,13 @@ Route::get('/', function () {
 
 // Route::redirect('/', '/dashboard', 301);
 
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'can:manage-cargos',
+])->get('/facturacion/cobranza', ShowCobranza::class)
+    ->name('facturacion.cobranza');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
