@@ -42,10 +42,22 @@ class CalculadorEstadoCuenta
 
     public function pagadoPorCargo(Cargo $cargo): string
     {
-        $total = max(0, $this->centavos($cargo->total));
-        $saldo = max(0, $this->centavos($cargo->saldo_pendiente));
+        return $this->valoresPresentacion($cargo)['pagado_actual'];
+    }
 
-        return $this->importe(max(0, min($total, $total - $saldo)));
+    /**
+     * Return display-safe values without mutating the persisted charge.
+     */
+    public function valoresPresentacion(Cargo $cargo): array
+    {
+        $total = max(0, $this->centavos($cargo->total));
+        $saldo = min(max(0, $this->centavos($cargo->saldo_pendiente)), $total);
+
+        return [
+            'total_actual' => $this->importe($total),
+            'saldo_actual' => $this->importe($saldo),
+            'pagado_actual' => $this->importe($total - $saldo),
+        ];
     }
 
     private function centavos($importe): int

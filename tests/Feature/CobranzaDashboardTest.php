@@ -187,7 +187,8 @@ class CobranzaDashboardTest extends InscripcionesTestCase
         $html = $this->actingAs($this->admin)->get(route('facturacion.cobranza'));
         $html->assertSee('Facturación y pagos')->assertSee('Cobranza')->assertSee('Cargos')
             ->assertSee('Pagos')->assertSee('Registrar pago')->assertSee('Configuración')
-            ->assertDontSee('Estado de cuenta')->assertDontSee('Facturación CFDI');
+            ->assertSee('Estado de cuenta')->assertSee(route('facturacion.estado-cuenta'), false)
+            ->assertDontSee('Facturación CFDI');
 
         $unauthorized = $this->user('venta');
         $this->actingAs($unauthorized)->get(route('dashboard'))->assertDontSee('Facturación y pagos');
