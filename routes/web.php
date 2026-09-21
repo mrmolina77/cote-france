@@ -13,6 +13,8 @@ use App\Http\Livewire\ShowPagos;
 use App\Http\Livewire\ShowCobranza;
 use App\Http\Livewire\EstadoCuenta;
 use App\Http\Controllers\DescargarArchivoPagoController;
+use App\Http\Controllers\DescargarComprobantePagoController;
+use App\Http\Controllers\VerComprobantePagoController;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
 use App\Http\Livewire\ShowProspectos;
@@ -156,6 +158,12 @@ Route::middleware([
 ])->get('/facturacion/pagos/{pago}/archivos/{archivo}/descargar', DescargarArchivoPagoController::class)
     ->whereNumber('pago')->whereNumber('archivo')
     ->name('facturacion.pagos.archivos.descargar');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-pagos', 'signed'])
+    ->get('/facturacion/pagos/{pago}/recibos/{comprobante}', VerComprobantePagoController::class)
+    ->whereNumber('pago')->whereNumber('comprobante')->name('facturacion.comprobantes.ver');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-pagos'])
+    ->get('/facturacion/pagos/{pago}/recibos/{comprobante}/descargar', DescargarComprobantePagoController::class)
+    ->whereNumber('pago')->whereNumber('comprobante')->name('facturacion.comprobantes.descargar');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),

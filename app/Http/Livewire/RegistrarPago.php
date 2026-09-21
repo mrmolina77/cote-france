@@ -7,6 +7,7 @@ use App\Models\Inscripcion;
 use App\Models\Pago;
 use App\Services\Facturacion\AplicarPagoService;
 use App\Services\Facturacion\MetodoPagoBehaviorService;
+use App\Services\Facturacion\GeneradorComprobantePagoService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -351,9 +352,16 @@ class RegistrarPago extends Component
         }
 
         $folio = (string) $pago->folio;
+        $mensajeRecibo = ' El recibo quedó pendiente de generación y puede reintentarse desde Pagos.';
+        try {
+            $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $usuarioId);
+            $mensajeRecibo = ' Recibo '.$recibo->folio.' generado correctamente.';
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
         $this->limpiarFormularioTrasExito();
         session()->flash('pago_confirmado', [
-            'mensaje' => 'Pago registrado correctamente.',
+            'mensaje' => 'Pago registrado correctamente.'.$mensajeRecibo,
             'folio' => $folio,
         ]);
     }
