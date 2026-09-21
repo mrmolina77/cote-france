@@ -10,6 +10,7 @@ use App\Models\Pago;
 use App\Models\ResponsablePago;
 use App\Services\Facturacion\AplicarPagoService;
 use App\Services\Facturacion\CancelarPagoService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\Support\ArchivoPagoFixtures;
@@ -18,10 +19,20 @@ class ArchivoPagoDetalleCancelacionTest extends InscripcionesTestCase
 {
     use ArchivoPagoFixtures;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Carbon::setTestNow('2026-09-20 12:00:00');
+    }
+
     protected function tearDown(): void
     {
-        $this->limpiarTemporalesArchivoPago();
-        parent::tearDown();
+        try {
+            $this->limpiarTemporalesArchivoPago();
+        } finally {
+            Carbon::setTestNow();
+            parent::tearDown();
+        }
     }
 
     public function test_detalle_escapa_nombre_muestra_metadatos_y_pago_historico_sin_adjuntos(): void
