@@ -44,7 +44,7 @@
         @if($inscripcion)
             <div class="bg-white rounded-lg shadow p-5">
                 <div class="flex flex-wrap justify-between gap-3">
-                    <h2 class="text-lg font-semibold text-gray-800">Inscripción seleccionada</h2>
+                    <div><h2 class="text-lg font-semibold text-gray-800">Inscripción seleccionada</h2><a href="{{ route('facturacion.estado-cuenta', $inscripcion->inscripciones_id) }}" class="text-sm text-indigo-700 hover:underline">Estado de cuenta</a></div>
                     <button type="button" wire:click="limpiarSeleccion" class="px-3 py-2 border rounded text-gray-700 hover:bg-gray-50">Cambiar inscripción</button>
                 </div>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">

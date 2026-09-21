@@ -7,6 +7,7 @@
                 <a href="{{ route('facturacion.pagos.registrar') }}" class="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Registrar pago</a>
                 <a href="{{ route('facturacion.pagos.index') }}" class="rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50">Pagos</a>
                 <a href="{{ route('facturacion.cargos') }}" class="rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50">Cargos</a>
+                <a href="{{ route('facturacion.estado-cuenta') }}" class="rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50">Estado de cuenta</a>
             </div>
         </div>
 
@@ -49,7 +50,7 @@
                             <td class="border-b px-4 py-3">{{ $pago->metodoPago?->nombre ?: 'Sin método' }}</td>
                             <td class="border-b px-4 py-3 whitespace-nowrap">{{ $pago->moneda }} ${{ number_format($pago->monto, 2, '.', ',') }}</td>
                             <td class="border-b px-4 py-3"><span class="rounded bg-gray-100 px-2 py-1">{{ ucfirst($pago->estado) }}</span></td>
-                            <td class="border-b px-4 py-3"><a href="{{ route('facturacion.pagos.index') }}" class="text-indigo-700 hover:underline">Ver en Pagos</a></td>
+                            <td class="border-b px-4 py-3 whitespace-nowrap"><a href="{{ route('facturacion.pagos.index') }}" class="text-indigo-700 hover:underline">Ver en Pagos</a><a href="{{ route('facturacion.estado-cuenta', $pago->inscripciones_id) }}" class="ml-3 text-indigo-700 hover:underline">Estado de cuenta</a></td>
                         </tr>
                     @empty
                         <tr><td colspan="8" class="px-4 py-10 text-center text-gray-500">No se encontraron movimientos.</td></tr>

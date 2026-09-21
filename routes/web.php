@@ -11,6 +11,7 @@ use App\Http\Livewire\ShowCargos;
 use App\Http\Livewire\RegistrarPago;
 use App\Http\Livewire\ShowPagos;
 use App\Http\Livewire\ShowCobranza;
+use App\Http\Livewire\EstadoCuenta;
 use App\Http\Controllers\DescargarArchivoPagoController;
 use App\Http\Livewire\ShowProgramadas;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +46,13 @@ Route::middleware([
     'can:manage-cargos',
 ])->get('/facturacion/cobranza', ShowCobranza::class)
     ->name('facturacion.cobranza');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'can:manage-cargos',
+])->get('/facturacion/estado-cuenta/{inscripcion?}', EstadoCuenta::class)
+    ->whereNumber('inscripcion')->name('facturacion.estado-cuenta');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -130,7 +138,8 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
     'can:manage-pagos',
-])->get('/facturacion/pagos/registrar', RegistrarPago::class)
+])->get('/facturacion/pagos/registrar/{inscripcion?}', RegistrarPago::class)
+    ->whereNumber('inscripcion')
     ->name('facturacion.pagos.registrar');
 Route::middleware([
     'auth:sanctum',

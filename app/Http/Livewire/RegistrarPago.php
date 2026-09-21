@@ -35,10 +35,13 @@ class RegistrarPago extends Component
     public $mostrarConfirmacion = false;
     public $confirmacionFingerprint;
 
-    public function mount(): void
+    public function mount($inscripcion = null): void
     {
         Gate::authorize('manage-pagos');
         $this->fechaPago = now()->format('Y-m-d\TH:i');
+        if ($inscripcion !== null) {
+            $this->seleccionarInscripcion($inscripcion);
+        }
     }
 
     public function updatedBusqueda(): void
