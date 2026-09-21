@@ -40,19 +40,13 @@ PNG y JPEG se abren mediante sus decodificadores GD (`imagecreatefrompng` y
 `imagecreatefromjpeg`), de modo que la evidencia no se limita a `finfo` o
 `getimagesize()`. Ambos se versionan como texto base64 y se decodifican estrictamente
 a temporales físicos, evitando parches binarios incompatibles con la herramienta de
-revisión. El PDF se comprueba por su estructura, offsets y lectura del cierre.
+revisión. El PDF también se versiona como `comprobante.pdf.base64`; se decodifica antes de usarlo y una prueba verifica que `startxref` apunta exactamente a `xref`, que cada entrada apunta al objeto correspondiente y que `%%EOF` cierra los bytes definitivos.
 Estos controles no agregan Python ni dependencias de producción a PHPUnit y los
 temporales creados por los helpers se eliminan en `tearDown()`.
 
 ## Estado de verificación de este correctivo (20/09/2026)
 
-Se ejecutaron las comprobaciones autónomas de sintaxis PHP, tamaños físicos, ubicación
-de `startxref`, cierre al final y decodificación con GD. En el entorno de corrección PHP
-estaba disponible, pero el directorio `vendor/` no estaba instalado y la red no permitió
-descargar Composer/Pillow; por ello los comandos Artisan/PHPUnit quedan pendientes y no
-se presentan resultados históricos como si correspondieran a este cambio. La
-verificación externa con Pillow y un lector PDF también queda pendiente en un entorno
-que disponga de esas herramientas; PHPUnit no depende de ellas.
+Se ejecutaron las comprobaciones autónomas de sintaxis PHP, `composer validate --strict` y la validación reproducible de los bytes PDF (base64 estricto, offsets, `startxref` y cierre). PHP está disponible, pero `vendor/` no está instalado; por ello Artisan/PHPUnit quedan pendientes y no se presentan resultados históricos como evidencia nueva. La instalación del lock fue impedida primero por PHP 8.5 y, al ignorar sólo ese requisito de plataforma, por respuestas 403 de la red. Tampoco hay un lector PDF estricto (`qpdf`, `pdfinfo` o `mutool`) instalado, así que esa apertura adicional queda documentada como pendiente; PHPUnit no depende de ella.
 
 ## Comprobación manual en desarrollo
 

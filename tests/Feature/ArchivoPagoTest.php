@@ -46,7 +46,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
     public static function archivosValidos(): array
     {
         return [
-            'pdf' => ['recibo.pdf', 'comprobante.pdf', 'application/pdf'],
+            'pdf' => ['recibo.pdf', 'comprobante.pdf.base64', 'application/pdf'],
             'png' => ['recibo.png', 'comprobante.png.base64', 'image/png'],
             'jpeg' => ['recibo.jpeg', 'comprobante.jpeg.base64', 'image/jpeg'],
         ];
@@ -89,7 +89,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $service = app(ArchivoPagoService::class);
         $pago = $this->pago();
         $usuario = $this->user('admin');
-        $contenido = file_get_contents(base_path('tests/Fixtures/archivos_pago/comprobante.pdf'));
+        $contenido = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
         $a = $service->guardar($pago, $this->upload("../malo\r\n.pdf", $contenido), $usuario->getKey());
         $b = $service->guardar($pago, $this->upload("../malo\r\n.pdf", $contenido), $usuario->getKey());
 
@@ -105,7 +105,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
     public function test_conserva_nombres_reconocibles_unicode_y_extension_al_sanear(string $original, string $esperado): void
     {
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $this->pago(), $this->archivoFixture('comprobante.pdf', $original), $this->user('admin')->getKey()
+            $this->pago(), $this->archivoFixture('comprobante.pdf.base64', $original), $this->user('admin')->getKey()
         );
 
         $this->assertSame($esperado, $archivo->nombre_original);
@@ -126,7 +126,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
     {
         try {
             app(ArchivoPagoService::class)->guardar(
-                $this->pago(), $this->archivoFixture('comprobante.pdf', "\0\r\n"), $this->user('admin')->getKey()
+                $this->pago(), $this->archivoFixture('comprobante.pdf.base64', "\0\r\n"), $this->user('admin')->getKey()
             );
             $this->fail('El nombre sin una extensión permitida debió rechazarse.');
         } catch (ValidationException $error) {
@@ -145,7 +145,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
     public function test_nombre_unicode_largo_respeta_limite_en_bytes_y_extension(): void
     {
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $this->pago(), $this->archivoFixture('comprobante.pdf', str_repeat('🧾', 100).'.pdf'),
+            $this->pago(), $this->archivoFixture('comprobante.pdf.base64', str_repeat('🧾', 100).'.pdf'),
             $this->user('admin')->getKey()
         );
 
@@ -180,7 +180,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $usuario = $this->user('admin');
         $pago = $this->pago();
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $pago, $this->archivoFixture('comprobante.pdf', 'evidencia.pdf'), $usuario->getKey()
+            $pago, $this->archivoFixture('comprobante.pdf.base64', 'evidencia.pdf'), $usuario->getKey()
         );
         $usuario->delete();
         $this->assertNull($archivo->fresh()->created_by);
@@ -202,7 +202,7 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $pago = $this->pago();
         $otro = $this->pago();
         $archivo = app(ArchivoPagoService::class)->guardar(
-            $pago, $this->archivoFixture('comprobante.pdf'), $admin->getKey()
+            $pago, $this->archivoFixture('comprobante.pdf.base64'), $admin->getKey()
         );
         $url = route('facturacion.pagos.archivos.descargar', [$pago, $archivo]);
 
@@ -219,11 +219,27 @@ class ArchivoPagoTest extends InscripcionesTestCase
         $this->assertFalse($response->headers->hasCacheControlDirective('public'));
         $this->assertStringContainsString('attachment', $response->headers->get('content-disposition'));
         $this->assertStringContainsString('comprobante.pdf', $response->headers->get('content-disposition'));
-        $this->assertSame(file_get_contents(base_path('tests/Fixtures/archivos_pago/comprobante.pdf')), $response->streamedContent());
+        $this->assertSame(self::bytesFixtureArchivoPago('comprobante.pdf.base64'), $response->streamedContent());
         $this->actingAs($admin)->get(route('facturacion.pagos.archivos.descargar', [$otro, $archivo]))->assertNotFound();
         $this->actingAs($admin)->get(route('facturacion.pagos.archivos.descargar', [$pago->getKey(), 999999]))->assertNotFound();
         Storage::disk('local')->delete($archivo->ruta);
         $this->actingAs($admin)->get($url)->assertNotFound();
+    }
+
+    public function test_fixture_pdf_tiene_xref_offsets_y_cierre_coherentes(): void
+    {
+        $pdf = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
+        $this->assertStringStartsWith("%PDF-", $pdf);
+        $this->assertStringEndsWith("%%EOF\n", $pdf);
+        $this->assertSame(1, preg_match('/startxref\s+(\d+)\s+%%EOF\s*$/D', $pdf, $match));
+        $xref = (int) $match[1];
+        $this->assertSame('xref', substr($pdf, $xref, 4));
+        $this->assertSame(1, preg_match('/xref\s+0\s+(\d+)\s+0000000000 65535 f\s+((?:\d{10} 00000 n\s+)+)/A', substr($pdf, $xref), $tabla));
+        $offsets = preg_split('/\s+/', trim($tabla[2]));
+        for ($objeto = 1; $objeto < (int) $tabla[1]; $objeto++) {
+            $offset = (int) $offsets[($objeto - 1) * 3];
+            $this->assertSame("{$objeto} 0 obj", substr($pdf, $offset, strlen("{$objeto} 0 obj")));
+        }
     }
 
     public function test_descarga_rechaza_disco_y_ruta_no_permitidos(): void

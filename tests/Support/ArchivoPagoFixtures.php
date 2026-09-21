@@ -11,7 +11,17 @@ trait ArchivoPagoFixtures
 
     protected function archivoFixture(string $nombre, ?string $nombreCliente = null): UploadedFile
     {
-        $contenido = file_get_contents(base_path('tests/Fixtures/archivos_pago/'.$nombre));
+        $contenido = self::bytesFixtureArchivoPago($nombre);
+        return $this->archivoDesdeContenido(
+            $nombreCliente ?? preg_replace('/\.base64$/', '', $nombre),
+            $contenido
+        );
+    }
+
+    public static function bytesFixtureArchivoPago(string $nombre): string
+    {
+        // También funciona desde data providers, antes de arrancar Laravel.
+        $contenido = file_get_contents(dirname(__DIR__).'/Fixtures/archivos_pago/'.$nombre);
         if (! is_string($contenido)) {
             throw new \RuntimeException('No fue posible leer el fixture '.$nombre.'.');
         }
@@ -23,15 +33,12 @@ trait ArchivoPagoFixtures
             $contenido = $decodificado;
         }
 
-        return $this->archivoDesdeContenido(
-            $nombreCliente ?? preg_replace('/\.base64$/', '', $nombre),
-            $contenido
-        );
+        return $contenido;
     }
 
     protected function pdfValido(string $nombre = 'comprobante.pdf'): UploadedFile
     {
-        return $this->archivoFixture('comprobante.pdf', $nombre);
+        return $this->archivoFixture('comprobante.pdf.base64', $nombre);
     }
 
     protected function archivoDesdeContenido(string $nombre, string $contenido): UploadedFile
