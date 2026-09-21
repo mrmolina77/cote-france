@@ -102,6 +102,19 @@ class CobranzaDashboardTest extends InscripcionesTestCase
             $different->save();
             $other->forceFill(['inscripciones_id' => $different->getKey()])->save();
         } elseif ($field === 'nombre' || $field === 'apellido') {
+            $otherProspecto = Prospecto::create([
+                'prospectos_nombres' => 'OtroNombre',
+                'prospectos_apellidos' => 'OtroApellido',
+                'prospectos_telefono1' => '5559999999',
+            ]);
+            $otherInscripcion = $this->inscripcion->replicate();
+            $otherInscripcion->prospectos_id = $otherProspecto->getKey();
+            $otherInscripcion->save();
+            $other->forceFill([
+                'inscripciones_id' => $otherInscripcion->getKey(),
+                'prospectos_id' => $otherProspecto->getKey(),
+            ])->save();
+
             $match->prospecto->update([$field === 'nombre' ? 'prospectos_nombres' : 'prospectos_apellidos' => $needle]);
         } else {
             $match->forceFill([$field => $needle])->save();
@@ -139,6 +152,7 @@ class CobranzaDashboardTest extends InscripcionesTestCase
         $component = Livewire::actingAs($this->admin)->test(ShowCobranza::class)
             ->set('busqueda', "%_' OR 1=1 --")
             ->assertDontSee($one->folio)->assertDontSee($two->folio)
+            ->set('busqueda', '')
             ->set('estado', ['confirmado'])->set('metodoPagoId', ['1'])->set('porPagina', 999)
             ->assertSet('porPagina', 10)
             ->set('fechaDesde', '2026-02-30')->assertHasErrors('fechaDesde')

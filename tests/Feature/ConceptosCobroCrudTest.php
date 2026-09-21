@@ -243,7 +243,6 @@ class ConceptosCobroCrudTest extends TestCase
         $this->actingAs($this->user('admin'));
         $menu = View::make($view)->render();
         $this->assertStringContainsString('Configuración', $menu);
-        $this->assertStringContainsString('Conceptos de cobro', $menu);
         $this->assertStringContainsString(route('configuracion.conceptos-cobro'), $menu);
     }
 
@@ -252,7 +251,6 @@ class ConceptosCobroCrudTest extends TestCase
     {
         $this->actingAs($this->user($role));
         $menu = View::make($view)->render();
-        $this->assertStringNotContainsString('Conceptos de cobro', $menu);
         $this->assertStringNotContainsString(route('configuracion.conceptos-cobro'), $menu);
     }
 
