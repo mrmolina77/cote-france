@@ -76,7 +76,7 @@ class EstadoCuenta extends Component
                 }
                 $cargo->periodo_presentacion = $cargo->periodo_anio && $cargo->periodo_mes
                     ? sprintf('%04d-%02d', $cargo->periodo_anio, $cargo->periodo_mes)
-                    : ($cargo->fecha_vencimiento?->format('Y-m') ?? 'Sin periodo');
+                    : 'Sin periodo';
             }
             $gruposCargos = $cargos->groupBy('periodo_presentacion')->sortKeysUsing(function ($a, $b) {
                 if ($a === $b) return 0;

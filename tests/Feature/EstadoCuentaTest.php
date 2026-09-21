@@ -151,7 +151,7 @@ class EstadoCuentaTest extends InscripcionesTestCase
         $estadoSegunda = route('facturacion.estado-cuenta', $otra->getKey());
         $registrarPrimera = route('facturacion.pagos.registrar', $this->inscripcion->getKey());
 
-        Livewire::actingAs($this->admin)->test(ShowInscripciones::class)
+        Livewire::actingAs($this->admin)->test(ShowInscripciones::class)->call('loadPosts')
             ->assertSee($estadoPrimera, false)->assertSee($estadoSegunda, false);
         Livewire::actingAs($this->admin)->test(ShowCobranza::class)
             ->assertSee($pago->folio)->assertSee($estadoPrimera, false)->assertDontSee($estadoSegunda, false);
@@ -214,12 +214,12 @@ class EstadoCuentaTest extends InscripcionesTestCase
 
     private function cargo(string $total, string $saldo, string $estado, ?int $anio, ?int $mes, ?string $vencimiento = '2026-09-10'): Cargo
     {
-        return Cargo::create(['inscripciones_id' => $this->inscripcion->getKey(), 'concepto_cobro_id' => ConceptoCobro::where('clave', 'MENSUALIDAD')->value('concepto_cobro_id'), 'periodo_anio' => $anio, 'periodo_mes' => $mes, 'fecha_emision' => '2026-09-01', 'fecha_vencimiento' => $vencimiento, 'moneda' => 'MXN', 'subtotal' => $total, 'descuento' => '0.00', 'recargo' => '0.00', 'impuestos' => '0.00', 'total' => $total, 'saldo_pendiente' => $saldo, 'estado' => $estado, 'origen' => 'manual']);
+        return Cargo::create(['inscripciones_id' => $this->inscripcion->getKey(), 'concepto_cobro_id' => ConceptoCobro::where('clave', 'MENSUALIDAD')->value('concepto_cobro_id'), 'periodo_anio' => $anio, 'periodo_mes' => $mes, 'fecha_emision' => '2026-09-01', 'fecha_vencimiento' => $vencimiento ?? '2026-09-10', 'moneda' => 'MXN', 'subtotal' => $total, 'descuento' => '0.00', 'recargo' => '0.00', 'impuestos' => '0.00', 'total' => $total, 'saldo_pendiente' => $saldo, 'estado' => $estado, 'origen' => 'manual']);
     }
 
     private function pago(string $folio, string $estado, string $fecha, ?Inscripcion $inscripcion = null): Pago
     {
         $inscripcion ??= $this->inscripcion;
-        return Pago::query()->forceCreate(['folio' => $folio, 'inscripciones_id' => $inscripcion->getKey(), 'prospectos_id' => $inscripcion->prospectos_id, 'responsable_pago_id' => $inscripcion->responsable_pago_id, 'fecha_pago' => $fecha, 'zona_horaria' => 'UTC', 'moneda' => 'MXN', 'monto' => '30.00', 'metodo_pago_id' => MetodoPago::value('metodo_pago_id'), 'estado' => $estado]);
+        return Pago::query()->forceCreate(['folio' => $folio, 'inscripciones_id' => $inscripcion->getKey(), 'prospectos_id' => $inscripcion->prospectos_id, 'responsable_pago_id' => $inscripcion->responsable_pago_id ?? $this->responsable->getKey(), 'fecha_pago' => $fecha, 'zona_horaria' => 'UTC', 'moneda' => 'MXN', 'monto' => '30.00', 'metodo_pago_id' => MetodoPago::value('metodo_pago_id'), 'estado' => $estado]);
     }
 }
