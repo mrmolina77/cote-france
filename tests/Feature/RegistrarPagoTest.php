@@ -1466,6 +1466,124 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertTrue(class_exists('App\\Models\\ArchivoPago'));
     }
 
+    public function test_doble_confirmacion_livewire_con_adjunto_no_duplica_registros_ni_archivos(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $bytesEsperados = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
+
+        $component = $this->componentWithSelectedCharge($cargo)
+            ->set('importesAplicar.'.$cargo->getKey(), '40.00')
+            ->set('montoRecibido', '40.00')
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-DOBLE', 'rastreo_spei' => 'SPEI-DOBLE'])
+            ->set('comprobante', $this->validPdfUpload('doble-confirmacion.pdf'))
+            ->call('prepararPago')
+            ->assertHasNoErrors()
+            ->assertSet('mostrarConfirmacion', true)
+            ->assertViewHas('resumenConfirmacion', fn ($resumen) => $resumen !== null);
+
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+        $this->assertDatabaseCount('archivos_pago', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('archivos_pago'));
+        $this->assertSame([], Storage::disk('public')->allFiles());
+
+        $component->call('confirmarPago')
+            ->assertHasNoErrors()
+            ->assertSet('comprobante', null)
+            ->assertSet('mostrarConfirmacion', false)
+            ->assertSet('confirmacionFingerprint', null)
+            ->assertSee('Pago registrado correctamente. Folio:');
+
+        $pago = Pago::query()->sole();
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertDatabaseCount('pago_aplicaciones', 1);
+        $this->assertDatabaseCount('archivos_pago', 1);
+        $this->assertDatabaseHas('pago_aplicaciones', [
+            'pago_id' => $pago->getKey(), 'cargo_id' => $cargo->getKey(),
+            'importe_aplicado' => '40.00', 'saldo_anterior' => '100.00', 'saldo_posterior' => '60.00',
+        ]);
+        $this->assertSame(['60.00', Cargo::ESTADO_PARCIAL], [$cargo->fresh()->saldo_pendiente, $cargo->fresh()->estado]);
+
+        $ruta = DB::table('archivos_pago')->value('ruta');
+        $this->assertDatabaseHas('archivos_pago', [
+            'pago_id' => $pago->getKey(),
+            'nombre_original' => 'doble-confirmacion.pdf',
+            'mime_type' => 'application/pdf',
+            'tamano_bytes' => strlen($bytesEsperados),
+            'created_by' => auth()->id(),
+        ]);
+        Storage::disk('local')->assertExists($ruta);
+        $this->assertSame(hash('sha256', $bytesEsperados), hash('sha256', Storage::disk('local')->get($ruta)));
+        $estadoPersistido = [
+            'pagos' => DB::table('pagos')->orderBy('pago_id')->get()->map(fn ($fila) => (array) $fila)->all(),
+            'aplicaciones' => DB::table('pago_aplicaciones')->orderBy('pago_aplicacion_id')->get()->map(fn ($fila) => (array) $fila)->all(),
+            'archivos' => DB::table('archivos_pago')->orderBy('archivo_pago_id')->get()->map(fn ($fila) => (array) $fila)->all(),
+            'consecutivo' => DB::table('consecutivos_pago')->where('anio', 2026)->value('ultimo_consecutivo'),
+            'cargo' => $cargo->fresh()->only(['saldo_pendiente', 'estado']),
+            'archivos_definitivos' => collect(Storage::disk('local')->allFiles('archivos_pago'))->mapWithKeys(
+                fn ($archivo) => [$archivo => hash('sha256', Storage::disk('local')->get($archivo))]
+            )->all(),
+        ];
+
+        $component->call('confirmarPago')
+            ->assertHasErrors('confirmacion')
+            ->assertDontSee('Pago registrado correctamente. Folio:');
+
+        $this->assertSame($estadoPersistido['pagos'], DB::table('pagos')->orderBy('pago_id')->get()->map(fn ($fila) => (array) $fila)->all());
+        $this->assertSame($estadoPersistido['aplicaciones'], DB::table('pago_aplicaciones')->orderBy('pago_aplicacion_id')->get()->map(fn ($fila) => (array) $fila)->all());
+        $this->assertSame($estadoPersistido['archivos'], DB::table('archivos_pago')->orderBy('archivo_pago_id')->get()->map(fn ($fila) => (array) $fila)->all());
+        $this->assertSame($estadoPersistido['consecutivo'], DB::table('consecutivos_pago')->where('anio', 2026)->value('ultimo_consecutivo'));
+        $this->assertSame($estadoPersistido['cargo'], $cargo->fresh()->only(['saldo_pendiente', 'estado']));
+        $this->assertSame($estadoPersistido['archivos_definitivos'], collect(Storage::disk('local')->allFiles('archivos_pago'))->mapWithKeys(
+            fn ($archivo) => [$archivo => hash('sha256', Storage::disk('local')->get($archivo))]
+        )->all());
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    public function test_temporal_eliminado_tras_revision_rechaza_confirmacion_sin_efectos(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        $cargo = $this->cargo();
+        $spei = MetodoPago::where('clave', MetodoPago::TRANSFERENCIA_SPEI)->firstOrFail();
+        $bytesEsperados = self::bytesFixtureArchivoPago('comprobante.pdf.base64');
+        $component = $this->componentWithSelectedCharge($cargo)
+            ->set('metodoPagoId', $spei->getKey())
+            ->set('datosMetodo', ['banco' => 'Banco', 'referencia' => 'REF-TEMP', 'rastreo_spei' => 'SPEI-TEMP'])
+            ->set('comprobante', $this->validPdfUpload('desaparece.pdf'))
+            ->call('prepararPago')
+            ->assertHasNoErrors()
+            ->assertSet('mostrarConfirmacion', true);
+
+        $fingerprint = $component->get('confirmacionFingerprint');
+        $this->assertIsString($fingerprint);
+        $this->assertSame(64, strlen($fingerprint));
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+        $this->assertDatabaseCount('archivos_pago', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('archivos_pago'));
+
+        $comprobante = $component->get('comprobante');
+        $rutaTemporal = $comprobante->getRealPath();
+        $this->assertFileExists($rutaTemporal);
+        $this->assertSame(hash('sha256', $bytesEsperados), hash_file('sha256', $rutaTemporal));
+        $this->assertTrue(unlink($rutaTemporal));
+        $this->assertFileDoesNotExist($rutaTemporal);
+
+        $component->call('confirmarPago')
+            ->assertHasErrors('confirmacion')
+            ->assertSet('mostrarConfirmacion', false)
+            ->assertSet('confirmacionFingerprint', null)
+            ->assertDontSee('Pago registrado correctamente. Folio:');
+
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+        $this->assertDatabaseCount('archivos_pago', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('archivos_pago'));
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
     private function assertNoFinancialWrites(Cargo $cargo, string $balance, string $status): void
     {
         $this->assertDatabaseCount('pagos', 0);
