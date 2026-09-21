@@ -131,6 +131,11 @@
                                  icon="fas fa-chart-line text-emerald-400 hover:text-emerald-200">
                 Cobranza
             </x-layout.aside-link>
+            <x-layout.aside-link href="{{ route('facturacion.estado-cuenta') }}"
+                                 :active="request()->routeIs('facturacion.estado-cuenta')"
+                                 icon="fas fa-file-invoice-dollar text-emerald-400 hover:text-emerald-200">
+                Estado de cuenta
+            </x-layout.aside-link>
             <x-layout.aside-link href="{{ route('facturacion.cargos') }}"
                                  :active="request()->routeIs('facturacion.cargos')"
                                  icon="fas fa-receipt text-emerald-400 hover:text-emerald-200">

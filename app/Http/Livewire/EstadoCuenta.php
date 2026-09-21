@@ -71,7 +71,9 @@ class EstadoCuenta extends Component
                 ->orderBy('periodo_anio')->orderBy('periodo_mes')
                 ->orderBy('fecha_vencimiento')->orderBy('cargo_id')->get();
             foreach ($cargos as $cargo) {
-                $cargo->importe_pagado_actual = $calculador->pagadoPorCargo($cargo);
+                foreach ($calculador->valoresPresentacion($cargo) as $atributo => $valor) {
+                    $cargo->setAttribute($atributo, $valor);
+                }
                 $cargo->periodo_presentacion = $cargo->periodo_anio && $cargo->periodo_mes
                     ? sprintf('%04d-%02d', $cargo->periodo_anio, $cargo->periodo_mes)
                     : ($cargo->fecha_vencimiento?->format('Y-m') ?? 'Sin periodo');

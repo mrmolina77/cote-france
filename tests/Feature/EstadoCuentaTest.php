@@ -3,6 +3,10 @@
 namespace Tests\Feature;
 
 use App\Http\Livewire\EstadoCuenta;
+use App\Http\Livewire\RegistrarPago;
+use App\Http\Livewire\ShowCobranza;
+use App\Http\Livewire\ShowInscripciones;
+use App\Http\Livewire\ShowPagos;
 use App\Models\Cargo;
 use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
@@ -108,6 +112,104 @@ class EstadoCuentaTest extends InscripcionesTestCase
             ->assertSee(route('facturacion.pagos.registrar', $this->inscripcion->getKey()), false)->call('limpiarSeleccion');
 
         $this->assertSame($before, [$this->inscripcion->fresh()->getAttributes(), $cargo->fresh()->getAttributes(), $pago->fresh()->getAttributes(), DB::table('pago_aplicaciones')->count()]);
+    }
+
+    /** @dataProvider financialMenuViews */
+    public function test_real_financial_menus_show_statement_link_only_to_admin(string $view): void
+    {
+        $url = route('facturacion.estado-cuenta');
+        $this->actingAs($this->admin);
+        $html = view($view)->render();
+        $this->assertStringContainsString('Facturación y pagos', $html);
+        $this->assertStringContainsString('Estado de cuenta', $html);
+        $this->assertStringContainsString($url, $html);
+
+        foreach (['venta', 'profe', 'alum', 'otro'] as $rol) {
+            $this->actingAs($this->user($rol));
+            $html = view($view)->render();
+            $this->assertStringNotContainsString($url, $html);
+            $this->assertStringNotContainsString('Facturación y pagos', $html);
+        }
+
+        $this->actingAs(User::factory()->create(['roles_id' => 999999]));
+        $html = view($view)->render();
+        $this->assertStringNotContainsString($url, $html);
+        $this->assertStringNotContainsString('Facturación y pagos', $html);
+    }
+
+    public function financialMenuViews(): array
+    {
+        return [['components.layout.aside'], ['components.layout.mobile-header']];
+    }
+
+    public function test_enrollment_navigation_links_keep_the_selected_enrollment_id(): void
+    {
+        [$otroProspecto, $curso, $grupo] = $this->catalogs();
+        $otra = $this->enroll($otroProspecto, $curso, $grupo);
+        $pago = $this->pago('ENLACE-PRIMERO', Pago::ESTADO_CONFIRMADO, '2026-09-10 10:00:00');
+        $estadoPrimera = route('facturacion.estado-cuenta', $this->inscripcion->getKey());
+        $estadoSegunda = route('facturacion.estado-cuenta', $otra->getKey());
+        $registrarPrimera = route('facturacion.pagos.registrar', $this->inscripcion->getKey());
+
+        Livewire::actingAs($this->admin)->test(ShowInscripciones::class)
+            ->assertSee($estadoPrimera, false)->assertSee($estadoSegunda, false);
+        Livewire::actingAs($this->admin)->test(ShowCobranza::class)
+            ->assertSee($pago->folio)->assertSee($estadoPrimera, false)->assertDontSee($estadoSegunda, false);
+        Livewire::actingAs($this->admin)->test(ShowPagos::class)
+            ->assertSee($pago->folio)->assertSee($estadoPrimera, false)->assertDontSee($estadoSegunda, false);
+        Livewire::actingAs($this->admin)->test(RegistrarPago::class, ['inscripcion' => $this->inscripcion->getKey()])
+            ->assertSee($estadoPrimera, false)->assertDontSee($estadoSegunda, false);
+        Livewire::actingAs($this->admin)->test(EstadoCuenta::class, ['inscripcion' => $this->inscripcion->getKey()])
+            ->assertSee($registrarPrimera, false)
+            ->assertDontSee(route('facturacion.pagos.registrar', $otra->getKey()), false);
+    }
+
+    /** @dataProvider inconsistentBalances */
+    public function test_inconsistent_charge_balances_are_normalized_only_for_presentation(string $storedBalance, string $expectedPaid, string $expectedBalance): void
+    {
+        $cargo = $this->cargo('100.00', $storedBalance, Cargo::ESTADO_PARCIAL, 2026, 9);
+
+        Livewire::actingAs($this->admin)->test(EstadoCuenta::class, ['inscripcion' => $this->inscripcion->getKey()])
+            ->assertSee('MXN $100.00')
+            ->assertSee('MXN $'.$expectedPaid)
+            ->assertSee('MXN $'.$expectedBalance)
+            ->assertDontSee('<td class="border-b p-3">MXN $'.$storedBalance.'</td>', false)
+            ->assertDontSee('<td class="border-b p-3">MXN $150.00</td>', false);
+
+        $this->assertSame($storedBalance, $cargo->fresh()->saldo_pendiente);
+        $this->assertSame('100.00', $cargo->fresh()->total);
+    }
+
+    public function inconsistentBalances(): array
+    {
+        return [
+            'negative balance' => ['-25.00', '100.00', '0.00'],
+            'balance above total' => ['150.00', '0.00', '100.00'],
+        ];
+    }
+
+    public function test_statement_excludes_every_charge_and_payment_field_from_another_enrollment(): void
+    {
+        $propio = $this->cargo('25.00', '25.00', Cargo::ESTADO_PENDIENTE, 2026, 9);
+        $propio->forceFill(['observaciones' => 'OBSERVACION-PROPIA'])->save();
+        [$otroProspecto, $curso, $grupo] = $this->catalogs();
+        $otra = $this->enroll($otroProspecto, $curso, $grupo);
+        $conceptoAjeno = ConceptoCobro::create(['clave' => 'CONCEPTO-AJENO', 'nombre' => 'Concepto exclusivo ajeno', 'activo' => true]);
+        Cargo::create([
+            'inscripciones_id' => $otra->getKey(), 'concepto_cobro_id' => $conceptoAjeno->getKey(),
+            'periodo_anio' => 2042, 'periodo_mes' => 12, 'fecha_emision' => '2042-12-01',
+            'fecha_vencimiento' => '2042-12-10', 'moneda' => 'MXN', 'subtotal' => '777.00',
+            'descuento' => '0.00', 'recargo' => '0.00', 'impuestos' => '0.00', 'total' => '777.00',
+            'saldo_pendiente' => '777.00', 'estado' => Cargo::ESTADO_PENDIENTE, 'origen' => 'manual',
+            'observaciones' => 'OBSERVACION-AJENA-EXCLUSIVA',
+        ]);
+        $this->pago('FOLIO-AJENO-EXCLUSIVO', Pago::ESTADO_CONFIRMADO, '2042-12-11 10:00:00', $otra);
+
+        Livewire::actingAs($this->admin)->test(EstadoCuenta::class, ['inscripcion' => $this->inscripcion->getKey()])
+            ->assertSee('OBSERVACION-PROPIA')
+            ->assertDontSee('CONCEPTO-AJENO')->assertDontSee('Concepto exclusivo ajeno')
+            ->assertDontSee('OBSERVACION-AJENA-EXCLUSIVA')->assertDontSee('Periodo 2042-12')
+            ->assertDontSee('FOLIO-AJENO-EXCLUSIVO');
     }
 
     private function cargo(string $total, string $saldo, string $estado, ?int $anio, ?int $mes, ?string $vencimiento = '2026-09-10'): Cargo
