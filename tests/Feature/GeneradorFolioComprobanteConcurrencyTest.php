@@ -46,21 +46,39 @@ $folio = app(App\Services\Facturacion\GeneradorFolioComprobanteService::class)
 file_put_contents($argv[3], json_encode($folio, JSON_THROW_ON_ERROR));
 PHP);
         $procesos = [];
-        $entorno = array_merge($_ENV, [
-            'APP_ENV' => 'testing', 'DB_CONNECTION' => 'mysql',
-            'DB_HOST' => getenv('EPIC12_MYSQL_HOST'), 'DB_PORT' => getenv('EPIC12_MYSQL_PORT'),
-            'DB_DATABASE' => getenv('EPIC12_MYSQL_DATABASE'), 'DB_USERNAME' => getenv('EPIC12_MYSQL_USERNAME'),
-            'DB_PASSWORD' => getenv('EPIC12_MYSQL_PASSWORD'),
-        ]);
+        $entorno = array_merge(
+            array_filter($_SERVER, 'is_scalar'),
+            array_filter($_ENV, 'is_scalar'),
+            [
+                'APP_ENV' => 'testing',
+                'DB_CONNECTION' => 'mysql',
+                'DB_HOST' => getenv('EPIC12_MYSQL_HOST'),
+                'DB_PORT' => getenv('EPIC12_MYSQL_PORT'),
+                'DB_DATABASE' => getenv('EPIC12_MYSQL_DATABASE'),
+                'DB_USERNAME' => getenv('EPIC12_MYSQL_USERNAME'),
+                'DB_PASSWORD' => getenv('EPIC12_MYSQL_PASSWORD'),
+            ]
+        );
         for ($i = 0; $i < 4; $i++) {
             $salida = $directorio.'/resultado-'.$i.'.json';
+            $errFile = $directorio.'/err-'.$i;
+            $outFile = $directorio.'/out-'.$i;
             $comando = [PHP_BINARY, $script, base_path(), $directorio.'/iniciar', $salida, '2026-09-21'];
-            $procesos[] = ['process' => proc_open($comando, [['pipe', 'r'], ['file', $directorio.'/out-'.$i, 'a'], ['file', $directorio.'/err-'.$i, 'a']], $pipes, base_path(), $entorno), 'output' => $salida];
+            $procesos[] = [
+                'process' => proc_open($comando, [['pipe', 'r'], ['file', $outFile, 'a'], ['file', $errFile, 'a']], $pipes, base_path(), $entorno),
+                'output' => $salida,
+                'err' => $errFile,
+                'out' => $outFile,
+            ];
         }
         touch($directorio.'/iniciar');
         $folios = [];
         foreach ($procesos as $proceso) {
-            $this->assertSame(0, proc_close($proceso['process']), 'Falló un proceso independiente de asignación.');
+            $code = proc_close($proceso['process']);
+            $errContent = file_exists($proceso['err']) ? file_get_contents($proceso['err']) : '';
+            $outContent = file_exists($proceso['out']) ? file_get_contents($proceso['out']) : '';
+            $this->assertSame(0, $code, "Falló un proceso independiente. STDOUT: {$outContent} STDERR: {$errContent}");
+            $this->assertFileExists($proceso['output'], "El archivo de salida no existe. STDOUT: {$outContent} STDERR: {$errContent}");
             $folios[] = json_decode(file_get_contents($proceso['output']), true, 512, JSON_THROW_ON_ERROR);
         }
         sort($folios);
