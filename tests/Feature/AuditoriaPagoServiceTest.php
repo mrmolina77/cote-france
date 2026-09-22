@@ -126,16 +126,19 @@ class AuditoriaPagoServiceTest extends PagosTestCase
         $this->assertDatabaseCount('auditoria_pagos', 0);
     }
 
-    public function test_invalid_date_is_rejected_and_unexpected_scalar_array_is_not_persisted(): void
+    public function test_invalid_date_and_non_scalar_fields_are_rejected_without_an_audit(): void
     {
         $pago = Pago::create($this->paymentAttributes());
         $service = app(AuditoriaPagoService::class);
 
-        $evento = $service->registrar($pago, AuditoriaPago::CONFIRMAR, null, [], [
-            'estado' => ['confirmado'],
-            'monto' => ['100.00'],
-        ]);
-        $this->assertSame([], $evento->valores_nuevos);
+        foreach ([['estado' => ['confirmado']], ['monto' => (object) ['valor' => '100.00']]] as $payload) {
+            try {
+                $service->registrar($pago, AuditoriaPago::CONFIRMAR, null, [], $payload);
+                $this->fail('Se aceptó un valor no escalar.');
+            } catch (InvalidArgumentException $e) {
+                $this->assertStringContainsString('debe ser escalar', $e->getMessage());
+            }
+        }
 
         try {
             $service->registrar($pago, AuditoriaPago::CONFIRMAR, null, [], [
@@ -145,7 +148,7 @@ class AuditoriaPagoServiceTest extends PagosTestCase
         } catch (InvalidArgumentException $e) {
             $this->assertStringContainsString('fecha_confirmacion', $e->getMessage());
         }
-        $this->assertDatabaseCount('auditoria_pagos', 1);
+        $this->assertDatabaseCount('auditoria_pagos', 0);
     }
 
     public function test_save_update_force_fill_and_delete_leave_original_record_unchanged(): void
