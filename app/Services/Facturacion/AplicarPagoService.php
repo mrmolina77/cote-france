@@ -69,6 +69,7 @@ class AplicarPagoService
 
             $totalAplicado = 0;
             $saldos = [];
+            $cargosAuditados = [];
             foreach ($ids as $cargoId) {
                 /** @var Cargo $cargo */
                 $cargo = $cargos->get($cargoId);
@@ -147,7 +148,10 @@ class AplicarPagoService
                 ])->save();
                 $estado = $posterior === 0 ? Cargo::ESTADO_PAGADO
                     : ($cargo->fecha_vencimiento->lt(now()->startOfDay()) ? Cargo::ESTADO_VENCIDO : Cargo::ESTADO_PARCIAL);
+                $estadoAnterior = (string) $cargo->estado;
                 $cargo->forceFill(['saldo_pendiente' => $this->deCentavos($posterior), 'estado' => $estado])->save();
+                $cargosAuditados[] = ['cargo_id'=>(int) $cargo->getKey(), 'saldo_anterior'=>$this->deCentavos($anterior),
+                    'saldo_posterior'=>$this->deCentavos($posterior), 'estado_anterior'=>$estadoAnterior, 'estado_nuevo'=>$estado];
             }
 
             if ($comprobante instanceof UploadedFile) {
@@ -156,10 +160,16 @@ class AplicarPagoService
                 });
             }
 
-            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CONFIRMAR, $usuarioId, [],
-                $this->auditoria->snapshotPago($pago), ['aplicaciones' => $pago->aplicaciones()->orderBy('cargo_id')->get()
-                    ->map(fn (PagoAplicacion $a) => ['cargo_id'=>(int) $a->cargo_id, 'importe_aplicado'=>(string) $a->importe_aplicado,
-                        'saldo_anterior'=>(string) $a->saldo_anterior, 'saldo_posterior'=>(string) $a->saldo_posterior])->all()]);
+            $aplicacionesAuditadas = $pago->aplicaciones()->orderBy('cargo_id')->get()
+                ->map(fn (PagoAplicacion $a) => ['cargo_id'=>(int) $a->cargo_id, 'importe_aplicado'=>(string) $a->importe_aplicado,
+                    'saldo_anterior'=>(string) $a->saldo_anterior, 'saldo_posterior'=>(string) $a->saldo_posterior])->all();
+            $metadatos = ['operacion_atomica'=>true, 'aplicaciones'=>$aplicacionesAuditadas, 'cargos'=>$cargosAuditados];
+            $snapshot = $this->auditoria->snapshotPago($pago);
+            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CREAR, $usuarioId, [], $snapshot, $metadatos);
+            // El pago nace confirmado atómicamente; estado_previo describe la operación
+            // lógica y no una fila borrador persistida.
+            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CONFIRMAR, $usuarioId,
+                ['estado_previo'=>'no_existia'], $snapshot, $metadatos);
 
             return $pago->load(['aplicaciones', 'archivos']);
             });

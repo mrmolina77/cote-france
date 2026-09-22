@@ -27,6 +27,11 @@ class GeneradorComprobantePagoService
                 $pago = Pago::query()->whereKey($pago->getKey())->lockForUpdate()->firstOrFail();
                 $comprobante = ComprobantePago::query()->where('pago_id', $pago->getKey())->lockForUpdate()->first();
                 $regeneracion = (bool) $comprobante;
+                $snapshotAnterior = $comprobante ? [
+                    'comprobante_pago_id'=>(int) $comprobante->getKey(), 'folio'=>(string) $comprobante->folio,
+                    'hash_sha256'=>(string) $comprobante->hash_sha256, 'tamano_bytes'=>(int) $comprobante->tamano_bytes,
+                    'generado_en'=>$comprobante->generado_en, 'estado'=>'generado',
+                ] : [];
                 if (! $comprobante && $pago->estado !== Pago::ESTADO_CONFIRMADO) {
                     throw ValidationException::withMessages(['pago' => 'Sólo un pago confirmado puede generar un recibo interno.']);
                 }
@@ -73,9 +78,11 @@ class GeneradorComprobantePagoService
                     'hash_sha256'=>hash('sha256', $bytes), 'mime_type'=>ComprobantePago::MIME_PDF,
                     'tamano_bytes'=>strlen($bytes), 'generado_en'=>$ahora, 'generado_por'=>$usuarioId,
                 ])->save();
+                $snapshotNuevo = ['comprobante_pago_id'=>(int) $comprobante->getKey(), 'folio'=>$comprobante->folio,
+                    'hash_sha256'=>$comprobante->hash_sha256, 'tamano_bytes'=>(int) $comprobante->tamano_bytes,
+                    'generado_en'=>$comprobante->generado_en, 'estado'=>'generado'];
                 $this->auditoria->registrar($pago, $regeneracion ? \App\Models\AuditoriaPago::REGENERAR_RECIBO : \App\Models\AuditoriaPago::GENERAR_RECIBO,
-                    $usuarioId, [], [], ['comprobante_pago_id'=>(int) $comprobante->getKey(), 'folio'=>$comprobante->folio,
-                        'hash_sha256'=>$comprobante->hash_sha256, 'tamano_bytes'=>(int) $comprobante->tamano_bytes]);
+                    $usuarioId, $snapshotAnterior, $snapshotNuevo, $snapshotNuevo);
                 return $comprobante->fresh(['pago']);
             }, 3);
         } catch (\Throwable $e) {

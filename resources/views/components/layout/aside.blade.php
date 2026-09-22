@@ -162,5 +162,12 @@
                 Métodos de pago
             </x-layout.aside-link>
         @endcan
+        @can('manage-pagos')
+            <x-layout.aside-link href="{{ route('facturacion.auditoria') }}"
+                                 :active="request()->routeIs('facturacion.auditoria')"
+                                 icon="fas fa-clipboard-check text-amber-400 hover:text-amber-200">
+                Auditoría financiera
+            </x-layout.aside-link>
+        @endcan
     </nav>
 </aside>

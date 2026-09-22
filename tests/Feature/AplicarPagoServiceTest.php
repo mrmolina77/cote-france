@@ -6,6 +6,7 @@ use App\Models\Cargo;
 use App\Models\MetodoPago;
 use App\Models\Pago;
 use App\Models\PagoAplicacion;
+use App\Models\AuditoriaPago;
 use App\Models\ResponsablePago;
 use App\Services\Facturacion\AplicarPagoService;
 use Illuminate\Support\Carbon;
@@ -69,6 +70,12 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
         $this->assertSame('0.00', $pago->aplicaciones[0]->saldo_posterior);
         $this->assertSame('0.00', $cargo->fresh()->saldo_pendiente);
         $this->assertSame(Cargo::ESTADO_PAGADO, $cargo->fresh()->estado);
+        $eventos = AuditoriaPago::query()->where('pago_id', $pago->getKey())->orderBy('auditoria_pago_id')->get();
+        $this->assertSame([AuditoriaPago::CREAR, AuditoriaPago::CONFIRMAR], $eventos->pluck('accion')->all());
+        $this->assertSame($this->usuario->getKey(), (int) $eventos->first()->usuario_id);
+        $this->assertTrue($eventos->every(fn (AuditoriaPago $evento) => $evento->metadatos['operacion_atomica'] === true));
+        $this->assertSame('30.00', $eventos->first()->metadatos['aplicaciones'][0]['importe_aplicado']);
+        $this->assertSame('no_existia', $eventos->last()->valores_anteriores['estado_previo']);
     }
 
     public function test_one_payment_can_fully_pay_one_charge_and_partially_pay_another(): void
@@ -213,10 +220,12 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
         $this->assertRejected(fn () => $this->confirm(['monto' => '10.00'], [$cargo->getKey() => '10.00']));
         $this->assertDatabaseCount('pago_aplicaciones', 0);
         $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertDatabaseCount('auditoria_pagos', 0);
         $this->assertSame(['5.00', Cargo::ESTADO_PENDIENTE], [$cargo->fresh()->saldo_pendiente, $cargo->fresh()->estado]);
 
         $pago = $this->confirm(['monto' => '5.00'], [$cargo->getKey() => '5.00']);
         $this->assertSame('5.00', $pago->aplicaciones->first()->saldo_anterior);
+        DB::table('auditoria_pagos')->where('pago_id', $pago->getKey())->delete();
         DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->delete();
         DB::table('pagos')->where('pago_id', $pago->getKey())->delete();
         DB::table('consecutivos_pago')->delete();
@@ -254,6 +263,7 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
         $this->assertDatabaseCount('pagos', 0);
         $this->assertDatabaseCount('pago_aplicaciones', 0);
         $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertDatabaseCount('auditoria_pagos', 0);
         $this->assertSame('10.00', $a->fresh()->saldo_pendiente);
         $this->assertSame('10.00', $b->fresh()->saldo_pendiente);
     }
