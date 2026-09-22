@@ -90,7 +90,7 @@ class EnviarNotificacionPago implements ShouldQueue
             'ultimo_error' => $this->sanitizar($e), 'ultimo_intento_en' => now(),
         ]);
         if ($cambio === 1 && ($entrega = NotificacionPago::query()->with('pago')->find($this->notificacionPagoId))) {
-            app(AuditoriaPagoService::class)->registrar($entrega->pago, AuditoriaPago::CORREO_FALLIDO, null, [],
+            app(AuditoriaPagoService::class)->registrar($entrega->pago, AuditoriaPago::CORREO_FALLIDO, null, ['estado'=>'desconocido'],
                 ['estado'=>NotificacionPago::ESTADO_FALLIDO], $this->meta($entrega), null, null);
         }
     }

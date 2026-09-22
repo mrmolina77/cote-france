@@ -85,7 +85,7 @@ class AplicarPagoService
                 if ($saldo <= 0 || $importes[$cargoId] > $saldo) {
                     throw ValidationException::withMessages(['aplicaciones' => 'El importe no puede superar el saldo pendiente actual.']);
                 }
-                $saldos[$cargoId] = [$saldo, $saldo - $importes[$cargoId]];
+                $saldos[$cargoId] = [$saldo, $saldo - $importes[$cargoId], $cargo->estado];
                 $totalAplicado += $importes[$cargoId];
             }
 
@@ -156,10 +156,22 @@ class AplicarPagoService
                 });
             }
 
-            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CONFIRMAR, $usuarioId, [],
-                $this->auditoria->snapshotPago($pago), ['aplicaciones' => $pago->aplicaciones()->orderBy('cargo_id')->get()
-                    ->map(fn (PagoAplicacion $a) => ['cargo_id'=>(int) $a->cargo_id, 'importe_aplicado'=>(string) $a->importe_aplicado,
-                        'saldo_anterior'=>(string) $a->saldo_anterior, 'saldo_posterior'=>(string) $a->saldo_posterior])->all()]);
+            $snapshot = $this->auditoria->snapshotPago($pago);
+            $aplicaciones = $pago->aplicaciones()->orderBy('cargo_id')->get()
+                ->map(fn (PagoAplicacion $a) => ['cargo_id'=>(int) $a->cargo_id, 'importe_aplicado'=>(string) $a->importe_aplicado,
+                    'saldo_anterior'=>(string) $a->saldo_anterior, 'saldo_posterior'=>(string) $a->saldo_posterior])->all();
+            $cargosAuditados = collect($ids)->map(function (int $cargoId) use ($cargos, $saldos) {
+                [$anterior, $posterior, $estadoAnterior] = $saldos[$cargoId];
+                return ['cargo_id'=>$cargoId, 'saldo_anterior'=>$this->deCentavos($anterior),
+                    'saldo_posterior'=>$this->deCentavos($posterior), 'estado_anterior'=>$estadoAnterior,
+                    'estado_nuevo'=>$cargos->get($cargoId)->estado];
+            })->all();
+            $meta = ['operacion_atomica'=>true, 'aplicaciones'=>$aplicaciones, 'cargos'=>$cargosAuditados];
+            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CREAR, $usuarioId, [], $snapshot, $meta);
+            // El pago nace confirmado: ésta es la segunda mitad de una confirmación atómica,
+            // no una transición desde una fila borrador persistida.
+            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CONFIRMAR, $usuarioId,
+                ['estado'=>'inexistente'], $snapshot, $meta);
 
             return $pago->load(['aplicaciones', 'archivos']);
             });

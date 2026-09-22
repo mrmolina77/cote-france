@@ -27,6 +27,11 @@ class GeneradorComprobantePagoService
                 $pago = Pago::query()->whereKey($pago->getKey())->lockForUpdate()->firstOrFail();
                 $comprobante = ComprobantePago::query()->where('pago_id', $pago->getKey())->lockForUpdate()->first();
                 $regeneracion = (bool) $comprobante;
+                $snapshotAnterior = $comprobante ? [
+                    'comprobante_pago_id'=>(int) $comprobante->getKey(), 'folio'=>$comprobante->folio,
+                    'hash_sha256'=>$comprobante->hash_sha256, 'tamano_bytes'=>(int) $comprobante->tamano_bytes,
+                    'generado_en'=>$comprobante->generado_en,
+                ] : [];
                 if (! $comprobante && $pago->estado !== Pago::ESTADO_CONFIRMADO) {
                     throw ValidationException::withMessages(['pago' => 'Sólo un pago confirmado puede generar un recibo interno.']);
                 }
@@ -74,8 +79,11 @@ class GeneradorComprobantePagoService
                     'tamano_bytes'=>strlen($bytes), 'generado_en'=>$ahora, 'generado_por'=>$usuarioId,
                 ])->save();
                 $this->auditoria->registrar($pago, $regeneracion ? \App\Models\AuditoriaPago::REGENERAR_RECIBO : \App\Models\AuditoriaPago::GENERAR_RECIBO,
-                    $usuarioId, [], [], ['comprobante_pago_id'=>(int) $comprobante->getKey(), 'folio'=>$comprobante->folio,
-                        'hash_sha256'=>$comprobante->hash_sha256, 'tamano_bytes'=>(int) $comprobante->tamano_bytes]);
+                    $usuarioId, $snapshotAnterior, [
+                        'comprobante_pago_id'=>(int) $comprobante->getKey(), 'folio'=>$comprobante->folio,
+                        'hash_sha256'=>$comprobante->hash_sha256, 'tamano_bytes'=>(int) $comprobante->tamano_bytes,
+                        'generado_en'=>$comprobante->generado_en,
+                    ], ['comprobante_pago_id'=>(int) $comprobante->getKey()]);
                 return $comprobante->fresh(['pago']);
             }, 3);
         } catch (\Throwable $e) {
