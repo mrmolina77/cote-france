@@ -151,6 +151,13 @@
                                  icon="fas fa-cash-register text-green-400 hover:text-green-200">
                 Registrar pago
             </x-layout.aside-link>
+            @can('manage-pagos')
+                <x-layout.aside-link href="{{ route('facturacion.auditoria') }}"
+                                     :active="request()->routeIs('facturacion.auditoria')"
+                                     icon="fas fa-clipboard-check text-amber-400 hover:text-amber-200">
+                    Auditoría financiera
+                </x-layout.aside-link>
+            @endcan
             <x-layout.aside-link href="{{ route('configuracion.conceptos-cobro') }}"
                                  :active="request()->routeIs('configuracion.conceptos-cobro', 'configuracion.metodos-pago')"
                                  icon="fas fa-cog text-cyan-400 hover:text-cyan-200">
