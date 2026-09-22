@@ -23,6 +23,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('jobs');
+        // Conservador por diseño: no es posible demostrar en un rollback posterior
+        // si esta migración o una instalación anterior creó la tabla. Preservarla
+        // evita eliminar trabajos operativos preexistentes.
     }
 };

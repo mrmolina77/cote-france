@@ -8,12 +8,13 @@ use App\Models\NotificacionPago;
 use App\Models\Pago;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class NotificacionPagoService
 {
-    public function solicitarInicialRecibido(Pago $pago, ComprobantePago $comprobante): NotificacionPago
+    public function solicitarInicialRecibido(Pago $pago, ?ComprobantePago $comprobante): NotificacionPago
     {
         return $this->crear($pago, $comprobante, NotificacionPago::TIPO_RECIBIDO,
             NotificacionPago::SOLICITUD_INICIAL, 'recibido:'.$pago->getKey(), null);
@@ -28,6 +29,10 @@ class NotificacionPagoService
 
     public function solicitarReenvio(Pago $pago, ComprobantePago $comprobante, int $usuarioId, string $token): NotificacionPago
     {
+        $usuario = \App\Models\User::query()->find($usuarioId);
+        if (! $usuario || ! Gate::forUser($usuario)->allows('manage-pagos')) {
+            throw ValidationException::withMessages(['recibo' => 'No está autorizado para programar el envío.']);
+        }
         if ($pago->estado !== Pago::ESTADO_CONFIRMADO || (int) $comprobante->pago_id !== (int) $pago->getKey()) {
             throw ValidationException::withMessages(['recibo' => 'El recibo seleccionado no está disponible para envío.']);
         }
@@ -43,10 +48,11 @@ class NotificacionPagoService
     {
         return DB::transaction(function () use ($pago, $comprobante, $tipo, $solicitud, $clave, $usuarioId) {
             $pago = Pago::query()->with(['responsablePago', 'comprobantePago'])->whereKey($pago->getKey())->lockForUpdate()->firstOrFail();
-            if ($tipo === NotificacionPago::TIPO_RECIBIDO && ($pago->estado !== Pago::ESTADO_CONFIRMADO || ! $comprobante
-                || (int) $comprobante->pago_id !== (int) $pago->getKey())) {
-                throw ValidationException::withMessages(['recibo' => 'El pago confirmado no tiene un recibo válido para enviar.']);
-            }
+            $comprobante = $comprobante
+                ? ComprobantePago::query()->whereKey($comprobante->getKey())->where('pago_id', $pago->getKey())->first()
+                : null;
+            $reciboValido = $tipo !== NotificacionPago::TIPO_RECIBIDO
+                || ($pago->estado === Pago::ESTADO_CONFIRMADO && $comprobante && $this->comprobanteLegible($comprobante));
             if ($tipo === NotificacionPago::TIPO_CANCELADO && $pago->estado !== Pago::ESTADO_CANCELADO) {
                 throw ValidationException::withMessages(['pago' => 'El pago no está cancelado.']);
             }
@@ -57,10 +63,12 @@ class NotificacionPagoService
                 'pago_id' => $pago->getKey(), 'comprobante_pago_id' => $comprobante?->getKey(),
                 'tipo' => $tipo, 'tipo_solicitud' => $solicitud, 'clave_idempotencia' => $clave,
                 'destinatario' => $valido ? $correo : 'sin-destinatario@example.invalid',
-                'estado' => $valido ? NotificacionPago::ESTADO_PENDIENTE : NotificacionPago::ESTADO_OMITIDO,
+                'estado' => $valido && $reciboValido ? NotificacionPago::ESTADO_PENDIENTE : NotificacionPago::ESTADO_OMITIDO,
                 'intentos' => 0, 'programado_en' => now(), 'solicitado_por' => $usuarioId,
                 'solicitado_en' => $usuarioId ? now() : null,
-                'ultimo_error' => $valido ? null : 'El responsable de pago no tiene un correo válido.',
+                'ultimo_error' => ! $reciboValido
+                    ? 'El pago o el archivo privado del recibo no es válido.'
+                    : ($valido ? null : 'El responsable de pago no tiene un correo válido.'),
             ];
             try {
                 $notificacion = new NotificacionPago();
@@ -71,7 +79,7 @@ class NotificacionPagoService
                 }
                 throw $e;
             }
-            if ($valido) EnviarNotificacionPago::dispatch($notificacion->getKey())->afterCommit();
+            if ($valido && $reciboValido) EnviarNotificacionPago::dispatch($notificacion->getKey())->afterCommit();
             return $notificacion;
         }, 3);
     }
