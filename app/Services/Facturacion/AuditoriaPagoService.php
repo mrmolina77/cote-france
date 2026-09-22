@@ -55,6 +55,14 @@ class AuditoriaPagoService
         }
 
         $request = app()->bound('request') ? request() : null;
+        $valoresAnteriores = $this->snapshotPorAccion($accion, $antes);
+        $valoresNuevos = $this->snapshotPorAccion($accion, $despues);
+        $metaSanitizada = $this->metadatosPorAccion($accion, $metadatos);
+        $this->limitarJson([
+            'valores_anteriores' => $valoresAnteriores,
+            'valores_nuevos' => $valoresNuevos,
+            'metadatos' => $metaSanitizada,
+        ]);
         $modelo = new AuditoriaPago();
         $modelo->forceFill([
             'pago_id' => $pago->getKey(),
@@ -63,9 +71,9 @@ class AuditoriaPagoService
             'ip_address' => $this->normalizarIp($ip ?? $request?->ip()),
             'user_agent' => $this->normalizarTexto($userAgent ?? $request?->userAgent(), 500),
             'ocurrido_en' => now(),
-            'valores_anteriores' => $this->snapshotPorAccion($accion, $antes),
-            'valores_nuevos' => $this->snapshotPorAccion($accion, $despues),
-            'metadatos' => $this->metadatosPorAccion($accion, $metadatos),
+            'valores_anteriores' => $valoresAnteriores,
+            'valores_nuevos' => $valoresNuevos,
+            'metadatos' => $metaSanitizada,
         ])->save();
 
         return $modelo;
@@ -107,10 +115,13 @@ class AuditoriaPagoService
         $salida = $this->filtrar($datos, self::META_POR_ACCION[$accion] ?? []);
         foreach (['aplicaciones' => self::CAMPOS_APLICACION, 'cargos' => self::CAMPOS_CARGO] as $clave => $campos) {
             if (! isset($salida[$clave]) || ! is_array($salida[$clave])) continue;
-            $salida[$clave] = array_values(array_map(
-                fn ($fila) => is_array($fila) ? $this->filtrar($fila, $campos, 2) : [],
-                $salida[$clave]
-            ));
+            $salida[$clave] = array_values(array_map(function ($fila) use ($clave, $campos) {
+                if (! is_array($fila)) {
+                    throw new InvalidArgumentException("Cada elemento de {$clave} debe ser un objeto válido.");
+                }
+
+                return $this->filtrar($fila, $campos, 2);
+            }, $salida[$clave]));
         }
         if (isset($salida['campos_modificados']) && is_array($salida['campos_modificados'])) {
             $salida['campos_modificados'] = array_values(array_intersect($salida['campos_modificados'], self::CAMPOS_PAGO));
@@ -130,16 +141,27 @@ class AuditoriaPagoService
         foreach ($permitidos as $clave) {
             if (! array_key_exists($clave, $datos)) continue;
             $valor = $datos[$clave];
+            $esColeccion = in_array($clave, ['aplicaciones', 'cargos', 'campos_modificados'], true);
+            $esFecha = in_array($clave, self::FECHAS, true);
+            if ((is_array($valor) && ! $esColeccion)
+                || (is_object($valor) && (! $valor instanceof DateTimeInterface || ! $esFecha))
+                || is_resource($valor)) {
+                throw new InvalidArgumentException("El campo {$clave} de auditoría debe ser escalar.");
+            }
             if ($valor instanceof DateTimeInterface) $valor = $valor->format('Y-m-d H:i:s');
-            elseif (in_array($clave, self::FECHAS, true) && is_string($valor)) {
+            elseif (in_array($clave, self::FECHAS, true)) {
+                if (! is_string($valor)) throw new InvalidArgumentException("La fecha {$clave} no es válida.");
                 $valor = $this->fecha($valor, $clave);
-            } elseif (in_array($clave, self::IMPORTES, true) && is_numeric($valor)) {
+            } elseif (in_array($clave, self::IMPORTES, true)) {
+                if (! is_int($valor) && ! is_float($valor) && ! is_string($valor)) {
+                    throw new InvalidArgumentException("El importe {$clave} no es válido.");
+                }
                 $escala = $clave === 'tipo_cambio' ? 6 : 2;
-                $valor = $this->decimal((string) $valor, $escala);
-            } elseif (is_string($valor)) $valor = $this->normalizarTexto($valor);
+                $valor = $this->decimal((string) $valor, $escala, $clave);
+            } elseif (is_string($valor)) $valor = $this->normalizarCampoTexto($valor, $clave);
             elseif (is_array($valor)) {
-                if (! in_array($clave, ['aplicaciones', 'cargos', 'campos_modificados'], true)) continue;
-            } elseif (is_object($valor) || is_resource($valor)) continue;
+                // Las colecciones se validan y filtran por su esquema en metadatosPorAccion().
+            }
             $salida[$clave] = $valor;
         }
         ksort($salida);
@@ -184,15 +206,33 @@ class AuditoriaPagoService
         return ($texto = mb_substr($texto, 0, $limite)) !== '' ? $texto : null;
     }
 
+    /** Los datos del evento nunca se truncan: un exceso invalida todo el evento. */
+    private function normalizarCampoTexto(string $valor, string $campo): ?string
+    {
+        $texto = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $valor) ?? '');
+        if (mb_strlen($texto) > self::MAX_STRING) {
+            throw new InvalidArgumentException("El campo {$campo} de auditoría excede el límite de 500 caracteres.");
+        }
+
+        return $texto !== '' ? $texto : null;
+    }
+
     private function normalizarIp($ip): ?string
     {
         $ip = is_string($ip) ? trim($ip) : '';
         return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : null;
     }
 
-    private function decimal(string $valor, int $escala): string
+    private function decimal(string $valor, int $escala, string $campo): string
     {
-        if (preg_match('/^(-?\d+)(?:\.(\d+))?$/D', $valor, $partes) !== 1) return str_repeat('0', 1).'.'.str_repeat('0', $escala);
-        return $partes[1].'.'.str_pad(substr($partes[2] ?? '', 0, $escala), $escala, '0');
+        if (preg_match('/^(-?\d+)(?:\.(\d+))?$/D', trim($valor), $partes) !== 1) {
+            throw new InvalidArgumentException("El importe {$campo} no es válido.");
+        }
+        $decimales = $partes[2] ?? '';
+        if (strlen($decimales) > $escala) {
+            throw new InvalidArgumentException("El importe {$campo} excede la escala de {$escala} decimales.");
+        }
+
+        return $partes[1].'.'.str_pad($decimales, $escala, '0');
     }
 }

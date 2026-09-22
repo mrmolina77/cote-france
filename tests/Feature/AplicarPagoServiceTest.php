@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditoriaPago;
 use App\Models\Cargo;
 use App\Models\MetodoPago;
 use App\Models\Pago;
@@ -38,6 +39,7 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
 
     protected function tearDown(): void
     {
+        AuditoriaPago::flushEventListeners();
         PagoAplicacion::flushEventListeners();
         Carbon::setTestNow();
         parent::tearDown();
@@ -69,6 +71,62 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
         $this->assertSame('0.00', $pago->aplicaciones[0]->saldo_posterior);
         $this->assertSame('0.00', $cargo->fresh()->saldo_pendiente);
         $this->assertSame(Cargo::ESTADO_PAGADO, $cargo->fresh()->estado);
+    }
+
+    public function test_confirmation_creates_ordered_sanitized_create_and_confirm_audits(): void
+    {
+        $this->actingAs($this->usuario);
+        request()->server->set('REMOTE_ADDR', '192.0.2.10');
+        $cargo = $this->cargo('30.00');
+
+        $pago = $this->confirm([
+            'monto' => '30.00',
+            'observaciones' => 'no debe auditarse',
+            'tipo_cambio' => '1.000000',
+        ], [$cargo->getKey() => '30.00']);
+        $eventos = AuditoriaPago::where('pago_id', $pago->getKey())->orderBy('auditoria_pago_id')->get();
+
+        $this->assertSame([AuditoriaPago::CREAR, AuditoriaPago::CONFIRMAR], $eventos->pluck('accion')->all());
+        $this->assertTrue($eventos[0]->auditoria_pago_id < $eventos[1]->auditoria_pago_id);
+        foreach ($eventos as $evento) {
+            $this->assertSame($this->usuario->getKey(), $evento->usuario_id);
+            $this->assertSame('192.0.2.10', $evento->ip_address);
+            $this->assertTrue($evento->metadatos['operacion_atomica']);
+            $this->assertSame('30.00', $evento->valores_nuevos['monto']);
+            $this->assertSame('1.000000', $evento->valores_nuevos['tipo_cambio']);
+            $this->assertSame('30.00', $evento->metadatos['aplicaciones'][0]['importe_aplicado']);
+            $this->assertSame('0.00', $evento->metadatos['cargos'][0]['saldo_posterior']);
+            $json = json_encode([$evento->valores_anteriores, $evento->valores_nuevos, $evento->metadatos]);
+            $this->assertStringNotContainsString('observaciones', $json);
+            $this->assertStringNotContainsString('no debe auditarse', $json);
+        }
+    }
+
+    public function test_failure_after_both_audits_rolls_back_the_entire_confirmation(): void
+    {
+        $cargo = $this->cargo('30.00');
+        $creadas = 0;
+        AuditoriaPago::created(function () use (&$creadas) {
+            if (++$creadas === 2) {
+                throw new RuntimeException('Falla posterior a las auditorías');
+            }
+        });
+
+        try {
+            $this->confirm(['monto' => '30.00'], [$cargo->getKey() => '30.00']);
+            $this->fail('La falla inducida debió propagarse.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Falla posterior a las auditorías', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('auditoria_pagos', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+        $this->assertSame(['30.00', Cargo::ESTADO_PENDIENTE], [
+            $cargo->fresh()->saldo_pendiente,
+            $cargo->fresh()->estado,
+        ]);
     }
 
     public function test_one_payment_can_fully_pay_one_charge_and_partially_pay_another(): void
