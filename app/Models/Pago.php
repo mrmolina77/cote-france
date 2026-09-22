@@ -68,6 +68,7 @@ class Pago extends Model
     public function aplicaciones() { return $this->hasMany(PagoAplicacion::class, 'pago_id', 'pago_id'); }
     public function archivos() { return $this->hasMany(ArchivoPago::class, 'pago_id', 'pago_id'); }
     public function comprobantePago() { return $this->hasOne(ComprobantePago::class, 'pago_id', 'pago_id'); }
+    public function notificacionesPago() { return $this->hasMany(NotificacionPago::class, 'pago_id', 'pago_id'); }
 
     public function scopeBorradores(Builder $query): Builder { return $query->where('estado', self::ESTADO_BORRADOR); }
     public function scopeConfirmados(Builder $query): Builder { return $query->where('estado', self::ESTADO_CONFIRMADO); }

@@ -11,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 class CancelarPagoService
 {
+    public function __construct(private NotificacionPagoService $notificaciones) {}
+
     public function cancelar(int $pagoId, string $motivo, int $usuarioId): Pago
     {
         $motivo = trim($motivo);
@@ -93,6 +95,8 @@ class CancelarPagoService
                 'fecha_cancelacion' => now(),
                 'motivo_cancelacion' => $motivo,
             ])->save();
+
+            $this->notificaciones->solicitarInicialCancelado($pago->load('comprobantePago'));
 
             return $pago->load(['aplicaciones.cargo', 'cancelledBy']);
         });

@@ -8,6 +8,7 @@ use App\Models\Pago;
 use App\Services\Facturacion\AplicarPagoService;
 use App\Services\Facturacion\MetodoPagoBehaviorService;
 use App\Services\Facturacion\GeneradorComprobantePagoService;
+use App\Services\Facturacion\NotificacionPagoService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -355,6 +356,7 @@ class RegistrarPago extends Component
         $mensajeRecibo = ' El recibo quedó pendiente de generación y puede reintentarse desde Pagos.';
         try {
             $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $usuarioId);
+            app(NotificacionPagoService::class)->solicitarInicialRecibido($pago, $recibo);
             $mensajeRecibo = ' Recibo '.$recibo->folio.' generado correctamente.';
         } catch (\Throwable $exception) {
             report($exception);
