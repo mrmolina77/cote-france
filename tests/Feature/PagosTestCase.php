@@ -18,6 +18,7 @@ abstract class PagosTestCase extends TestCase
         DB::statement('PRAGMA foreign_keys = ON');
         $this->createReferencedTables();
         $this->pagosMigration()->up();
+        (require database_path('migrations/2026_09_22_000003_create_auditoria_pagos_table.php'))->up();
     }
 
     protected function createReferences(): array

@@ -27,7 +27,9 @@ class ShowAuditoriaPagos extends Component
     public function verDetalle($id): void
     {
         Gate::authorize('manage-pagos');
-        abort_unless(is_numeric($id) && AuditoriaPago::query()->whereKey((int) $id)->exists(), 404);
+        abort_unless((is_int($id) || (is_string($id) && ctype_digit($id)))
+            && (int) $id > 0
+            && AuditoriaPago::query()->whereKey((int) $id)->exists(), 404);
         $this->detalleId = (int) $id;
     }
     public function cerrarDetalle(): void { Gate::authorize('manage-pagos'); $this->detalleId = null; }
