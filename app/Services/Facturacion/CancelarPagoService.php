@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class CancelarPagoService
 {
-    public function __construct(private NotificacionPagoService $notificaciones) {}
+    public function __construct(private NotificacionPagoService $notificaciones, private AuditoriaPagoService $auditoria) {}
 
     public function cancelar(int $pagoId, string $motivo, int $usuarioId): Pago
     {
@@ -29,6 +29,7 @@ class CancelarPagoService
             if ($pago->estado !== Pago::ESTADO_CONFIRMADO) {
                 throw ValidationException::withMessages(['pago_id' => 'El pago ya no puede cancelarse.']);
             }
+            $antes = $this->auditoria->snapshotPago($pago);
 
             $aplicaciones = PagoAplicacion::query()
                 ->where('pago_id', $pago->getKey())
@@ -95,6 +96,11 @@ class CancelarPagoService
                 'fecha_cancelacion' => now(),
                 'motivo_cancelacion' => $motivo,
             ])->save();
+
+            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CANCELAR, $usuarioId, $antes,
+                $this->auditoria->snapshotPago($pago), ['motivo'=>$motivo, 'cargos'=>collect($restauraciones)
+                    ->map(fn ($r) => ['cargo_id'=>(int) $r[0]->getKey(), 'saldo_restaurado'=>$this->deCentavos($r[1]),
+                        'total'=>$this->deCentavos($r[2])])->all()]);
 
             $this->notificaciones->solicitarInicialCancelado($pago->load('comprobantePago'));
 

@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class NotificacionPagoService
 {
+    public function __construct(private AuditoriaPagoService $auditoria) {}
     public function solicitarInicialRecibido(Pago $pago, ?ComprobantePago $comprobante): NotificacionPago
     {
         return $this->crear($pago, $comprobante, NotificacionPago::TIPO_RECIBIDO,
@@ -79,6 +80,10 @@ class NotificacionPagoService
                 }
                 throw $e;
             }
+            $this->auditoria->registrar($pago,
+                $solicitud === NotificacionPago::SOLICITUD_REENVIO ? \App\Models\AuditoriaPago::REENVIAR_CORREO : \App\Models\AuditoriaPago::ENVIAR_CORREO,
+                $usuarioId, [], [], ['notificacion_pago_id'=>(int) $notificacion->getKey(), 'tipo'=>$tipo,
+                    'tipo_solicitud'=>$solicitud, 'destinatario'=>$datos['destinatario'], 'estado'=>$datos['estado']]);
             if ($valido && $reciboValido) EnviarNotificacionPago::dispatch($notificacion->getKey())->afterCommit();
             return $notificacion;
         }, 3);

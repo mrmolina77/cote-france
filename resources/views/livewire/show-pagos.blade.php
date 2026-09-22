@@ -17,6 +17,7 @@
                         <div><x-forms.input type="date" wire:model="fechaDesde" title="Fecha de pago desde" />@error('fechaDesde')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror</div>
                         <div><x-forms.input type="date" wire:model="fechaHasta" title="Fecha de pago hasta" />@error('fechaHasta')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror</div>
                         <a href="{{ route('facturacion.pagos.registrar') }}" class="text-center rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Registrar pago</a>
+                        <a href="{{ route('facturacion.auditoria') }}" class="text-center rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Auditoría</a>
                     </div>
                 </div>
             </x-slot:header>

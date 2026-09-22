@@ -17,7 +17,8 @@ class AplicarPagoService
     public function __construct(
         private MetodoPagoBehaviorService $metodos,
         private GeneradorFolioPagoService $folios,
-        private ArchivoPagoService $archivos
+        private ArchivoPagoService $archivos,
+        private AuditoriaPagoService $auditoria
     ) {
     }
 
@@ -154,6 +155,11 @@ class AplicarPagoService
                     $rutaArchivoNuevo = $ruta;
                 });
             }
+
+            $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CONFIRMAR, $usuarioId, [],
+                $this->auditoria->snapshotPago($pago), ['aplicaciones' => $pago->aplicaciones()->orderBy('cargo_id')->get()
+                    ->map(fn (PagoAplicacion $a) => ['cargo_id'=>(int) $a->cargo_id, 'importe_aplicado'=>(string) $a->importe_aplicado,
+                        'saldo_anterior'=>(string) $a->saldo_anterior, 'saldo_posterior'=>(string) $a->saldo_posterior])->all()]);
 
             return $pago->load(['aplicaciones', 'archivos']);
             });
