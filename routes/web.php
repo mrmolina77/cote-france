@@ -12,6 +12,7 @@ use App\Http\Livewire\RegistrarPago;
 use App\Http\Livewire\ShowPagos;
 use App\Http\Livewire\ShowCobranza;
 use App\Http\Livewire\EstadoCuenta;
+use App\Http\Livewire\ShowAuditoriaPagos;
 use App\Http\Controllers\DescargarArchivoPagoController;
 use App\Http\Controllers\DescargarComprobantePagoController;
 use App\Http\Controllers\VerComprobantePagoController;
@@ -150,6 +151,8 @@ Route::middleware([
     'can:manage-pagos',
 ])->get('/facturacion/pagos', ShowPagos::class)
     ->name('facturacion.pagos.index');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-pagos'])
+    ->get('/facturacion/auditoria', ShowAuditoriaPagos::class)->name('facturacion.auditoria');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
