@@ -34,7 +34,20 @@
                             <td class="px-3 py-3 border-t whitespace-nowrap">{{ $pago->moneda }} ${{ $pago->monto }}</td>
                             <td class="px-3 py-3 border-t"><span class="px-2 py-1 rounded {{ $estadoClases[$pago->estado] ?? 'bg-gray-100' }}">{{ ucfirst($pago->estado) }}</span></td>
                             <td class="px-3 py-3 border-t">{{ $pago->confirmedBy?->name ?: '—' }}</td>
-                            <td class="px-3 py-3 border-t whitespace-nowrap"><a href="{{ route('facturacion.estado-cuenta', $pago->inscripciones_id) }}" class="mr-3 text-indigo-700 hover:underline">Estado de cuenta</a><button type="button" wire:click="verDetalle({{ $pago->pago_id }})" class="text-indigo-700 hover:underline">Detalle</button> @if($pago->comprobantePago)<a class="ml-3 text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$pago, 'comprobante'=>$pago->comprobantePago]) }}">Descargar recibo</a>@elseif($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)<button type="button" wire:click="generarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Generar recibo</button>@endif@if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO) @can('cancel-pagos')<button type="button" wire:click="prepararCancelacion({{ $pago->pago_id }})" class="ml-3 text-red-700 hover:underline">Cancelar</button>@endcan @endif</td>
+                            <td class="px-3 py-3 border-t whitespace-nowrap">
+                                <a href="{{ route('facturacion.estado-cuenta', $pago->inscripciones_id) }}" class="mr-3 text-indigo-700 hover:underline">Estado de cuenta</a>
+                                <button type="button" wire:click="verDetalle({{ $pago->pago_id }})" class="text-indigo-700 hover:underline">Detalle</button>
+                                @if($pago->comprobantePago)
+                                    <a class="ml-3 text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$pago, 'comprobante'=>$pago->comprobantePago]) }}">Descargar recibo</a>
+                                @elseif($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
+                                    <button type="button" wire:click="generarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Generar recibo</button>
+                                @endif
+                                @if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
+                                    @can('cancel-pagos')
+                                        <button type="button" wire:click="prepararCancelacion({{ $pago->pago_id }})" class="ml-3 text-red-700 hover:underline">Cancelar</button>
+                                    @endcan
+                                @endif
+                            </td>
                         </tr>
                     @empty<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">No se encontraron pagos.</td></tr>@endforelse</tbody>
                 </table>

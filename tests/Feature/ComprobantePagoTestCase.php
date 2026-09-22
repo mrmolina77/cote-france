@@ -14,7 +14,6 @@ abstract class ComprobantePagoTestCase extends InscripcionesTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        (require database_path('migrations/2026_09_21_000001_create_comprobantes_pago_tables.php'))->up();
     }
 
     /** @return array{pago:Pago,cargos:array<int,Cargo>} */

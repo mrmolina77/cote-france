@@ -361,7 +361,8 @@ class RegistrarPago extends Component
         }
         $this->limpiarFormularioTrasExito();
         session()->flash('pago_confirmado', [
-            'mensaje' => 'Pago registrado correctamente.'.$mensajeRecibo,
+            'mensaje' => 'Pago registrado correctamente.',
+            'recibo' => $mensajeRecibo,
             'folio' => $folio,
         ]);
     }

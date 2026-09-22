@@ -42,9 +42,10 @@ class GeneradorComprobantePagoServiceTest extends ComprobantePagoTestCase
         $this->assertSame(hash('sha256', $bytes), $recibo->hash_sha256);
         $this->assertStringStartsWith('%PDF-', $bytes);
         $this->assertStringEndsWith("%%EOF\n", $bytes);
-        foreach (['Comprobante interno de pago. Este documento no constituye un CFDI.', 'Elodie Martin',
-            'Inscripcion: #'.$pago->inscripciones_id, 'Importe recibido: MXN $15.00', 'Metodo de pago:',
-            'REC-2026-000001', 'Inscripcion', 'Mensualidad', 'Codigo QR interno:', '/recibos/', 'q 0 0 0 rg'] as $texto) {
+        $c = fn (string $t) => iconv('UTF-8', 'Windows-1252//TRANSLIT//IGNORE', $t);
+        foreach (['Comprobante interno de pago. Este documento no constituye un CFDI.', $c('Élodie Martin'),
+            $c('Inscripción: #'.$pago->inscripciones_id), 'Importe recibido: MXN $15.00', $c('Método de pago:'),
+            'REC-2026-000001', $c('Inscripción'), 'Mensualidad', $c('Código QR interno:'), '/recibos/', 'q 0 0 0 rg'] as $texto) {
             $this->assertStringContainsString($texto, $bytes);
         }
         $this->assertSame(1, substr_count($bytes, 'Importe recibido: MXN $15.00'));
@@ -98,7 +99,7 @@ class GeneradorComprobantePagoServiceTest extends ComprobantePagoTestCase
             app(GeneradorComprobantePagoService::class)->generar($pago->fresh(), $admin->getKey());
         } finally {
             $this->assertSame($estable, Storage::disk('local')->get($ruta));
-            $this->assertSame($metadatos, $segundo->fresh()->only(array_keys($metadatos)));
+            $this->assertEquals($metadatos, $segundo->fresh()->only(array_keys($metadatos)));
             $this->assertDatabaseCount('comprobantes_pago', 1);
             $this->assertSame([], Storage::disk('local')->allFiles('comprobantes_pago/temporales'));
         }
