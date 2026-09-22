@@ -217,6 +217,7 @@ class AplicarPagoServiceTest extends InscripcionesTestCase
 
         $pago = $this->confirm(['monto' => '5.00'], [$cargo->getKey() => '5.00']);
         $this->assertSame('5.00', $pago->aplicaciones->first()->saldo_anterior);
+        DB::table('auditoria_pagos')->where('pago_id', $pago->getKey())->delete();
         DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->delete();
         DB::table('pagos')->where('pago_id', $pago->getKey())->delete();
         DB::table('consecutivos_pago')->delete();

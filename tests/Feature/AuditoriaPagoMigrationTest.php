@@ -14,7 +14,6 @@ class AuditoriaPagoMigrationTest extends PagosTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        (require database_path('migrations/2026_09_22_000003_create_auditoria_pagos_table.php'))->up();
     }
 
     public function test_schema_json_relations_and_append_only_model(): void
