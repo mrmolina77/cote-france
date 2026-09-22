@@ -39,6 +39,7 @@ class NotificacionesPagoConcurrencyTest extends ComprobantePagoTestCase
         config()->set('queue.default', 'database');
         DB::purge('epic13');
         Artisan::call('migrate:fresh', ['--database' => 'epic13', '--force' => true]);
+        (new \Database\Seeders\EstadoSeeder())->run();
         (new \Database\Seeders\ConceptoCobroSeeder())->run();
         (new \Database\Seeders\MetodoPagoSeeder())->run();
         (new \Database\Seeders\ModalidadSeeder())->run();

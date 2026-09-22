@@ -18,13 +18,21 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('diarios', function (Blueprint $table) {
-            $table->dropColumn([
-                'validado_datos_generales',
-                'validado_contenido_clase',
-                'validado_estudiantes',
-                'validado_prospectos',
-            ]);
-        });
+        if (! Schema::hasTable('diarios')) {
+            return;
+        }
+
+        foreach ([
+            'validado_datos_generales',
+            'validado_contenido_clase',
+            'validado_estudiantes',
+            'validado_prospectos',
+        ] as $column) {
+            if (Schema::hasColumn('diarios', $column)) {
+                Schema::table('diarios', function (Blueprint $table) use ($column) {
+                    $table->dropColumn($column);
+                });
+            }
+        }
     }
 };

@@ -17,4 +17,9 @@ class Modalidad extends Model
      * @var string
      */
     protected $primaryKey = 'modalidad_id';
+
+    protected $fillable = [
+        'modalidad_nombre',
+        'modalidad_descripcion',
+    ];
 }

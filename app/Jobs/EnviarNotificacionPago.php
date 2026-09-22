@@ -25,9 +25,10 @@ class EnviarNotificacionPago implements ShouldQueue
     public int $tries = 3;
     public int $timeout = 60;
     public array $backoff = [30, 120, 300];
-    public bool $afterCommit = true;
-
-    public function __construct(public int $notificacionPagoId) {}
+    public function __construct(public int $notificacionPagoId)
+    {
+        $this->afterCommit = true;
+    }
 
     public function handle(NotificacionPagoService $servicio): void
     {

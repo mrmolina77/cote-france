@@ -11,8 +11,11 @@ use Illuminate\Notifications\Notification;
 class PagoCanceladoNotification extends Notification implements ShouldQueue
 {
     use Queueable;
-    public bool $afterCommit = true;
-    public function __construct(public int $pagoId) {}
+
+    public function __construct(public int $pagoId)
+    {
+        $this->afterCommit = true;
+    }
     public function via($notifiable): array { return ['mail']; }
 
     public function toMail($notifiable): MailMessage

@@ -17,4 +17,9 @@ class Estado extends Model
      * @var string
      */
     protected $primaryKey = 'estado_id';
+
+    protected $fillable = [
+        'estado_nombre',
+        'estado_descripcion',
+    ];
 }

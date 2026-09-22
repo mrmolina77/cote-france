@@ -14,9 +14,10 @@ class PagoRecibidoNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public bool $afterCommit = true;
-
-    public function __construct(public int $pagoId, public int $comprobanteId) {}
+    public function __construct(public int $pagoId, public int $comprobanteId)
+    {
+        $this->afterCommit = true;
+    }
     public function via($notifiable): array { return ['mail']; }
 
     public function toMail($notifiable): MailMessage

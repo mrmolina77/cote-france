@@ -37,19 +37,17 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('diarios', function (Blueprint $table) {
-            $columns = [
-                'validado_datos_generales',
-                'validado_contenido_clase',
-                'validado_estudiantes',
-                'validado_prospectos',
-            ];
-
-            foreach ($columns as $column) {
-                if (Schema::hasColumn('diarios', $column)) {
+        foreach ([
+            'validado_datos_generales',
+            'validado_contenido_clase',
+            'validado_estudiantes',
+            'validado_prospectos',
+        ] as $column) {
+            if (Schema::hasColumn('diarios', $column)) {
+                Schema::table('diarios', function (Blueprint $table) use ($column) {
                     $table->dropColumn($column);
-                }
+                });
             }
-        });
+        }
     }
 };
