@@ -33,4 +33,5 @@ class ComprobantePago extends Model
 
     public function pago() { return $this->belongsTo(Pago::class, 'pago_id', 'pago_id'); }
     public function generadoPor() { return $this->belongsTo(User::class, 'generado_por', 'id'); }
+    public function notificacionesPago() { return $this->hasMany(NotificacionPago::class, 'comprobante_pago_id', 'comprobante_pago_id'); }
 }

@@ -6,6 +6,7 @@ use App\Models\MetodoPago;
 use App\Models\Pago;
 use App\Services\Facturacion\CancelarPagoService;
 use App\Services\Facturacion\GeneradorComprobantePagoService;
+use App\Services\Facturacion\NotificacionPagoService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -74,6 +75,7 @@ class ShowPagos extends Component
         $pago = Pago::query()->with('comprobantePago')->findOrFail($id);
         try {
             $comprobante = $servicio->generar($pago, (int) Auth::id());
+            app(NotificacionPagoService::class)->solicitarInicialRecibido($pago, $comprobante);
             session()->flash('status', 'Recibo '.$comprobante->folio.' generado correctamente.');
         } catch (ValidationException $e) {
             $this->addError('recibo', $e->errors()['pago'][0] ?? 'El recibo no pudo generarse.');
@@ -81,6 +83,20 @@ class ShowPagos extends Component
             report($e);
             $this->addError('recibo', 'No fue posible generar el recibo. El pago permanece confirmado y puede reintentarse.');
         }
+    }
+
+    public function reenviarRecibo($pagoId, NotificacionPagoService $servicio): void
+    {
+        Gate::authorize('manage-pagos');
+        $id = $this->normalizarId($pagoId);
+        abort_unless($id !== null, 404);
+        $pago = Pago::query()->with('comprobantePago')->findOrFail($id);
+        abort_unless($pago->comprobantePago, 404);
+        // A short action window gives repeated browser events the same unique key,
+        // while later, deliberate resend actions retain independent history.
+        $token = implode(':', [Auth::id(), $id, intdiv(now()->timestamp, 5)]);
+        $servicio->solicitarReenvio($pago, $pago->comprobantePago, (int) Auth::id(), $token);
+        session()->flash('status', 'El reenvío del recibo fue programado.');
     }
 
     public function prepararCancelacion($pagoId): void
@@ -152,7 +168,7 @@ class ShowPagos extends Component
         $this->porPagina = $porPagina;
         $metodoId = $this->normalizarId($this->metodoPagoId);
 
-        $query = Pago::query()->with(['prospecto', 'responsablePago', 'metodoPago', 'confirmedBy', 'comprobantePago']);
+        $query = Pago::query()->with(['prospecto', 'responsablePago', 'metodoPago', 'confirmedBy', 'comprobantePago', 'notificacionesPago']);
         if ($busqueda !== '') {
             $query->where(function (Builder $query) use ($busqueda) {
                 $query->where('folio', 'like', '%'.$busqueda.'%')
@@ -177,7 +193,7 @@ class ShowPagos extends Component
         $detalle = $this->pagoDetalleId ? Pago::query()->with([
             'prospecto', 'responsablePago', 'metodoPago', 'confirmedBy', 'cancelledBy',
             'aplicaciones.cargo.conceptoCobro',
-            'archivos.createdBy', 'comprobantePago',
+            'archivos.createdBy', 'comprobantePago', 'notificacionesPago',
         ])->find($this->normalizarId($this->pagoDetalleId)) : null;
         $pagoCancelar = $this->pagoCancelarId ? Pago::query()->with(['prospecto', 'metodoPago'])->find($this->normalizarId($this->pagoCancelarId)) : null;
 

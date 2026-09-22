@@ -39,6 +39,12 @@
                                 <button type="button" wire:click="verDetalle({{ $pago->pago_id }})" class="text-indigo-700 hover:underline">Detalle</button>
                                 @if($pago->comprobantePago)
                                     <a class="ml-3 text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$pago, 'comprobante'=>$pago->comprobantePago]) }}">Descargar recibo</a>
+                                    @if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
+                                        <button type="button" wire:click="reenviarRecibo({{ $pago->pago_id }})" wire:loading.attr="disabled" wire:target="reenviarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline disabled:opacity-50">{{ $pago->notificacionesPago->isEmpty() ? 'Enviar recibo' : 'Reenviar recibo' }}</button>
+                                    @endif
+                                    @if($pago->notificacionesPago->isNotEmpty())
+                                        <span class="ml-2 text-xs text-gray-500">Correo: {{ $pago->notificacionesPago->sortByDesc('notificacion_pago_id')->first()->estado }}</span>
+                                    @endif
                                 @elseif($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
                                     <button type="button" wire:click="generarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Generar recibo</button>
                                 @endif
