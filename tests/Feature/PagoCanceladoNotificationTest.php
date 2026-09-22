@@ -52,7 +52,7 @@ class PagoCanceladoNotificationTest extends ComprobantePagoTestCase
     {
         Storage::fake('local'); Notification::fake();
         (require database_path('migrations/2026_09_22_000002_create_jobs_table.php'))->up();
-        config()->set('queue.default', 'database'); app('queue')->forget('database');
+        config()->set('queue.default', 'database');
         $admin = $this->user('admin'); ['pago' => $pago, 'cargos' => $cargos] = $this->pagoConfirmado($admin);
         $pago->responsablePago->update(['correo' => 'payer@example.com']);
         DB::beginTransaction();

@@ -54,7 +54,8 @@ class ReenvioReciboTest extends ComprobantePagoTestCase
         $pago->responsablePago->update(['correo' => 'payer@example.com']);
         $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $admin->getKey());
         $entrega = app(NotificacionPagoService::class)->solicitarReenvio($pago, $recibo, $admin->getKey(), 'lost-permission');
-        $admin->role()->associate(\App\Models\Role::query()->where('roles_codigo', 'venta')->firstOrFail())->save();
+        $venta = $this->user('venta');
+        $admin->role()->associate($venta->role)->save();
 
         (new EnviarNotificacionPago($entrega->getKey()))->handle(app(NotificacionPagoService::class));
 

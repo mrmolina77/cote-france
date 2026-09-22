@@ -110,7 +110,7 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
     {
         Storage::fake('local'); Notification::fake();
         (require database_path('migrations/2026_09_22_000002_create_jobs_table.php'))->up();
-        config()->set('queue.default', 'database'); app('queue')->forget('database');
+        config()->set('queue.default', 'database');
         $admin = $this->user('admin'); ['pago' => $pago] = $this->pagoConfirmado($admin);
         $pago->responsablePago->update(['correo' => 'payer@example.com']);
         $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $admin->getKey());
@@ -126,7 +126,7 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
     {
         Storage::fake('local'); Notification::fake();
         (require database_path('migrations/2026_09_22_000002_create_jobs_table.php'))->up();
-        config()->set('queue.default', 'database'); app('queue')->forget('database');
+        config()->set('queue.default', 'database');
         $admin = $this->user('admin'); ['pago' => $pago] = $this->pagoConfirmado($admin);
         $pago->responsablePago->update(['correo' => 'payer@example.com']);
         $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $admin->getKey());
@@ -145,8 +145,7 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $pago->responsablePago->update(['correo' => 'payer@example.com']);
         $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $admin->getKey());
         $entrega = app(NotificacionPagoService::class)->solicitarInicialRecibido($pago, $recibo);
-        Notification::shouldReceive('route')->twice()->with('mail', 'payer@example.com')->andReturnSelf();
-        Notification::shouldReceive('notifyNow')->once()->andThrow(new \RuntimeException('smtp://secret-token@private-host/path'));
+        Notification::shouldReceive('sendNow')->once()->andThrow(new \RuntimeException('smtp://secret-token@private-host/path'));
         try {
             (new EnviarNotificacionPago($entrega->getKey()))->handle(app(NotificacionPagoService::class));
             $this->fail('El transporte debía fallar.');
@@ -155,7 +154,7 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
             $this->assertSame(1, $entrega->fresh()->intentos);
             $this->assertSame('Error de entrega (RuntimeException).', $entrega->fresh()->ultimo_error);
         }
-        Notification::shouldReceive('notifyNow')->once()->andReturnNull();
+        Notification::shouldReceive('sendNow')->once()->andReturnNull();
         (new EnviarNotificacionPago($entrega->getKey()))->handle(app(NotificacionPagoService::class));
         $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $entrega->fresh()->estado);
         $this->assertSame(2, $entrega->fresh()->intentos);
