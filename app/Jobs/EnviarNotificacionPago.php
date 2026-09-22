@@ -32,8 +32,9 @@ class EnviarNotificacionPago implements ShouldQueue
         $this->afterCommit = true;
     }
 
-    public function handle(NotificacionPagoService $servicio, AuditoriaPagoService $auditoria): void
+    public function handle(NotificacionPagoService $servicio, ?AuditoriaPagoService $auditoria = null): void
     {
+        $auditoria ??= app(AuditoriaPagoService::class);
         $limite = now()->subMinutes(10);
         $reclamada = NotificacionPago::query()->whereKey($this->notificacionPagoId)
             ->where(function ($query) use ($limite) {

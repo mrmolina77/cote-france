@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Blade;
 
 class ShowAuditoriaPagosTest extends InscripcionesTestCase
 {
-    protected function setUp(): void { parent::setUp(); (require database_path('migrations/2026_09_22_000003_create_auditoria_pagos_table.php'))->up(); }
-
     public function test_route_and_livewire_are_protected(): void
     {
         $this->get('/facturacion/auditoria')->assertRedirect('/login');
@@ -40,5 +38,16 @@ class ShowAuditoriaPagosTest extends InscripcionesTestCase
         $this->actingAs($this->user('venta'));
         $this->assertStringNotContainsString(route('facturacion.auditoria'), Blade::render('<x-layout.aside />'));
         $this->get('/facturacion/auditoria')->assertForbidden();
+    }
+
+    public function test_detail_rejects_non_integer_and_missing_identifiers(): void
+    {
+        $admin = $this->user('admin');
+
+        foreach (['texto', '1.5', 0, -1, 999999] as $id) {
+            Livewire::actingAs($admin)->test(ShowAuditoriaPagos::class)
+                ->call('verDetalle', $id)
+                ->assertNotFound();
+        }
     }
 }

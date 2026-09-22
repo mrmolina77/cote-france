@@ -36,6 +36,19 @@ class AuditoriaPago extends Model
         static::deleting(fn () => throw new LogicException('La auditoría financiera es append-only.'));
     }
 
+    /**
+     * Eloquent no dispara el evento "updating" al guardar un modelo existente
+     * sin atributos sucios. La bitácora es append-only incluso en ese caso.
+     */
+    public function save(array $options = [])
+    {
+        if ($this->exists) {
+            throw new LogicException('La auditoría financiera es inmutable.');
+        }
+
+        return parent::save($options);
+    }
+
     public function pago() { return $this->belongsTo(Pago::class, 'pago_id', 'pago_id'); }
     public function usuario() { return $this->belongsTo(User::class, 'usuario_id'); }
     public function scopeDelPago(Builder $q, int $id): Builder { return $q->where('pago_id', $id); }

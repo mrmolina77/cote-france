@@ -149,5 +149,6 @@ abstract class InscripcionesTestCase extends TestCase
         (require database_path('migrations/2026_09_11_000001_create_archivos_pago_table.php'))->up();
         (require database_path('migrations/2026_09_21_000001_create_comprobantes_pago_tables.php'))->up();
         (require database_path('migrations/2026_09_22_000001_create_notificaciones_pago_table.php'))->up();
+        (require database_path('migrations/2026_09_22_000003_create_auditoria_pagos_table.php'))->up();
     }
 }

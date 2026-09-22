@@ -5,6 +5,7 @@ namespace App\Services\Facturacion;
 use App\Models\AuditoriaPago;
 use App\Models\Pago;
 use DateTimeInterface;
+use DateTimeImmutable;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 
@@ -106,7 +107,10 @@ class AuditoriaPagoService
         $salida = $this->filtrar($datos, self::META_POR_ACCION[$accion] ?? []);
         foreach (['aplicaciones' => self::CAMPOS_APLICACION, 'cargos' => self::CAMPOS_CARGO] as $clave => $campos) {
             if (! isset($salida[$clave]) || ! is_array($salida[$clave])) continue;
-            $salida[$clave] = array_values(array_map(fn ($fila) => is_array($fila) ? $this->filtrar($fila, $campos, 2) : [], array_slice($salida[$clave], 0, 500)));
+            $salida[$clave] = array_values(array_map(
+                fn ($fila) => is_array($fila) ? $this->filtrar($fila, $campos, 2) : [],
+                $salida[$clave]
+            ));
         }
         if (isset($salida['campos_modificados']) && is_array($salida['campos_modificados'])) {
             $salida['campos_modificados'] = array_values(array_intersect($salida['campos_modificados'], self::CAMPOS_PAGO));
@@ -128,12 +132,14 @@ class AuditoriaPagoService
             $valor = $datos[$clave];
             if ($valor instanceof DateTimeInterface) $valor = $valor->format('Y-m-d H:i:s');
             elseif (in_array($clave, self::FECHAS, true) && is_string($valor)) {
-                try { $valor = date('Y-m-d H:i:s', strtotime($valor)); } catch (\Throwable $e) { continue; }
+                $valor = $this->fecha($valor, $clave);
             } elseif (in_array($clave, self::IMPORTES, true) && is_numeric($valor)) {
                 $escala = $clave === 'tipo_cambio' ? 6 : 2;
                 $valor = $this->decimal((string) $valor, $escala);
             } elseif (is_string($valor)) $valor = $this->normalizarTexto($valor);
-            elseif (is_object($valor) || is_resource($valor)) continue;
+            elseif (is_array($valor)) {
+                if (! in_array($clave, ['aplicaciones', 'cargos', 'campos_modificados'], true)) continue;
+            } elseif (is_object($valor) || is_resource($valor)) continue;
             $salida[$clave] = $valor;
         }
         ksort($salida);
@@ -142,8 +148,33 @@ class AuditoriaPagoService
 
     private function limitarJson(array $datos): array
     {
-        while ($datos !== [] && strlen((string) json_encode($datos)) > self::MAX_JSON_BYTES) array_pop($datos);
+        try {
+            $json = json_encode($datos, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new InvalidArgumentException('El payload de auditoría no contiene JSON válido.', 0, $e);
+        }
+
+        // Un evento financiero nunca se trunca: es preferible abortar la misma
+        // transacción a conservar un snapshot parcial que parezca completo.
+        if (strlen($json) > self::MAX_JSON_BYTES) {
+            throw new InvalidArgumentException('El payload de auditoría excede el límite de 32768 bytes.');
+        }
+
         return $datos;
+    }
+
+    private function fecha(string $valor, string $campo): string
+    {
+        $valor = trim($valor);
+        foreach (['!Y-m-d H:i:s', '!Y-m-d\TH:i:sP', '!Y-m-d'] as $formato) {
+            $fecha = DateTimeImmutable::createFromFormat($formato, $valor);
+            $errores = DateTimeImmutable::getLastErrors();
+            if ($fecha !== false && ($errores === false || ($errores['warning_count'] === 0 && $errores['error_count'] === 0))) {
+                return $fecha->format('Y-m-d H:i:s');
+            }
+        }
+
+        throw new InvalidArgumentException("La fecha {$campo} no es válida.");
     }
 
     private function normalizarTexto($valor, int $limite = self::MAX_STRING): ?string
