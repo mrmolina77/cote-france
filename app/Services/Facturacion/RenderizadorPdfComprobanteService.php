@@ -7,7 +7,7 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 
-/** Renderizador PDF autocontenido; el QR usa bacon/bacon-qr-code, ya incluido por Jetstream. */
+/** Renderizador PDF autocontenido; el QR usa la dependencia directa bacon/bacon-qr-code. */
 class RenderizadorPdfComprobanteService
 {
     public function renderizar(string $html, string $urlQr): string
@@ -28,7 +28,6 @@ class RenderizadorPdfComprobanteService
 
     private function qrVectorial(string $url, int $x, int $y, int $escala): string
     {
-        if (! class_exists(Writer::class)) return '';
         $svg = (new Writer(new ImageRenderer(new RendererStyle(37, 1), new SvgImageBackEnd())))->writeString($url);
         if (! preg_match('/viewBox="0 0 ([0-9.]+) ([0-9.]+)"/', $svg, $vista)) return '';
         preg_match_all('/<path d="([^"]+)"[^>]*fill="(?:#000000|black)"/i', $svg, $paths);
