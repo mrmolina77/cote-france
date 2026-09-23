@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\EnviarNotificacionPago;
+use App\Models\AuditoriaPago;
 use App\Models\NotificacionPago;
 use App\Models\Pago;
 use App\Notifications\PagoRecibidoNotification;
@@ -168,11 +169,49 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $pago->responsablePago->update(['correo' => 'payer@example.com']);
         $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $admin->getKey());
         $entrega = app(NotificacionPagoService::class)->solicitarInicialRecibido($pago, $recibo);
-        $entrega->forceFill(['intentos' => 3])->save();
+        $entrega->forceFill(['intentos' => 3, 'estado' => NotificacionPago::ESTADO_PROCESANDO])->save();
         (new EnviarNotificacionPago($entrega->getKey()))->failed(new \RuntimeException('password=secret /private/file.pdf'));
         $this->assertSame(NotificacionPago::ESTADO_FALLIDO, $entrega->fresh()->estado);
         $this->assertSame(3, $entrega->fresh()->intentos);
         $this->assertSame('Error de entrega (RuntimeException).', $entrega->fresh()->ultimo_error);
+        $evento = AuditoriaPago::where('pago_id', $pago->getKey())->where('accion', AuditoriaPago::CORREO_FALLIDO)->sole();
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_PROCESANDO], $evento->valores_anteriores);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_FALLIDO], $evento->valores_nuevos);
+    }
+
+    /** @dataProvider estadosTerminalesYNoReclamados */
+    public function test_failed_callback_does_not_change_or_audit_unclaimed_or_terminal_delivery(string $estado): void
+    {
+        Storage::fake('local'); Queue::fake();
+        $admin = $this->user('admin'); ['pago' => $pago] = $this->pagoConfirmado($admin);
+        $pago->responsablePago->update(['correo' => 'payer@example.com']);
+        $recibo = app(GeneradorComprobantePagoService::class)->generar($pago, $admin->getKey());
+        $entrega = app(NotificacionPagoService::class)->solicitarInicialRecibido($pago, $recibo);
+        $entrega->forceFill(['estado' => $estado, 'ultimo_error' => 'sin cambios'])->save();
+        $auditoriasAntes = AuditoriaPago::where('pago_id', $pago->getKey())->count();
+
+        (new EnviarNotificacionPago($entrega->getKey()))->failed(new \RuntimeException('token=secreto'));
+
+        $this->assertSame($estado, $entrega->fresh()->estado);
+        $this->assertSame('sin cambios', $entrega->fresh()->ultimo_error);
+        $this->assertSame($auditoriasAntes, AuditoriaPago::where('pago_id', $pago->getKey())->count());
+    }
+
+    public function estadosTerminalesYNoReclamados(): array
+    {
+        return array_map(fn ($estado) => [$estado], [
+            NotificacionPago::ESTADO_PENDIENTE,
+            NotificacionPago::ESTADO_FALLIDO,
+            NotificacionPago::ESTADO_ENVIADO,
+            NotificacionPago::ESTADO_OMITIDO,
+        ]);
+    }
+
+    public function test_failed_callback_ignores_missing_delivery(): void
+    {
+        (new EnviarNotificacionPago(PHP_INT_MAX))->failed(new \RuntimeException('token=secreto'));
+
+        $this->assertDatabaseCount('auditoria_pagos', 0);
     }
 
     public function test_invalid_recipient_is_audited_without_queueing(): void

@@ -49,6 +49,15 @@ class AuditoriaPago extends Model
         return parent::save($options);
     }
 
+    public function update(array $attributes = [], array $options = [])
+    {
+        if ($this->exists) {
+            throw new LogicException('La auditoría financiera es inmutable.');
+        }
+
+        return parent::update($attributes, $options);
+    }
+
     public function pago() { return $this->belongsTo(Pago::class, 'pago_id', 'pago_id'); }
     public function usuario() { return $this->belongsTo(User::class, 'usuario_id'); }
     public function scopeDelPago(Builder $q, int $id): Builder { return $q->where('pago_id', $id); }
