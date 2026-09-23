@@ -91,7 +91,7 @@ class ShowAuditoriaPagosTest extends InscripcionesTestCase
         [, $evento] = $this->evento("<script>alert('xss')</script>", 'Xss', 'Seguro', AuditoriaPago::CREAR, $admin->getKey(), '2026-09-23 10:00:00');
 
         $html = Livewire::actingAs($admin)->test(ShowAuditoriaPagos::class)
-            ->call('verDetalle', $evento->getKey())->html();
+            ->call('verDetalle', $evento->getKey())->lastRenderedDom;
 
         $this->assertStringNotContainsString("<script>alert('xss')</script>", $html);
         $this->assertStringContainsString('&lt;script&gt;alert', $html);
