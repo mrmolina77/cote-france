@@ -124,7 +124,13 @@
             </x-layout.aside-link>
         @endif
 
-        @can('manage-cargos')
+        @can('view-financial-enrollments')
+            @cannot('manage-inscripciones')
+                <x-layout.aside-link href="{{ route('inscripciones') }}" :active="request()->routeIs('inscripciones')" icon="fas fa-clipboard-list text-purple-400">{{ __('Enrollment') }}</x-layout.aside-link>
+            @endcannot
+        @endcan
+
+        @can('view-financial')
             <div class="px-4 pt-4 pb-1 text-xs uppercase tracking-wider text-gray-400" x-show="open">Facturación y pagos</div>
             <x-layout.aside-link href="{{ route('facturacion.cobranza') }}"
                                  :active="request()->routeIs('facturacion.cobranza')"
@@ -136,38 +142,46 @@
                                  icon="fas fa-file-invoice-dollar text-emerald-400 hover:text-emerald-200">
                 Estado de cuenta
             </x-layout.aside-link>
+            @can('manage-cargos')
             <x-layout.aside-link href="{{ route('facturacion.cargos') }}"
                                  :active="request()->routeIs('facturacion.cargos')"
                                  icon="fas fa-receipt text-emerald-400 hover:text-emerald-200">
                 Cargos
             </x-layout.aside-link>
+            @endcan
             <x-layout.aside-link href="{{ route('facturacion.pagos.index') }}"
                                  :active="request()->routeIs('facturacion.pagos.index')"
                                  icon="fas fa-money-check-alt text-emerald-400 hover:text-emerald-200">
                 Pagos
             </x-layout.aside-link>
+            @can('register-payments')
             <x-layout.aside-link href="{{ route('facturacion.pagos.registrar') }}"
                                  :active="request()->routeIs('facturacion.pagos.registrar')"
                                  icon="fas fa-cash-register text-green-400 hover:text-green-200">
                 Registrar pago
             </x-layout.aside-link>
-            @can('manage-pagos')
+            @endcan
+            @can('audit-payments')
                 <x-layout.aside-link href="{{ route('facturacion.auditoria') }}"
                                      :active="request()->routeIs('facturacion.auditoria')"
                                      icon="fas fa-clipboard-check text-amber-400 hover:text-amber-200">
                     Auditoría financiera
                 </x-layout.aside-link>
             @endcan
+            @can('manage-conceptos-cobro')
             <x-layout.aside-link href="{{ route('configuracion.conceptos-cobro') }}"
                                  :active="request()->routeIs('configuracion.conceptos-cobro', 'configuracion.metodos-pago')"
                                  icon="fas fa-cog text-cyan-400 hover:text-cyan-200">
                 Configuración
             </x-layout.aside-link>
+            @endcan
+            @can('manage-metodos-pago')
             <x-layout.aside-link href="{{ route('configuracion.metodos-pago') }}"
                                  :active="request()->routeIs('configuracion.metodos-pago')"
                                  icon="fas fa-credit-card text-cyan-400 hover:text-cyan-200">
                 Métodos de pago
             </x-layout.aside-link>
+            @endcan
         @endcan
     </nav>
 </aside>

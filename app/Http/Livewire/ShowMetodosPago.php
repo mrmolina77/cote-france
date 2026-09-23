@@ -46,9 +46,9 @@ class ShowMetodosPago extends Component
     public $requiere_comprobante = false;
 
     public function mount(): void { Gate::authorize('manage-metodos-pago'); }
-    public function updatingSearch(): void { $this->resetPage(); }
-    public function updatingEstado(): void { $this->resetPage(); }
-    public function updatingCant(): void { $this->resetPage(); }
+    public function updatingSearch(): void { Gate::authorize('manage-metodos-pago'); $this->resetPage(); }
+    public function updatingEstado(): void { Gate::authorize('manage-metodos-pago'); $this->resetPage(); }
+    public function updatingCant(): void { Gate::authorize('manage-metodos-pago'); $this->resetPage(); }
 
     protected function rules(): array
     {
@@ -112,8 +112,8 @@ class ShowMetodosPago extends Component
         $this->finish('El método de pago fue actualizado satisfactoriamente.');
     }
 
-    public function activar($id): void { $this->setActivo($id, true); }
-    public function desactivar($id): void { $this->setActivo($id, false); }
+    public function activar($id): void { Gate::authorize('manage-metodos-pago'); $this->setActivo($id, true); }
+    public function desactivar($id): void { Gate::authorize('manage-metodos-pago'); $this->setActivo($id, false); }
 
     public function toggleEstado($id): void
     {
@@ -123,10 +123,11 @@ class ShowMetodosPago extends Component
         $this->setActivo($metodo->getKey(), ! $metodo->activo);
     }
 
-    public function closeForm(): void { $this->resetForm(); $this->open_form = false; }
+    public function closeForm(): void { Gate::authorize('manage-metodos-pago'); $this->resetForm(); $this->open_form = false; }
 
     public function order($column): void
     {
+        Gate::authorize('manage-metodos-pago');
         if (! in_array($column, self::SORT_COLUMNS, true)) {
             $this->sort = 'orden'; $this->direction = 'asc'; return;
         }
@@ -136,6 +137,7 @@ class ShowMetodosPago extends Component
 
     public function render()
     {
+        Gate::authorize('manage-metodos-pago');
         $term = trim($this->search);
         $query = MetodoPago::query()
             ->when($term !== '', function ($query) use ($term) {

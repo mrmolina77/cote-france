@@ -43,9 +43,9 @@ class ShowConceptosCobro extends Component
         Gate::authorize('manage-conceptos-cobro');
     }
 
-    public function updatingSearch(): void { $this->resetPage(); }
-    public function updatingEstado(): void { $this->resetPage(); }
-    public function updatingCant(): void { $this->resetPage(); }
+    public function updatingSearch(): void { Gate::authorize('manage-conceptos-cobro'); $this->resetPage(); }
+    public function updatingEstado(): void { Gate::authorize('manage-conceptos-cobro'); $this->resetPage(); }
+    public function updatingCant(): void { Gate::authorize('manage-conceptos-cobro'); $this->resetPage(); }
 
     protected function rules(): array
     {
@@ -108,8 +108,8 @@ class ShowConceptosCobro extends Component
         $this->finish('El concepto de cobro fue actualizado satisfactoriamente.');
     }
 
-    public function activar($id): void { $this->setActivo($id, true); }
-    public function desactivar($id): void { $this->setActivo($id, false); }
+    public function activar($id): void { Gate::authorize('manage-conceptos-cobro'); $this->setActivo($id, true); }
+    public function desactivar($id): void { Gate::authorize('manage-conceptos-cobro'); $this->setActivo($id, false); }
 
     public function toggleEstado($id): void
     {
@@ -120,12 +120,14 @@ class ShowConceptosCobro extends Component
 
     public function closeForm(): void
     {
+        Gate::authorize('manage-conceptos-cobro');
         $this->resetForm();
         $this->open_form = false;
     }
 
     public function order($column): void
     {
+        Gate::authorize('manage-conceptos-cobro');
         if (! in_array($column, self::SORT_COLUMNS, true)) {
             $this->sort = 'orden';
             $this->direction = 'asc';
@@ -137,6 +139,7 @@ class ShowConceptosCobro extends Component
 
     public function render()
     {
+        Gate::authorize('manage-conceptos-cobro');
         $term = trim($this->search);
         $query = ConceptoCobro::query()
             ->when($term !== '', function ($query) use ($term) {

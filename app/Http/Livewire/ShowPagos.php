@@ -37,12 +37,12 @@ class ShowPagos extends Component
 
     public function mount(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('view-financial');
     }
 
     public function updated($name): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('view-financial');
         if (in_array($name, ['busqueda', 'estado', 'metodoPagoId', 'fechaDesde', 'fechaHasta', 'porPagina'], true)) {
             $this->resetPage();
         }
@@ -53,7 +53,7 @@ class ShowPagos extends Component
 
     public function verDetalle($pagoId): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('view-financial');
         $id = $this->normalizarId($pagoId);
         abort_unless($id !== null && Pago::query()->whereKey($id)->exists(), 404);
         $this->pagoDetalleId = $id;
@@ -62,14 +62,14 @@ class ShowPagos extends Component
 
     public function cerrarDetalle(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('view-financial');
         $this->pagoDetalleId = null;
         $this->mostrarModalDetalle = false;
     }
 
     public function generarRecibo($pagoId, GeneradorComprobantePagoService $servicio): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $id = $this->normalizarId($pagoId);
         abort_unless($id !== null, 404);
         $pago = Pago::query()->with('comprobantePago')->findOrFail($id);
@@ -87,7 +87,7 @@ class ShowPagos extends Component
 
     public function reenviarRecibo($pagoId, NotificacionPagoService $servicio): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $id = $this->normalizarId($pagoId);
         abort_unless($id !== null, 404);
         $pago = Pago::query()->with('comprobantePago')->findOrFail($id);
@@ -161,7 +161,7 @@ class ShowPagos extends Component
 
     public function render()
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('view-financial');
         $busqueda = mb_substr(trim(is_string($this->busqueda) ? $this->busqueda : ''), 0, self::BUSQUEDA_MAXIMA);
         $estado = in_array($this->estado, Pago::ESTADOS, true) ? $this->estado : 'todos';
         $porPagina = in_array((int) $this->porPagina, self::POR_PAGINA, true) ? (int) $this->porPagina : 10;

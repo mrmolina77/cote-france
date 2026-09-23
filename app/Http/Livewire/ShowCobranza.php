@@ -27,12 +27,12 @@ class ShowCobranza extends Component
 
     public function mount(): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
     }
 
     public function updated($name): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
 
         if (in_array($name, ['busqueda', 'estado', 'metodoPagoId', 'fechaDesde', 'fechaHasta', 'porPagina'], true)) {
             $this->resetPage();
@@ -44,7 +44,7 @@ class ShowCobranza extends Component
 
     public function limpiarFiltros(): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         $this->reset(['busqueda', 'fechaDesde', 'fechaHasta']);
         $this->estado = 'todos';
         $this->metodoPagoId = 'todos';
@@ -56,7 +56,7 @@ class ShowCobranza extends Component
 
     public function render()
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
 
         $busqueda = mb_substr(trim(is_string($this->busqueda) ? $this->busqueda : ''), 0, self::BUSQUEDA_MAXIMA);
         $estado = is_string($this->estado) && in_array($this->estado, Pago::ESTADOS, true) ? $this->estado : 'todos';

@@ -32,7 +32,7 @@ class ShowPagosTest extends InscripcionesTestCase
         parent::tearDown();
     }
 
-    public function test_access_and_gates_are_restricted_to_admins(): void
+    public function test_access_and_gates_follow_financial_role_matrix(): void
     {
         $this->get('/facturacion/pagos')->assertRedirect('/login');
         $admin = $this->user('admin');
@@ -40,7 +40,13 @@ class ShowPagosTest extends InscripcionesTestCase
         $this->assertTrue(Gate::forUser($admin)->allows('manage-pagos'));
         $this->assertTrue(Gate::forUser($admin)->allows('cancel-pagos'));
 
-        foreach (['venta', 'profe'] as $rol) {
+        $venta = $this->user('venta');
+        $this->assertTrue(Gate::forUser($venta)->allows('view-financial'));
+        $this->assertFalse(Gate::forUser($venta)->allows('manage-pagos'));
+        $this->actingAs($venta)->get('/facturacion/pagos')->assertOk();
+        Livewire::actingAs($venta)->test(ShowPagos::class)->assertOk();
+
+        foreach (['profe', 'alum'] as $rol) {
             $usuario = $this->user($rol);
             $this->assertFalse(Gate::forUser($usuario)->allows('manage-pagos'));
             $this->assertFalse(Gate::forUser($usuario)->allows('cancel-pagos'));

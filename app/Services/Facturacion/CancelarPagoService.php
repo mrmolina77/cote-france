@@ -5,7 +5,9 @@ namespace App\Services\Facturacion;
 use App\Models\Cargo;
 use App\Models\Pago;
 use App\Models\PagoAplicacion;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -15,6 +17,9 @@ class CancelarPagoService
 
     public function cancelar(int $pagoId, string $motivo, int $usuarioId): Pago
     {
+        $usuario = User::query()->find($usuarioId);
+        abort_unless($usuario && Gate::forUser($usuario)->allows('cancel-pagos'), 403);
+
         $motivo = trim($motivo);
         Validator::make(['motivo' => $motivo], [
             'motivo' => ['required', 'string', 'max:2000'],

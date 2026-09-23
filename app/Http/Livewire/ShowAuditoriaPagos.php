@@ -22,21 +22,21 @@ class ShowAuditoriaPagos extends Component
     public $porPagina = 25;
     public $detalleId;
 
-    public function mount(): void { Gate::authorize('manage-pagos'); }
-    public function updated(): void { Gate::authorize('manage-pagos'); $this->resetPage(); }
+    public function mount(): void { Gate::authorize('audit-payments'); }
+    public function updated(): void { Gate::authorize('audit-payments'); $this->resetPage(); }
     public function verDetalle($id): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('audit-payments');
         abort_unless((is_int($id) || (is_string($id) && ctype_digit($id)))
             && (int) $id > 0
             && AuditoriaPago::query()->whereKey((int) $id)->exists(), 404);
         $this->detalleId = (int) $id;
     }
-    public function cerrarDetalle(): void { Gate::authorize('manage-pagos'); $this->detalleId = null; }
+    public function cerrarDetalle(): void { Gate::authorize('audit-payments'); $this->detalleId = null; }
 
     public function render()
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('audit-payments');
         $query = AuditoriaPago::query()->with(['pago.prospecto', 'usuario'])->whereHas('pago');
         $buscar = mb_substr(trim((string) $this->busqueda), 0, 120);
         if ($buscar !== '') $query->whereHas('pago', function (Builder $q) use ($buscar) {

@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use LogicException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class CancelarPagoServiceTest extends InscripcionesTestCase
 {
@@ -215,7 +216,7 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         $this->assertDatabaseHas('pago_aplicaciones', ['pago_id' => $pago->getKey(), 'importe_aplicado' => '4.00']);
     }
 
-    public function test_missing_cancelling_user_foreign_key_rolls_back_all_changes(): void
+    public function test_missing_cancelling_user_is_denied_before_any_changes(): void
     {
         DB::statement('PRAGMA foreign_keys = ON');
         $first = $this->cargo('10.00');
@@ -225,8 +226,9 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
 
         try {
             app(CancelarPagoService::class)->cancelar($pago->getKey(), 'Usuario inexistente', 999999);
-            $this->fail('La llave foránea debió impedir la cancelación.');
-        } catch (QueryException $exception) {
+            $this->fail('La autorización debió impedir la cancelación.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
             $this->assertSame(['5.00', '5.00'], [$first->fresh()->saldo_pendiente, $second->fresh()->saldo_pendiente]);
             $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
             $this->assertEquals($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());

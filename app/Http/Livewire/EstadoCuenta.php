@@ -17,7 +17,7 @@ class EstadoCuenta extends Component
 
     public function mount($inscripcion = null): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         if ($inscripcion !== null) {
             $id = $this->normalizarId($inscripcion);
             abort_unless($id !== null && Inscripcion::query()->whereKey($id)->exists(), 404);
@@ -27,13 +27,13 @@ class EstadoCuenta extends Component
 
     public function updatedBusqueda(): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         $this->busqueda = mb_substr((string) $this->busqueda, 0, self::BUSQUEDA_MAXIMA);
     }
 
     public function seleccionarInscripcion($inscripcionId): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         $id = $this->normalizarId($inscripcionId);
         abort_unless($id !== null && Inscripcion::query()->whereKey($id)->exists(), 404);
         $this->inscripcionSeleccionadaId = $id;
@@ -41,19 +41,19 @@ class EstadoCuenta extends Component
 
     public function limpiarSeleccion(): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         $this->inscripcionSeleccionadaId = null;
     }
 
     public function limpiarBusqueda(): void
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         $this->busqueda = '';
     }
 
     public function render(CalculadorEstadoCuenta $calculador)
     {
-        Gate::authorize('manage-cargos');
+        Gate::authorize('view-financial');
         $inscripcion = null;
         $resultados = collect();
         $gruposCargos = collect();

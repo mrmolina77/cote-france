@@ -3,7 +3,7 @@
     <main class="mx-auto px-4 py-10 sm:px-6 lg:px-8 space-y-6">
         <header class="flex flex-wrap items-center justify-between gap-3">
             <div><h1 class="text-2xl font-bold text-gray-900">Estado de cuenta</h1><p class="text-sm text-gray-500">Consulta financiera por inscripción.</p></div>
-            @if($inscripcion)<div class="flex gap-2"><a href="{{ route('facturacion.pagos.registrar', $inscripcion->inscripciones_id) }}" class="rounded bg-indigo-600 px-4 py-2 text-white">Registrar pago</a><button type="button" wire:click="limpiarSeleccion" class="rounded border px-4 py-2">Cambiar inscripción</button></div>@endif
+            @if($inscripcion)<div class="flex gap-2">@can('register-payments')<a href="{{ route('facturacion.pagos.registrar', $inscripcion->inscripciones_id) }}" class="rounded bg-indigo-600 px-4 py-2 text-white">Registrar pago</a>@endcan<button type="button" wire:click="limpiarSeleccion" class="rounded border px-4 py-2">Cambiar inscripción</button></div>@endif
         </header>
 
         @unless($inscripcion)
