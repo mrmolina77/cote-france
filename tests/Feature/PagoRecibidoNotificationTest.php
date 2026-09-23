@@ -37,6 +37,16 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $entrega->fresh()->estado);
         $this->assertSame(1, $entrega->fresh()->intentos);
         $this->assertNotNull($entrega->fresh()->enviado_en);
+        $evento = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_ENVIADO)->sole();
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_PROCESANDO], $evento->valores_anteriores);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_ENVIADO], $evento->valores_nuevos);
+        $this->assertSame([
+            'intento' => 1,
+            'notificacion_pago_id' => $entrega->getKey(),
+            'transicion' => NotificacionPago::ESTADO_ENVIADO,
+        ], $evento->metadatos);
+        $this->assertAuditContainsNoPrivateDeliveryData($evento, $recibo->ruta_pdf);
     }
 
     /** @dataProvider metadatosInvalidos */
@@ -76,6 +86,8 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $otro->responsablePago->update(['correo' => 'other@example.com']);
         $this->assertSame(NotificacionPago::ESTADO_OMITIDO,
             app(NotificacionPagoService::class)->solicitarInicialRecibido($otro, null)->estado);
+        $this->assertSame(2, AuditoriaPago::where('accion', AuditoriaPago::CORREO_OMITIDO)->count());
+        $this->assertSame(2, AuditoriaPago::where('accion', AuditoriaPago::ENVIAR_CORREO)->count());
     }
 
     public function test_non_confirmed_payment_is_omitted_without_changing_financial_state(): void
@@ -90,6 +102,8 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
                 app(NotificacionPagoService::class)->solicitarInicialRecibido($pago, $recibo)->estado);
             $this->assertSame($estado, $pago->fresh()->estado);
             Queue::assertNothingPushed();
+            $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+                ->where('accion', AuditoriaPago::CORREO_OMITIDO)->count());
         }
     }
 
@@ -105,6 +119,13 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $this->assertSame(NotificacionPago::ESTADO_OMITIDO, $entrega->fresh()->estado);
         $this->assertSame(1, $entrega->fresh()->intentos);
         Notification::assertNothingSent();
+        $evento = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_OMITIDO)->sole();
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_PROCESANDO], $evento->valores_anteriores);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_OMITIDO], $evento->valores_nuevos);
+        $this->assertSame($entrega->getKey(), $evento->metadatos['notificacion_pago_id']);
+        $this->assertSame(1, $evento->metadatos['intento']);
+        $this->assertAuditContainsNoPrivateDeliveryData($evento, $recibo->ruta_pdf);
     }
 
     public function test_database_job_becomes_available_only_after_outer_commit(): void
@@ -160,6 +181,18 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $entrega->fresh()->estado);
         $this->assertSame(2, $entrega->fresh()->intentos);
         $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
+        $fallos = AuditoriaPago::where('pago_id', $pago->getKey())->where('accion', AuditoriaPago::CORREO_FALLIDO)->get();
+        $this->assertCount(1, $fallos);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_PROCESANDO], $fallos->first()->valores_anteriores);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_FALLIDO], $fallos->first()->valores_nuevos);
+        $this->assertSame(1, $fallos->first()->metadatos['intento']);
+        $this->assertAuditContainsNoPrivateDeliveryData($fallos->first(), $recibo->ruta_pdf);
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_ENVIADO)->count());
+
+        (new EnviarNotificacionPago($entrega->getKey()))->failed(new \RuntimeException('password=secret'));
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_FALLIDO)->count());
     }
 
     public function test_failed_callback_sanitizes_permanent_error_without_increment_reset(): void
@@ -223,5 +256,23 @@ class PagoRecibidoNotificationTest extends ComprobantePagoTestCase
         $this->assertSame(NotificacionPago::ESTADO_OMITIDO, $entrega->estado);
         Queue::assertNothingPushed();
         $this->assertSame('confirmado', $pago->fresh()->estado);
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::ENVIAR_CORREO)->count());
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_OMITIDO)->count());
+    }
+
+    private function assertAuditContainsNoPrivateDeliveryData(AuditoriaPago $evento, string $ruta): void
+    {
+        $json = json_encode([
+            $evento->valores_anteriores,
+            $evento->valores_nuevos,
+            $evento->metadatos,
+        ], JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString($ruta, $json);
+        $this->assertStringNotContainsString('secret', strtolower($json));
+        $this->assertStringNotContainsString('token', strtolower($json));
+        $this->assertStringNotContainsString('%PDF', $json);
     }
 }

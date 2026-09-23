@@ -84,7 +84,16 @@ class NotificacionPagoService
                 $solicitud === NotificacionPago::SOLICITUD_REENVIO ? \App\Models\AuditoriaPago::REENVIAR_CORREO : \App\Models\AuditoriaPago::ENVIAR_CORREO,
                 $usuarioId, [], ['estado'=>$datos['estado']], ['notificacion_pago_id'=>(int) $notificacion->getKey(), 'tipo'=>$tipo,
                     'tipo_solicitud'=>$solicitud, 'destinatario'=>$datos['destinatario'], 'estado'=>$datos['estado']]);
-            if ($valido && $reciboValido) EnviarNotificacionPago::dispatch($notificacion->getKey())->afterCommit();
+            if ($valido && $reciboValido) {
+                EnviarNotificacionPago::dispatch($notificacion->getKey())->afterCommit();
+            } else {
+                $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CORREO_OMITIDO, $usuarioId,
+                    [], ['estado' => NotificacionPago::ESTADO_OMITIDO], [
+                        'notificacion_pago_id' => (int) $notificacion->getKey(),
+                        'intento' => 0,
+                        'transicion' => NotificacionPago::ESTADO_OMITIDO,
+                    ]);
+            }
             return $notificacion;
         }, 3);
     }

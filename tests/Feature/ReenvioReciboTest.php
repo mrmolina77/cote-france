@@ -7,6 +7,7 @@ use App\Jobs\EnviarNotificacionPago;
 use App\Services\Facturacion\GeneradorComprobantePagoService;
 use App\Services\Facturacion\NotificacionPagoService;
 use App\Models\NotificacionPago;
+use App\Models\AuditoriaPago;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -60,6 +61,16 @@ class ReenvioReciboTest extends ComprobantePagoTestCase
         (new EnviarNotificacionPago($entrega->getKey()))->handle(app(NotificacionPagoService::class));
 
         $this->assertSame(NotificacionPago::ESTADO_OMITIDO, $entrega->fresh()->estado);
+        $this->assertSame(1, $entrega->fresh()->intentos);
         Notification::assertNothingSent();
+        Queue::assertPushed(EnviarNotificacionPago::class, 1);
+        $evento = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_OMITIDO)->sole();
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_PROCESANDO], $evento->valores_anteriores);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_OMITIDO], $evento->valores_nuevos);
+        $this->assertSame($entrega->getKey(), $evento->metadatos['notificacion_pago_id']);
+        $this->assertSame(1, $evento->metadatos['intento']);
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::REENVIAR_CORREO)->count());
     }
 }
