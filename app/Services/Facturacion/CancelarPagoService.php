@@ -82,12 +82,22 @@ class CancelarPagoService
                 throw ValidationException::withMessages(['pago_id' => 'Las aplicaciones del pago no coinciden con su importe.']);
             }
 
+            $cargosAuditados = [];
             foreach ($restauraciones as [$cargo, $restaurado, $total]) {
+                $saldoAnterior = (string) $cargo->saldo_pendiente;
+                $estadoAnterior = $cargo->estado;
                 $estado = $this->estadoRestaurado($cargo, $restaurado, $total);
                 $cargo->forceFill([
                     'saldo_pendiente' => $this->deCentavos($restaurado),
                     'estado' => $estado,
                 ])->save();
+                $cargosAuditados[] = [
+                    'cargo_id' => (int) $cargo->getKey(),
+                    'saldo_anterior' => $saldoAnterior,
+                    'saldo_posterior' => $this->deCentavos($restaurado),
+                    'estado_anterior' => $estadoAnterior,
+                    'estado_nuevo' => $estado,
+                ];
             }
 
             $pago->forceFill([
@@ -98,9 +108,7 @@ class CancelarPagoService
             ])->save();
 
             $this->auditoria->registrar($pago, \App\Models\AuditoriaPago::CANCELAR, $usuarioId, $antes,
-                $this->auditoria->snapshotPago($pago), ['motivo'=>$motivo, 'cargos'=>collect($restauraciones)
-                    ->map(fn ($r) => ['cargo_id'=>(int) $r[0]->getKey(), 'saldo_restaurado'=>$this->deCentavos($r[1]),
-                        'total'=>$this->deCentavos($r[2])])->all()]);
+                $this->auditoria->snapshotPago($pago), ['motivo'=>$motivo, 'cargos'=>$cargosAuditados]);
 
             $this->notificaciones->solicitarInicialCancelado($pago->load('comprobantePago'));
 

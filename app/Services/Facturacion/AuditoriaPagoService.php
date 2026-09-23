@@ -114,7 +114,10 @@ class AuditoriaPagoService
     {
         $salida = $this->filtrar($datos, self::META_POR_ACCION[$accion] ?? []);
         foreach (['aplicaciones' => self::CAMPOS_APLICACION, 'cargos' => self::CAMPOS_CARGO] as $clave => $campos) {
-            if (! isset($salida[$clave]) || ! is_array($salida[$clave])) continue;
+            if (! array_key_exists($clave, $salida)) continue;
+            if (! is_array($salida[$clave])) {
+                throw new InvalidArgumentException("El campo {$clave} debe ser una colección válida.");
+            }
             $salida[$clave] = array_values(array_map(function ($fila) use ($clave, $campos) {
                 if (! is_array($fila)) {
                     throw new InvalidArgumentException("Cada elemento de {$clave} debe ser un objeto válido.");
@@ -123,7 +126,15 @@ class AuditoriaPagoService
                 return $this->filtrar($fila, $campos, 2);
             }, $salida[$clave]));
         }
-        if (isset($salida['campos_modificados']) && is_array($salida['campos_modificados'])) {
+        if (array_key_exists('campos_modificados', $salida) && ! is_array($salida['campos_modificados'])) {
+            throw new InvalidArgumentException('El campo campos_modificados debe ser una colección válida.');
+        }
+        if (isset($salida['campos_modificados'])) {
+            foreach ($salida['campos_modificados'] as $campo) {
+                if (! is_string($campo)) {
+                    throw new InvalidArgumentException('Cada elemento de campos_modificados debe ser texto.');
+                }
+            }
             $salida['campos_modificados'] = array_values(array_intersect($salida['campos_modificados'], self::CAMPOS_PAGO));
         }
         if (isset($salida['destinatario'])) {
