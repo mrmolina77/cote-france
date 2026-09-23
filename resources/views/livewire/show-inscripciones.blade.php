@@ -30,7 +30,9 @@
                         </div>
                     </div>
                     <div class="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
-                    @livewire('create-inscripciones')
+                    @can('manage-inscripciones')
+                        @livewire('create-inscripciones')
+                    @endcan
                     </div>
                 </div>
             </x-slot>
@@ -143,8 +145,10 @@
                     </td>
                     <td class="flex border-t-0 px-4 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
                         <a href="{{ route('facturacion.estado-cuenta', $item->inscripciones_id) }}" class="mr-4 text-indigo-700 hover:underline">Estado de cuenta</a>
-                        <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->inscripciones_id }})"></i>
-                        <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteInscripcion',{{$item->inscripciones_id}})"></i>
+                        @can('manage-inscripciones')
+                            <i class="fas fa-pen text-emerald-500 mr-4 cursor-pointer" wire:click="edit({{ $item->inscripciones_id }})"></i>
+                            <i class="fas fa-trash text-red-500 mr-4 cursor-pointer" wire:click="$emit('deleteInscripcion',{{$item->inscripciones_id}})"></i>
+                        @endcan
                     </td>
                 </tr>
                 @empty
