@@ -24,7 +24,11 @@ class ReenvioReciboTest extends ComprobantePagoTestCase
         Livewire::actingAs($admin)->test(ShowPagos::class)->call('reenviarRecibo', $pago->getKey())->assertHasNoErrors();
         $this->assertDatabaseHas('notificaciones_pago', ['pago_id' => $pago->getKey(), 'comprobante_pago_id' => $recibo->getKey(), 'solicitado_por' => $admin->getKey()]);
         $this->assertDatabaseCount('comprobantes_pago', 1); Queue::assertPushed(EnviarNotificacionPago::class, 1);
-        Livewire::actingAs($this->user('venta'))->test(ShowPagos::class)->assertForbidden();
+        $antes = [NotificacionPago::count(), AuditoriaPago::count(), Queue::pushed(EnviarNotificacionPago::class)->count()];
+        Livewire::actingAs($this->user('venta'))->test(ShowPagos::class)
+            ->call('reenviarRecibo', $pago->getKey())
+            ->assertForbidden();
+        $this->assertSame($antes, [NotificacionPago::count(), AuditoriaPago::count(), Queue::pushed(EnviarNotificacionPago::class)->count()]);
     }
 
     public function test_service_rejects_unauthorized_requester_and_receipt_from_another_payment(): void
