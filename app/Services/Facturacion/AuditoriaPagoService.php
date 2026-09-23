@@ -214,8 +214,9 @@ class AuditoriaPagoService
     private function normalizarCampoTexto(string $valor, string $campo): ?string
     {
         $texto = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $valor) ?? '');
-        if (mb_strlen($texto) > self::MAX_STRING) {
-            throw new InvalidArgumentException("El campo {$campo} de auditoría excede el límite de 500 caracteres.");
+        $max = in_array($campo, ['motivo', 'motivo_cancelacion'], true) ? 2000 : self::MAX_STRING;
+        if (mb_strlen($texto) > $max) {
+            throw new InvalidArgumentException("El campo {$campo} de auditoría excede el límite de {$max} caracteres.");
         }
 
         return $texto !== '' ? $texto : null;
