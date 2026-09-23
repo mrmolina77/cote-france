@@ -39,7 +39,7 @@ class RegistrarPago extends Component
 
     public function mount($inscripcion = null): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->fechaPago = now()->format('Y-m-d\TH:i');
         if ($inscripcion !== null) {
             $this->seleccionarInscripcion($inscripcion);
@@ -48,12 +48,12 @@ class RegistrarPago extends Component
 
     public function updatedBusqueda(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
     }
 
     public function updated($name, $value): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         if (in_array($name, ['inscripcionSeleccionadaId', 'cargosSeleccionados', 'importesAplicar', 'metodoPagoId', 'datosMetodo', 'fechaPago', 'montoRecibido', 'comprobante', 'observaciones'], true)
             || str_starts_with($name, 'importesAplicar.') || str_starts_with($name, 'datosMetodo.')) {
             $this->mostrarConfirmacion = false;
@@ -63,7 +63,7 @@ class RegistrarPago extends Component
 
     public function updatedMetodoPagoId(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->mostrarConfirmacion = false;
         $this->confirmacionFingerprint = null;
         $this->datosMetodo = [];
@@ -83,26 +83,26 @@ class RegistrarPago extends Component
 
     public function updatedDatosMetodo(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->mostrarConfirmacion = false;
         $this->confirmacionFingerprint = null;
     }
 
-    public function updatedFechaPago(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
+    public function updatedFechaPago(): void { Gate::authorize('register-payments'); $this->invalidarConfirmacion(); }
     public function updatedMontoRecibido(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         if (is_float($this->montoRecibido) && ! is_finite($this->montoRecibido)) {
             $this->montoRecibido = 'invalid';
         }
         $this->invalidarConfirmacion();
     }
-    public function updatedObservaciones(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
-    public function updatedComprobante(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
+    public function updatedObservaciones(): void { Gate::authorize('register-payments'); $this->invalidarConfirmacion(); }
+    public function updatedComprobante(): void { Gate::authorize('register-payments'); $this->invalidarConfirmacion(); }
 
     public function seleccionarInscripcion($inscripcionId): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->limpiarDatosSeleccionados();
         $this->resetErrorBag();
         $this->resetValidation();
@@ -121,7 +121,7 @@ class RegistrarPago extends Component
 
     public function limpiarSeleccion(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->limpiarDatosSeleccionados();
         $this->resetErrorBag();
         $this->resetValidation();
@@ -129,7 +129,7 @@ class RegistrarPago extends Component
 
     public function seleccionarCargo($cargoId): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->normalizarEstadoSeleccion();
         $cargoId = $this->normalizarId($cargoId);
         $cargo = $cargoId === null ? null : $this->consultarCargoElegible($cargoId);
@@ -150,7 +150,7 @@ class RegistrarPago extends Component
 
     public function deseleccionarCargo($cargoId): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->normalizarEstadoSeleccion();
         $cargoId = $this->normalizarId($cargoId);
         if ($cargoId === null) {
@@ -168,7 +168,7 @@ class RegistrarPago extends Component
 
     public function seleccionarTodosCargos(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $inscripcionId = $this->normalizarId($this->inscripcionSeleccionadaId);
         if ($inscripcionId === null || ! $this->inscripcionPersistida($inscripcionId)) {
             $this->limpiarSeleccionCargosInterno();
@@ -184,7 +184,7 @@ class RegistrarPago extends Component
 
     public function limpiarSeleccionCargos(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->limpiarSeleccionCargosInterno();
         $this->resetErrorBag();
         $this->resetValidation();
@@ -192,7 +192,7 @@ class RegistrarPago extends Component
 
     public function updatedImportesAplicar($value, $key = null): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         if (! is_array($this->importesAplicar)) {
             $this->importesAplicar = [];
             $this->addError('importesAplicar', 'La estructura de importes no es válida y fue limpiada.');
@@ -228,7 +228,7 @@ class RegistrarPago extends Component
 
     public function prepararPago(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         session()->forget('pago_confirmado');
         $this->mostrarConfirmacion = false;
         $this->confirmacionFingerprint = null;
@@ -291,11 +291,11 @@ class RegistrarPago extends Component
         }
     }
 
-    public function volverAEditar(): void { Gate::authorize('manage-pagos'); $this->invalidarConfirmacion(); }
+    public function volverAEditar(): void { Gate::authorize('register-payments'); $this->invalidarConfirmacion(); }
 
     public function confirmarPago(): void
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
         $this->resetErrorBag('confirmacion');
         session()->forget('pago_confirmado');
 
@@ -371,7 +371,7 @@ class RegistrarPago extends Component
 
     public function render()
     {
-        Gate::authorize('manage-pagos');
+        Gate::authorize('register-payments');
 
         $termino = trim((string) $this->busqueda);
         $resultados = collect();

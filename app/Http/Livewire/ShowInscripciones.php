@@ -38,10 +38,10 @@ class ShowInscripciones extends Component
         'monto_mensualidad' => 'inscripciones.monto_mensualidad',
     ];
 
-    public function mount() { Gate::authorize('manage-inscripciones'); }
-    public function updatingSearch() { $this->resetPage(); }
-    public function updatingFiltroFinanciero() { $this->resetPage(); }
-    public function loadPosts() { $this->readyToLoad = true; }
+    public function mount() { Gate::authorize('view-financial-enrollments'); }
+    public function updatingSearch() { Gate::authorize('view-financial-enrollments'); $this->resetPage(); }
+    public function updatingFiltroFinanciero() { Gate::authorize('view-financial-enrollments'); $this->resetPage(); }
+    public function loadPosts() { Gate::authorize('view-financial-enrollments'); $this->readyToLoad = true; }
 
     protected function rules(): array
     {
@@ -56,6 +56,7 @@ class ShowInscripciones extends Component
 
     public function render()
     {
+        Gate::authorize('view-financial-enrollments');
         $inscripciones = [];
         if ($this->readyToLoad) {
             $term = trim($this->search);
@@ -98,6 +99,7 @@ class ShowInscripciones extends Component
 
     public function order($order)
     {
+        Gate::authorize('view-financial-enrollments');
         if (! array_key_exists($order, self::SORT_COLUMNS)) { $this->sort = 'inscripciones_id'; $this->direction = 'asc'; return; }
         if ($this->sort === $order) $this->direction = $this->direction === 'desc' ? 'asc' : 'desc';
         else { $this->sort = $order; $this->direction = 'asc'; }

@@ -3,9 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Role;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class RoleSeeder extends Seeder
 {
@@ -16,22 +14,16 @@ class RoleSeeder extends Seeder
      */
     public function run()
     {
-        //
-        Role::create([
-            'roles_codigo' =>'admin',
-            'roles_nombre' =>'Administradores',
-        ]);
-        Role::create([
-            'roles_codigo' =>'venta',
-            'roles_nombre' =>'Ventas',
-        ]);
-        Role::create([
-            'roles_codigo' =>'profe',
-            'roles_nombre' =>'Profesores',
-        ]);
-        Role::create([
-            'roles_codigo' =>'alum',
-            'roles_nombre' =>'Alumnos',
-        ]);
+        foreach ([
+            'admin' => 'Administradores',
+            'venta' => 'Ventas',
+            'profe' => 'Profesores',
+            'alum' => 'Alumnos',
+            'caja' => 'Caja / Cobranza',
+            'contabilidad' => 'Contabilidad',
+        ] as $codigo => $nombre) {
+            // The code is the stable natural key. Existing rows, IDs and names are never changed.
+            Role::query()->firstOrCreate(['roles_codigo' => $codigo], ['roles_nombre' => $nombre]);
+        }
     }
 }

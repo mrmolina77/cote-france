@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Team;
 use App\Policies\TeamPolicy;
+use App\Support\FinancialPermissions;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -25,28 +26,8 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        Gate::define('manage-inscripciones', function ($user) {
-            return optional($user->role)->roles_codigo === 'admin';
-        });
-
-        Gate::define('manage-conceptos-cobro', function ($user) {
-            return optional($user->role)->roles_codigo === 'admin';
-        });
-
-        Gate::define('manage-metodos-pago', function ($user) {
-            return optional($user->role)->roles_codigo === 'admin';
-        });
-
-        Gate::define('manage-cargos', function ($user) {
-            return optional($user->role)->roles_codigo === 'admin';
-        });
-
-        Gate::define('manage-pagos', function ($user) {
-            return optional($user->role)->roles_codigo === 'admin';
-        });
-
-        Gate::define('cancel-pagos', function ($user) {
-            return optional($user->role)->roles_codigo === 'admin';
-        });
+        foreach (FinancialPermissions::names() as $permission) {
+            Gate::define($permission, fn ($user) => FinancialPermissions::allows($user, $permission));
+        }
     }
 }

@@ -16,8 +16,8 @@
                         <x-select wire:model="metodoPagoId" aria-label="Método de pago"><option value="todos">Todos los métodos</option>@foreach($metodos as $metodo)<option value="{{ $metodo->metodo_pago_id }}">{{ $metodo->nombre }}</option>@endforeach</x-select>
                         <div><x-forms.input type="date" wire:model="fechaDesde" title="Fecha de pago desde" />@error('fechaDesde')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror</div>
                         <div><x-forms.input type="date" wire:model="fechaHasta" title="Fecha de pago hasta" />@error('fechaHasta')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror</div>
-                        <a href="{{ route('facturacion.pagos.registrar') }}" class="text-center rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Registrar pago</a>
-                        <a href="{{ route('facturacion.auditoria') }}" class="text-center rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Auditoría</a>
+                        @can('register-payments')<a href="{{ route('facturacion.pagos.registrar') }}" class="text-center rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Registrar pago</a>@endcan
+                        @can('audit-payments')<a href="{{ route('facturacion.auditoria') }}" class="text-center rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Auditoría</a>@endcan
                     </div>
                 </div>
             </x-slot:header>
@@ -38,17 +38,21 @@
                             <td class="px-3 py-3 border-t whitespace-nowrap">
                                 <a href="{{ route('facturacion.estado-cuenta', $pago->inscripciones_id) }}" class="mr-3 text-indigo-700 hover:underline">Estado de cuenta</a>
                                 <button type="button" wire:click="verDetalle({{ $pago->pago_id }})" class="text-indigo-700 hover:underline">Detalle</button>
+                                @can('view-payment-documents')
                                 @if($pago->comprobantePago)
                                     <a class="ml-3 text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$pago, 'comprobante'=>$pago->comprobantePago]) }}">Descargar recibo</a>
+                                    @can('register-payments')
                                     @if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
                                         <button type="button" wire:click="reenviarRecibo({{ $pago->pago_id }})" wire:loading.attr="disabled" wire:target="reenviarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline disabled:opacity-50">{{ $pago->notificacionesPago->isEmpty() ? 'Enviar recibo' : 'Reenviar recibo' }}</button>
                                     @endif
+                                    @endcan
                                     @if($pago->notificacionesPago->isNotEmpty())
                                         <span class="ml-2 text-xs text-gray-500">Correo: {{ $pago->notificacionesPago->sortByDesc('notificacion_pago_id')->first()->estado }}</span>
                                     @endif
                                 @elseif($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
-                                    <button type="button" wire:click="generarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Generar recibo</button>
+                                    @can('register-payments')<button type="button" wire:click="generarRecibo({{ $pago->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Generar recibo</button>@endcan
                                 @endif
+                                @endcan
                                 @if($pago->estado === \App\Models\Pago::ESTADO_CONFIRMADO)
                                     @can('cancel-pagos')
                                         <button type="button" wire:click="prepararCancelacion({{ $pago->pago_id }})" class="ml-3 text-red-700 hover:underline">Cancelar</button>
@@ -74,13 +78,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2"><div><strong>Banco:</strong> {{ $detalle->banco ?: '—' }}</div><div><strong>Referencia:</strong> {{ $detalle->referencia ?: '—' }}</div><div><strong>Rastreo SPEI:</strong> {{ $detalle->rastreo_spei ?: '—' }}</div><div><strong>Cheque:</strong> {{ $detalle->numero_cheque ?: '—' }}</div><div><strong>Autorización:</strong> {{ $detalle->numero_autorizacion ?: '—' }}</div><div><strong>Transacción externa:</strong> {{ $detalle->identificador_transaccion_externa ?: '—' }}</div></div>
             <div><strong>Observaciones:</strong><p class="whitespace-pre-wrap">{{ $detalle->observaciones ?: '—' }}</p></div>
             @if($detalle->estado === \App\Models\Pago::ESTADO_CANCELADO)<div class="rounded bg-red-50 p-3"><strong>Cancelación</strong><p class="whitespace-pre-wrap">{{ $detalle->motivo_cancelacion }}</p><p>{{ $detalle->cancelledBy?->name ?: '—' }} / {{ optional($detalle->fecha_cancelacion)->format('Y-m-d H:i:s') ?: '—' }}</p></div>@endif
-            <div><strong>Recibo interno</strong><div class="mt-2">@if($detalle->comprobantePago)<span class="font-mono">{{ $detalle->comprobantePago->folio }}</span> · <a class="text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$detalle, 'comprobante'=>$detalle->comprobantePago]) }}">Descargar recibo</a> <button type="button" wire:click="generarRecibo({{ $detalle->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Regenerar recibo</button>@elseif($detalle->estado === \App\Models\Pago::ESTADO_CONFIRMADO)<button type="button" wire:click="generarRecibo({{ $detalle->pago_id }})" class="text-indigo-700 hover:underline">Generar recibo</button>@else<span>Sin recibo</span>@endif</div></div>
+            @can('view-payment-documents')
+            <div><strong>Recibo interno</strong><div class="mt-2">@if($detalle->comprobantePago)<span class="font-mono">{{ $detalle->comprobantePago->folio }}</span> · <a class="text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$detalle, 'comprobante'=>$detalle->comprobantePago]) }}">Descargar recibo</a> @can('register-payments')<button type="button" wire:click="generarRecibo({{ $detalle->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Regenerar recibo</button>@endcan@elseif($detalle->estado === \App\Models\Pago::ESTADO_CONFIRMADO)@can('register-payments')<button type="button" wire:click="generarRecibo({{ $detalle->pago_id }})" class="text-indigo-700 hover:underline">Generar recibo</button>@endcan@else<span>Sin recibo</span>@endif</div></div>
             <div><strong>Comprobantes bancarios</strong>
                 <div class="mt-2 overflow-x-auto"><table class="w-full text-sm"><thead><tr><th class="border p-2 text-left">Archivo</th><th class="border p-2 text-left">Tamaño</th><th class="border p-2 text-left">Cargado</th><th class="border p-2 text-left">Usuario</th><th class="border p-2 text-left">Acción</th></tr></thead><tbody>
                 @forelse($detalle->archivos as $archivo)<tr><td class="border p-2">{{ $archivo->nombre_original }}</td><td class="border p-2">{{ number_format($archivo->tamano_bytes / 1024, 1) }} KB</td><td class="border p-2">{{ optional($archivo->created_at)->format('Y-m-d H:i:s') }}</td><td class="border p-2">{{ $archivo->createdBy?->name ?: '—' }}</td><td class="border p-2"><a class="text-indigo-700 hover:underline" href="{{ route('facturacion.pagos.archivos.descargar', ['pago' => $detalle->pago_id, 'archivo' => $archivo->archivo_pago_id]) }}">Descargar</a></td></tr>
                 @empty<tr><td colspan="5" class="border p-3 text-center">Este pago no tiene comprobantes adjuntos.</td></tr>@endforelse
                 </tbody></table></div>
             </div>
+            @endcan
             <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr>@foreach(['Cargo','Concepto','Importe','Saldo anterior','Saldo posterior'] as $titulo)<th class="border p-2 text-left">{{ $titulo }}</th>@endforeach</tr></thead><tbody>@forelse($detalle->aplicaciones as $aplicacion)<tr><td class="border p-2">#{{ $aplicacion->cargo_id }}</td><td class="border p-2">{{ $aplicacion->cargo?->conceptoCobro?->nombre ?: '—' }}</td><td class="border p-2">${{ $aplicacion->importe_aplicado }}</td><td class="border p-2">${{ $aplicacion->saldo_anterior }}</td><td class="border p-2">${{ $aplicacion->saldo_posterior }}</td></tr>@empty<tr><td colspan="5" class="border p-3 text-center">Sin aplicaciones.</td></tr>@endforelse</tbody></table></div>
         </div>@endif</x-slot>
         <x-slot name="footer"><button type="button" wire:click="cerrarDetalle" class="px-4 py-2 border rounded">Cerrar</button></x-slot>

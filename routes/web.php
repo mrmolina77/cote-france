@@ -46,14 +46,14 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    'can:manage-cargos',
+    'can:view-financial',
 ])->get('/facturacion/cobranza', ShowCobranza::class)
     ->name('facturacion.cobranza');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    'can:manage-cargos',
+    'can:view-financial',
 ])->get('/facturacion/estado-cuenta/{inscripcion?}', EstadoCuenta::class)
     ->whereNumber('inscripcion')->name('facturacion.estado-cuenta');
 Route::middleware([
@@ -113,7 +113,7 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    'can:manage-inscripciones',
+    'can:view-financial-enrollments',
 ])->get('/inscripciones', ShowInscripciones::class )->name('inscripciones');
 Route::middleware([
     'auth:sanctum',
@@ -140,7 +140,7 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    'can:manage-pagos',
+    'can:register-payments',
 ])->get('/facturacion/pagos/registrar/{inscripcion?}', RegistrarPago::class)
     ->whereNumber('inscripcion')
     ->name('facturacion.pagos.registrar');
@@ -148,23 +148,23 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    'can:manage-pagos',
+    'can:view-financial',
 ])->get('/facturacion/pagos', ShowPagos::class)
     ->name('facturacion.pagos.index');
-Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-pagos'])
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:audit-payments'])
     ->get('/facturacion/auditoria', ShowAuditoriaPagos::class)->name('facturacion.auditoria');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    'can:manage-pagos',
+    'can:view-payment-documents',
 ])->get('/facturacion/pagos/{pago}/archivos/{archivo}/descargar', DescargarArchivoPagoController::class)
     ->whereNumber('pago')->whereNumber('archivo')
     ->name('facturacion.pagos.archivos.descargar');
-Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-pagos', 'signed'])
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:view-payment-documents', 'signed'])
     ->get('/facturacion/pagos/{pago}/recibos/{comprobante}', VerComprobantePagoController::class)
     ->whereNumber('pago')->whereNumber('comprobante')->name('facturacion.comprobantes.ver');
-Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-pagos'])
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:view-payment-documents'])
     ->get('/facturacion/pagos/{pago}/recibos/{comprobante}/descargar', DescargarComprobantePagoController::class)
     ->whereNumber('pago')->whereNumber('comprobante')->name('facturacion.comprobantes.descargar');
 Route::middleware([

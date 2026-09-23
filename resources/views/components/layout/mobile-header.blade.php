@@ -34,15 +34,17 @@
                 <i class="fas fa-align-left mr-3"></i>
                 {{ __('Homeworks') }}
             </a>
+            @can('view-financial-enrollments')
             <a href="{{ route('inscripciones') }}" class="flex items-center text-white opacity-75 hover:opacity-100 py-2 pl-4 nav-item">
                 <i class="fas fa-tablet-alt mr-3"></i>
                 {{ __('Enrollment') }}
             </a>
+                @endcan
             <a href="{{ route('usuarios') }}" class="flex items-center text-white opacity-75 hover:opacity-100 py-2 pl-4 nav-item">
                 <i class="fas fa-user-alt mr-3"></i>
                 {{ __('Users') }}
             </a>
-            @can('manage-cargos')
+            @can('view-financial')
                 <div class="text-gray-300 text-xs uppercase tracking-wider pt-4 pl-4">Facturación y pagos</div>
                 <a href="{{ route('facturacion.cobranza') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.cobranza') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-chart-line mr-3"></i>Cobranza
@@ -50,21 +52,32 @@
                 <a href="{{ route('facturacion.estado-cuenta') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.estado-cuenta') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-file-invoice-dollar mr-3"></i>Estado de cuenta
                 </a>
+                @can('manage-cargos')
                 <a href="{{ route('facturacion.cargos') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.cargos') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-receipt mr-3"></i>Cargos
                 </a>
+                @endcan
                 <a href="{{ route('facturacion.pagos.index') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.pagos.index') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-money-check-alt mr-3"></i>Pagos
                 </a>
+                @can('register-payments')
                 <a href="{{ route('facturacion.pagos.registrar') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.pagos.registrar') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-cash-register mr-3"></i>Registrar pago
                 </a>
+                @endcan
+                @can('audit-payments')
+                <a href="{{ route('facturacion.auditoria') }}" class="flex items-center text-white py-2 pl-4 nav-item"><i class="fas fa-clipboard-check mr-3"></i>Auditoría financiera</a>
+                @endcan
+                @can('manage-conceptos-cobro')
                 <a href="{{ route('configuracion.conceptos-cobro') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('configuracion.conceptos-cobro', 'configuracion.metodos-pago') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-cog mr-3"></i>Configuración
                 </a>
+                @endcan
+                @can('manage-metodos-pago')
                 <a href="{{ route('configuracion.metodos-pago') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('configuracion.metodos-pago') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-credit-card mr-3"></i>Métodos de pago
                 </a>
+                @endcan
             @endcan
             <form method="POST" action="{{ route('logout') }}" x-data>
                 @csrf

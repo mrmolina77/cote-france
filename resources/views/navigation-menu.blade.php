@@ -21,7 +21,7 @@
                         {{ __('Prospects') }}
                     </x-nav-link>
                 </div>
-                @can('manage-cargos')<div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex"><x-nav-link href="{{ route('facturacion.estado-cuenta') }}" :active="request()->routeIs('facturacion.estado-cuenta')">Estado de cuenta</x-nav-link></div>@endcan
+                @can('view-financial')<div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex"><x-nav-link href="{{ route('facturacion.estado-cuenta') }}" :active="request()->routeIs('facturacion.estado-cuenta')">Estado de cuenta</x-nav-link></div>@endcan
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ml-6">
@@ -152,7 +152,7 @@
                 {{ __('Prospects') }}
             </x-responsive-nav-link>
         </div>
-        @can('manage-cargos')<div class="pt-2 pb-3 space-y-1"><x-responsive-nav-link href="{{ route('facturacion.estado-cuenta') }}" :active="request()->routeIs('facturacion.estado-cuenta')">Estado de cuenta</x-responsive-nav-link></div>@endcan
+        @can('view-financial')<div class="pt-2 pb-3 space-y-1"><x-responsive-nav-link href="{{ route('facturacion.estado-cuenta') }}" :active="request()->routeIs('facturacion.estado-cuenta')">Estado de cuenta</x-responsive-nav-link></div>@endcan
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
