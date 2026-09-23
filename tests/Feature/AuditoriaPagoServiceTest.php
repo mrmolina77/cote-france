@@ -167,9 +167,11 @@ class AuditoriaPagoServiceTest extends PagosTestCase
 
         foreach ([
             fn () => $evento->save(),
+            fn () => $evento->update(['accion' => AuditoriaPago::CANCELAR]),
             fn () => $evento->forceFill(['accion' => AuditoriaPago::CANCELAR])->save(),
             fn () => $evento->forceFill(['ocurrido_en' => now()->addDay(), 'metadatos' => ['motivo' => 'x']])->save(),
             fn () => $evento->delete(),
+            fn () => $evento->deleteOrFail(),
         ] as $intento) {
             try {
                 $intento();

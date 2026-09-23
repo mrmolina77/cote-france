@@ -87,14 +87,21 @@ class EnviarNotificacionPago implements ShouldQueue
 
     public function failed(Throwable $e): void
     {
-        $cambio = NotificacionPago::query()->whereKey($this->notificacionPagoId)->where('estado', '!=', NotificacionPago::ESTADO_FALLIDO)->update([
-            'estado' => NotificacionPago::ESTADO_FALLIDO,
-            'ultimo_error' => $this->sanitizar($e), 'ultimo_intento_en' => now(),
-        ]);
-        if ($cambio === 1 && ($entrega = NotificacionPago::query()->with('pago')->find($this->notificacionPagoId))) {
-            app(AuditoriaPagoService::class)->registrar($entrega->pago, AuditoriaPago::CORREO_FALLIDO, null, ['estado'=>'desconocido'],
-                ['estado'=>NotificacionPago::ESTADO_FALLIDO], $this->meta($entrega), null, null);
-        }
+        // El callback puede ejecutarse despues de que handle() ya haya registrado
+        // el fallo. Solo el intento que quedo efectivamente reclamado conserva el
+        // derecho a cerrar la transicion; nunca debe degradar un estado terminal.
+        DB::transaction(function () use ($e) {
+            $cambio = NotificacionPago::query()->whereKey($this->notificacionPagoId)
+                ->where('estado', NotificacionPago::ESTADO_PROCESANDO)->update([
+                    'estado' => NotificacionPago::ESTADO_FALLIDO,
+                    'ultimo_error' => $this->sanitizar($e), 'ultimo_intento_en' => now(),
+                ]);
+            if ($cambio === 1 && ($entrega = NotificacionPago::query()->with('pago')->find($this->notificacionPagoId))) {
+                app(AuditoriaPagoService::class)->registrar($entrega->pago, AuditoriaPago::CORREO_FALLIDO, null,
+                    ['estado'=>NotificacionPago::ESTADO_PROCESANDO],
+                    ['estado'=>NotificacionPago::ESTADO_FALLIDO], $this->meta($entrega), null, null);
+            }
+        });
     }
 
     private function omitir(NotificacionPago $entrega, string $motivo, AuditoriaPagoService $auditoria): void
