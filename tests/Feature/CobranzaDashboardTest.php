@@ -10,9 +10,7 @@ use App\Models\Pago;
 use App\Models\Prospecto;
 use App\Models\ResponsablePago;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 
 class CobranzaDashboardTest extends InscripcionesTestCase
@@ -45,14 +43,18 @@ class CobranzaDashboardTest extends InscripcionesTestCase
     public function test_route_and_component_require_financial_authorization(): void
     {
         $this->get(route('facturacion.cobranza'))->assertRedirect('/login');
-        $unauthorized = $this->user('venta');
-        $this->actingAs($unauthorized)->get(route('facturacion.cobranza'))->assertForbidden();
-        Livewire::actingAs($unauthorized)->test(ShowCobranza::class)->assertForbidden();
-        $this->assertFalse(Gate::forUser($unauthorized)->allows('manage-cargos'));
+        $venta = $this->user('venta');
+        $this->actingAs($venta)->get(route('facturacion.cobranza'))->assertOk();
+        Livewire::actingAs($venta)->test(ShowCobranza::class)
+            ->set('busqueda', 'consulta')
+            ->call('limpiarFiltros')
+            ->assertOk();
 
-        $this->actingAs($unauthorized);
-        $this->expectException(AuthorizationException::class);
-        (new ShowCobranza())->limpiarFiltros();
+        foreach (['profe', 'alum', 'desconocido'] as $rol) {
+            $usuario = $this->user($rol);
+            $this->actingAs($usuario)->get(route('facturacion.cobranza'))->assertForbidden();
+            Livewire::actingAs($usuario)->test(ShowCobranza::class)->assertForbidden();
+        }
     }
 
     public function test_authorized_user_sees_dashboard_six_zero_cards_and_table(): void
@@ -190,8 +192,11 @@ class CobranzaDashboardTest extends InscripcionesTestCase
             ->assertSee('Estado de cuenta')->assertSee(route('facturacion.estado-cuenta'), false)
             ->assertDontSee('Facturación CFDI');
 
-        $unauthorized = $this->user('venta');
-        $this->actingAs($unauthorized)->get(route('dashboard'))->assertDontSee('Facturación y pagos');
+        $venta = $this->user('venta');
+        $this->actingAs($venta)->get(route('dashboard'))->assertSee('Facturación y pagos')
+            ->assertSee(route('facturacion.cobranza'), false)
+            ->assertDontSee(route('facturacion.pagos.registrar'), false)
+            ->assertDontSee(route('facturacion.auditoria'), false);
     }
 
     private function pago(array $changes = []): Pago

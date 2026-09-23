@@ -15,7 +15,6 @@ use App\Models\Pago;
 use App\Models\Prospecto;
 use App\Models\ResponsablePago;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
@@ -39,16 +38,20 @@ class EstadoCuentaTest extends InscripcionesTestCase
     public function test_route_and_every_public_action_require_financial_authorization(): void
     {
         $this->get(route('facturacion.estado-cuenta'))->assertRedirect('/login');
-        foreach (['venta', 'profe', 'alum', 'otro'] as $rol) {
+        $venta = $this->user('venta');
+        $this->actingAs($venta)->get(route('facturacion.estado-cuenta'))->assertOk();
+        Livewire::actingAs($venta)->test(EstadoCuenta::class)
+            ->set('busqueda', 'Alumno')
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('limpiarSeleccion')
+            ->call('limpiarBusqueda')
+            ->assertOk();
+
+        foreach (['profe', 'alum', 'otro'] as $rol) {
             $this->actingAs($this->user($rol))->get(route('facturacion.estado-cuenta'))->assertForbidden();
         }
         $sinRol = User::factory()->create(['roles_id' => 999999]);
         $this->actingAs($sinRol)->get(route('facturacion.estado-cuenta'))->assertForbidden();
-        Livewire::actingAs($this->user('venta'))->test(EstadoCuenta::class)->assertForbidden();
-
-        $this->actingAs($this->user('venta'));
-        $this->expectException(AuthorizationException::class);
-        (new EstadoCuenta())->limpiarBusqueda();
     }
 
     public function test_admin_can_open_selector_and_valid_enrollment_while_invalid_id_is_404(): void
@@ -115,7 +118,7 @@ class EstadoCuentaTest extends InscripcionesTestCase
     }
 
     /** @dataProvider financialMenuViews */
-    public function test_real_financial_menus_show_statement_link_only_to_admin(string $view): void
+    public function test_real_financial_menus_show_statement_link_to_read_roles(string $view): void
     {
         $url = route('facturacion.estado-cuenta');
         $this->actingAs($this->admin);
@@ -124,7 +127,14 @@ class EstadoCuentaTest extends InscripcionesTestCase
         $this->assertStringContainsString('Estado de cuenta', $html);
         $this->assertStringContainsString($url, $html);
 
-        foreach (['venta', 'profe', 'alum', 'otro'] as $rol) {
+        foreach (['caja', 'contabilidad', 'venta'] as $rol) {
+            $this->actingAs($this->user($rol));
+            $html = view($view)->render();
+            $this->assertStringContainsString($url, $html);
+            $this->assertStringContainsString('Facturación y pagos', $html);
+        }
+
+        foreach (['profe', 'alum', 'otro'] as $rol) {
             $this->actingAs($this->user($rol));
             $html = view($view)->render();
             $this->assertStringNotContainsString($url, $html);
