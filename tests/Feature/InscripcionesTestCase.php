@@ -108,6 +108,23 @@ abstract class InscripcionesTestCase extends TestCase
             $table->unsignedBigInteger('modalidad_id');
             $table->timestamps();
         });
+        Schema::create('horarios', function (Blueprint $table) {
+            $table->id('horarios_id');
+            $table->date('horarios_dia')->nullable();
+            $table->unsignedBigInteger('espacios_id')->nullable();
+            $table->unsignedBigInteger('horas_id')->nullable();
+            $table->unsignedBigInteger('grupo_id')->nullable();
+            $table->unsignedBigInteger('profesores_id')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('evaluaciones', function (Blueprint $table) {
+            $table->id('evaluacion_id');
+            $table->unsignedBigInteger('prospectos_id')->nullable();
+            $table->unsignedBigInteger('horarios_id')->nullable();
+            $table->boolean('asistio')->nullable();
+            $table->string('observacion', 255)->nullable();
+            $table->timestamps();
+        });
         Schema::create('responsables_pago', function (Blueprint $table) {
             $table->id('responsable_pago_id');
             $table->string('tipo', 20);
