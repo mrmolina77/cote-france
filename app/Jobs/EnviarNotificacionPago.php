@@ -30,6 +30,7 @@ class EnviarNotificacionPago implements ShouldQueue
     public function __construct(public int $notificacionPagoId)
     {
         $this->afterCommit = true;
+		
     }
 
     public function handle(NotificacionPagoService $servicio, ?AuditoriaPagoService $auditoria = null): void

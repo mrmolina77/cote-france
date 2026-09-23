@@ -141,6 +141,10 @@ class AuditoriaPagoService
         foreach ($permitidos as $clave) {
             if (! array_key_exists($clave, $datos)) continue;
             $valor = $datos[$clave];
+            if ($valor === null) {
+                $salida[$clave] = null;
+                continue;
+            }
             $esColeccion = in_array($clave, ['aplicaciones', 'cargos', 'campos_modificados'], true);
             $esFecha = in_array($clave, self::FECHAS, true);
             if ((is_array($valor) && ! $esColeccion)
