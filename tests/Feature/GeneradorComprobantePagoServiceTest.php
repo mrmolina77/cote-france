@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditoriaPago;
 use App\Models\ComprobantePago;
 use App\Models\Pago;
 use App\Services\Facturacion\GeneradorComprobantePagoService;
@@ -54,6 +55,16 @@ class GeneradorComprobantePagoServiceTest extends ComprobantePagoTestCase
         $this->assertSame('xref', substr($bytes, (int) $xref[1], 4));
         $this->assertSame($antes, $this->fotografia($pago));
         $this->assertSame(['0.00', '0.00'], array_map(fn ($cargo) => $cargo->fresh()->saldo_pendiente, $cargos));
+
+        $auditoria = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::GENERAR_RECIBO)->sole();
+        $this->assertSame([], $auditoria->valores_anteriores);
+        $this->assertSame($recibo->getKey(), $auditoria->valores_nuevos['comprobante_pago_id']);
+        $this->assertSame($recibo->folio, $auditoria->valores_nuevos['folio']);
+        $this->assertSame($recibo->hash_sha256, $auditoria->valores_nuevos['hash_sha256']);
+        $this->assertSame($recibo->tamano_bytes, $auditoria->valores_nuevos['tamano_bytes']);
+        $this->assertArrayHasKey('generado_en', $auditoria->valores_nuevos);
+        $this->assertStringNotContainsString('ruta_pdf', json_encode($auditoria->toArray()));
     }
 
     public function test_estados_no_permitidos_no_dejan_folios_archivos_ni_registros(): void
@@ -88,6 +99,13 @@ class GeneradorComprobantePagoServiceTest extends ComprobantePagoTestCase
         $this->assertSame($primero->folio, $segundo->folio);
         $this->assertSame(1, DB::table('consecutivos_comprobante_pago')->value('ultimo_consecutivo'));
         $this->assertNotSame($bytes, Storage::disk('local')->get($ruta));
+        $auditorias = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->whereIn('accion', [AuditoriaPago::GENERAR_RECIBO, AuditoriaPago::REGENERAR_RECIBO])
+            ->orderBy('auditoria_pago_id')->get();
+        $this->assertSame([AuditoriaPago::GENERAR_RECIBO, AuditoriaPago::REGENERAR_RECIBO], $auditorias->pluck('accion')->all());
+        $this->assertSame($primero->getKey(), $auditorias[1]->valores_anteriores['comprobante_pago_id']);
+        $this->assertSame($segundo->getKey(), $auditorias[1]->valores_nuevos['comprobante_pago_id']);
+        $this->assertNotSame($auditorias[1]->valores_anteriores['hash_sha256'], $auditorias[1]->valores_nuevos['hash_sha256']);
         $estable = Storage::disk('local')->get($ruta);
         $metadatos = $segundo->only(['ruta_pdf', 'hash_sha256', 'tamano_bytes', 'generado_en']);
 
@@ -102,6 +120,8 @@ class GeneradorComprobantePagoServiceTest extends ComprobantePagoTestCase
             $this->assertEquals($metadatos, $segundo->fresh()->only(array_keys($metadatos)));
             $this->assertDatabaseCount('comprobantes_pago', 1);
             $this->assertSame([], Storage::disk('local')->allFiles('comprobantes_pago/temporales'));
+            $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+                ->where('accion', AuditoriaPago::REGENERAR_RECIBO)->count());
         }
     }
 
@@ -122,6 +142,8 @@ class GeneradorComprobantePagoServiceTest extends ComprobantePagoTestCase
         $this->assertDatabaseCount('comprobantes_pago', 0);
         $this->assertDatabaseCount('consecutivos_comprobante_pago', 0);
         $this->assertSame([], Storage::disk('local')->allFiles('comprobantes_pago'));
+        $this->assertSame(0, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->whereIn('accion', [AuditoriaPago::GENERAR_RECIBO, AuditoriaPago::REGENERAR_RECIBO])->count());
     }
 
     public function test_recibo_existente_sigue_disponible_si_el_pago_se_cancela(): void

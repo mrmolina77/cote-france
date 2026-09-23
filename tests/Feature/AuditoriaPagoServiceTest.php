@@ -151,6 +151,23 @@ class AuditoriaPagoServiceTest extends PagosTestCase
         $this->assertDatabaseCount('auditoria_pagos', 0);
     }
 
+    public function test_resource_in_scalar_field_is_rejected_without_an_audit(): void
+    {
+        $pago = Pago::create($this->paymentAttributes());
+        $recurso = fopen('php://memory', 'r');
+        try {
+            app(AuditoriaPagoService::class)->registrar($pago, AuditoriaPago::CONFIRMAR, null, [], [
+                'referencia' => $recurso,
+            ]);
+            $this->fail('Se aceptó un recurso en un campo escalar.');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('debe ser escalar', $e->getMessage());
+        } finally {
+            fclose($recurso);
+        }
+        $this->assertDatabaseCount('auditoria_pagos', 0);
+    }
+
     public function test_save_update_force_fill_and_delete_leave_original_record_unchanged(): void
     {
         $pago = Pago::create($this->paymentAttributes());
@@ -181,6 +198,60 @@ class AuditoriaPagoServiceTest extends PagosTestCase
             }
             $evento = $evento->fresh();
             $this->assertSame($original, $evento->getRawOriginal());
+        }
+    }
+
+    public function test_every_persisted_column_is_individually_immutable(): void
+    {
+        $pago = Pago::create($this->paymentAttributes());
+        $evento = app(AuditoriaPagoService::class)->registrar($pago, AuditoriaPago::CREAR);
+        $original = $evento->fresh()->getRawOriginal();
+        $cambios = [
+            'pago_id' => $pago->getKey() + 1,
+            'usuario_id' => 999,
+            'accion' => AuditoriaPago::CANCELAR,
+            'ip_address' => '192.0.2.80',
+            'user_agent' => 'mutado',
+            'ocurrido_en' => now()->addDay(),
+            'valores_anteriores' => ['estado' => Pago::ESTADO_CONFIRMADO],
+            'valores_nuevos' => ['estado' => Pago::ESTADO_CANCELADO],
+            'metadatos' => ['motivo' => 'mutado'],
+            'created_at' => now()->addDay(),
+            'updated_at' => now()->addDay(),
+        ];
+
+        foreach ($cambios as $campo => $valor) {
+            $actual = $evento->fresh();
+            try {
+                $actual->forceFill([$campo => $valor])->save();
+                $this->fail("Se permitió modificar {$campo}.");
+            } catch (\LogicException $e) {
+                $this->assertSame('La auditoría financiera es inmutable.', $e->getMessage());
+            }
+            $this->assertSame($original, $evento->fresh()->getRawOriginal());
+            $this->assertDatabaseCount('auditoria_pagos', 1);
+        }
+    }
+
+    public function test_invalid_metadata_collections_reject_the_whole_event(): void
+    {
+        $pago = Pago::create($this->paymentAttributes());
+        $casos = [
+            [AuditoriaPago::CONFIRMAR, ['aplicaciones' => 'no-es-lista']],
+            [AuditoriaPago::CONFIRMAR, ['cargos' => (object) ['cargo_id' => 1]]],
+            [AuditoriaPago::MODIFICAR, ['campos_modificados' => 'monto']],
+            [AuditoriaPago::MODIFICAR, ['campos_modificados' => [['monto']]]],
+            [AuditoriaPago::CONFIRMAR, ['aplicaciones' => [['cargo_id' => ['secreto']]]]],
+        ];
+
+        foreach ($casos as [$accion, $metadatos]) {
+            try {
+                app(AuditoriaPagoService::class)->registrar($pago, $accion, null, [], [], $metadatos);
+                $this->fail('Se aceptaron metadatos con una estructura inválida.');
+            } catch (InvalidArgumentException $e) {
+                $this->assertNotEmpty($e->getMessage());
+            }
+            $this->assertDatabaseCount('auditoria_pagos', 0);
         }
     }
 }

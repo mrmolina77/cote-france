@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditoriaPago;
 use App\Models\Cargo;
 use App\Models\MetodoPago;
 use App\Models\Pago;
@@ -68,6 +69,19 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         $this->assertSame($applications, $cancelado->aplicaciones->map->only(['pago_aplicacion_id', 'importe_aplicado', 'saldo_anterior', 'saldo_posterior'])->all());
         $this->assertDatabaseCount('pagos', 1);
         $this->assertDatabaseCount('pago_aplicaciones', 2);
+
+        $auditoria = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CANCELAR)->sole();
+        $this->assertSame(Pago::ESTADO_CONFIRMADO, $auditoria->valores_anteriores['estado']);
+        $this->assertSame(Pago::ESTADO_CANCELADO, $auditoria->valores_nuevos['estado']);
+        $this->assertSame('Error bancario', $auditoria->metadatos['motivo']);
+        $this->assertSame([
+            [$future->getKey(), '15.00', '20.00', Cargo::ESTADO_PARCIAL, Cargo::ESTADO_PENDIENTE],
+            [$overdue->getKey(), '0.00', '10.00', Cargo::ESTADO_PAGADO, Cargo::ESTADO_VENCIDO],
+        ], array_map(fn (array $cargo) => [
+            $cargo['cargo_id'], $cargo['saldo_anterior'], $cargo['saldo_posterior'],
+            $cargo['estado_anterior'], $cargo['estado_nuevo'],
+        ], $auditoria->metadatos['cargos']));
     }
 
     public function test_restores_current_balance_when_a_later_confirmed_payment_exists(): void
@@ -133,6 +147,8 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
         } catch (ValidationException $exception) {
             $this->assertSame('10.00', $cargo->fresh()->saldo_pendiente);
             $this->assertDatabaseCount('pago_aplicaciones', 1);
+            $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+                ->where('accion', AuditoriaPago::CANCELAR)->count());
         }
     }
 
@@ -214,6 +230,8 @@ class CancelarPagoServiceTest extends InscripcionesTestCase
             $this->assertSame(['5.00', '5.00'], [$first->fresh()->saldo_pendiente, $second->fresh()->saldo_pendiente]);
             $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->fresh()->estado);
             $this->assertEquals($applications, DB::table('pago_aplicaciones')->where('pago_id', $pago->getKey())->orderBy('pago_aplicacion_id')->get()->toArray());
+            $this->assertSame(0, AuditoriaPago::where('pago_id', $pago->getKey())
+                ->where('accion', AuditoriaPago::CANCELAR)->count());
         }
     }
 
