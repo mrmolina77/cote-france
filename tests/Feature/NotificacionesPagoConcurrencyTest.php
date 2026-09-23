@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Services\Facturacion\GeneradorComprobantePagoService;
 use App\Services\Facturacion\NotificacionPagoService;
+use App\Models\AuditoriaPago;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
@@ -23,6 +24,10 @@ class NotificacionesPagoConcurrencyTest extends ComprobantePagoTestCase
         $service->solicitarReenvio($pago, $receipt, $admin->getKey(), 'same-action');
         $this->assertDatabaseCount('notificaciones_pago', 2);
         Queue::assertPushed(\App\Jobs\EnviarNotificacionPago::class, 2);
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::ENVIAR_CORREO)->count());
+        $this->assertSame(1, AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::REENVIAR_CORREO)->count());
     }
 
     public function test_mysql_two_real_processes_compete_for_initial_and_same_resend_token(): void
@@ -54,6 +59,8 @@ class NotificacionesPagoConcurrencyTest extends ComprobantePagoTestCase
         $this->assertSame(1, DB::table('notificaciones_pago')->where('tipo_solicitud', 'reenvio')->count());
         $this->assertSame(2, DB::table('jobs')->count());
         $this->assertSame(2, DB::table('notificaciones_pago')->distinct()->count('clave_idempotencia'));
+        $this->assertSame(1, DB::table('auditoria_pagos')->where('accion', AuditoriaPago::ENVIAR_CORREO)->count());
+        $this->assertSame(1, DB::table('auditoria_pagos')->where('accion', AuditoriaPago::REENVIAR_CORREO)->count());
         Artisan::call('migrate:reset', ['--database' => 'epic13', '--force' => true]);
     }
 

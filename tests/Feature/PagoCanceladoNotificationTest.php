@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\EnviarNotificacionPago;
 use App\Models\NotificacionPago;
+use App\Models\AuditoriaPago;
 use App\Services\Facturacion\CancelarPagoService;
 use App\Services\Facturacion\GeneradorComprobantePagoService;
 use App\Services\Facturacion\NotificacionPagoService;
@@ -46,6 +47,16 @@ class PagoCanceladoNotificationTest extends ComprobantePagoTestCase
             $this->assertEmpty($mail->rawAttachments);
             return true;
         });
+        $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $entrega->fresh()->estado);
+        $this->assertSame(1, $entrega->fresh()->intentos);
+        $this->assertNotNull($entrega->fresh()->enviado_en);
+        $evento = AuditoriaPago::where('pago_id', $pago->getKey())
+            ->where('accion', AuditoriaPago::CORREO_ENVIADO)->sole();
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_PROCESANDO], $evento->valores_anteriores);
+        $this->assertSame(['estado' => NotificacionPago::ESTADO_ENVIADO], $evento->valores_nuevos);
+        $this->assertSame($entrega->getKey(), $evento->metadatos['notificacion_pago_id']);
+        $this->assertSame(1, $evento->metadatos['intento']);
+        $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $evento->metadatos['transicion']);
     }
 
     public function test_cancellation_job_obeys_outer_commit_and_rollback_restores_finances(): void
