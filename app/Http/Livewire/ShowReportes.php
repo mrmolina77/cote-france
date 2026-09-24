@@ -10,6 +10,8 @@ use App\Models\Pago;
 use App\Models\User;
 use App\Services\Facturacion\CerrarCajaService;
 use App\Services\Facturacion\ReporteFinancieroService;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 
@@ -64,6 +66,16 @@ class ShowReportes extends Component
     {
         $cajero=optional(auth()->user()->role)->roles_codigo==='caja' ? (int)auth()->id() : $this->id($this->cajeroId);
         return ['desde'=>$this->desde,'hasta'=>$this->hasta,'corte'=>$this->corte,'curso_id'=>$this->id($this->cursoId),'grupo_id'=>$this->id($this->grupoId),'metodo_pago_id'=>$this->id($this->metodoId),'moneda'=>preg_match('/^[A-Z]{3}$/',$this->moneda)?$this->moneda:null,'created_by'=>$this->id($this->usuarioId),'confirmed_by'=>$cajero,'cancelled_by'=>optional(auth()->user()->role)->roles_codigo==='caja'?(int)auth()->id():$this->id($this->usuarioId),'usuario_id'=>$this->id($this->usuarioId),'tipo'=>$this->tipoEvento];
+    }
+
+    /** Return a display value without converting money to binary floating point. */
+    public function diferenciaPreliminar(string $clave, string $esperado): ?string
+    {
+        if (! array_key_exists($clave, $this->contados)) return null;
+        $contado = $this->contados[$clave];
+        if ((! is_string($contado) && ! is_int($contado)) || ! preg_match('/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/D', (string) $contado)) return null;
+
+        return (string) BigDecimal::of((string) $contado)->minus($esperado)->toScale(2, RoundingMode::UNNECESSARY);
     }
 
     private function id($v): ?int { return ctype_digit((string)$v) && (int)$v>0 ? (int)$v : null; }
