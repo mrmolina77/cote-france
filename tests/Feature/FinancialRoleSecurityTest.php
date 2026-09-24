@@ -11,6 +11,7 @@ use App\Http\Livewire\ShowConceptosCobro;
 use App\Http\Livewire\ShowInscripciones;
 use App\Http\Livewire\ShowMetodosPago;
 use App\Http\Livewire\ShowPagos;
+use App\Http\Livewire\ShowReportes;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\FinancialPermissions;
@@ -33,8 +34,8 @@ class FinancialRoleSecurityTest extends InscripcionesTestCase
     {
         return [
             'admin' => ['admin', $this->permissions()],
-            'caja' => ['caja', ['view-financial', 'register-payments', 'view-payment-documents', 'manage-pagos']],
-            'contabilidad' => ['contabilidad', ['view-financial', 'view-payment-documents', 'audit-payments', 'view-financial-enrollments', 'cancel-pagos']],
+            'caja' => ['caja', ['view-financial', 'register-payments', 'view-payment-documents', 'manage-pagos', 'view-financial-reports', 'close-cash']],
+            'contabilidad' => ['contabilidad', ['view-financial', 'view-payment-documents', 'audit-payments', 'view-financial-enrollments', 'cancel-pagos', 'view-financial-reports', 'export-financial-reports']],
             'venta' => ['venta', ['view-financial']],
             'profe' => ['profe', []],
             'alum' => ['alum', []],
@@ -89,6 +90,7 @@ class FinancialRoleSecurityTest extends InscripcionesTestCase
             'conceptos' => ['configuracion.conceptos-cobro', ['admin']],
             'metodos' => ['configuracion.metodos-pago', ['admin']],
             'auditoria' => ['facturacion.auditoria', ['admin', 'contabilidad']],
+            'reportes' => ['facturacion.reportes', ['admin', 'caja', 'contabilidad']],
         ];
     }
 
@@ -118,6 +120,7 @@ class FinancialRoleSecurityTest extends InscripcionesTestCase
             'cargos' => [ShowCargos::class, ['admin']],
             'conceptos' => [ShowConceptosCobro::class, ['admin']],
             'metodos' => [ShowMetodosPago::class, ['admin']],
+            'reportes' => [ShowReportes::class, ['admin', 'caja', 'contabilidad']],
         ];
     }
 
@@ -125,9 +128,9 @@ class FinancialRoleSecurityTest extends InscripcionesTestCase
     public function test_desktop_and_mobile_financial_links_follow_permissions(string $view): void
     {
         $expectations = [
-            'admin' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index', 'facturacion.pagos.registrar', 'inscripciones', 'facturacion.cargos', 'configuracion.conceptos-cobro', 'configuracion.metodos-pago', 'facturacion.auditoria'],
-            'caja' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index', 'facturacion.pagos.registrar'],
-            'contabilidad' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index', 'inscripciones', 'facturacion.auditoria'],
+            'admin' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index', 'facturacion.pagos.registrar', 'inscripciones', 'facturacion.cargos', 'configuracion.conceptos-cobro', 'configuracion.metodos-pago', 'facturacion.auditoria', 'facturacion.reportes'],
+            'caja' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index', 'facturacion.pagos.registrar', 'facturacion.reportes'],
+            'contabilidad' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index', 'inscripciones', 'facturacion.auditoria', 'facturacion.reportes'],
             'venta' => ['facturacion.cobranza', 'facturacion.estado-cuenta', 'facturacion.pagos.index'],
             'profe' => [], 'alum' => [], 'desconocido' => [],
         ];
@@ -177,6 +180,7 @@ class FinancialRoleSecurityTest extends InscripcionesTestCase
             'view-financial', 'register-payments', 'view-payment-documents', 'audit-payments',
             'view-financial-enrollments', 'manage-inscripciones', 'manage-conceptos-cobro',
             'manage-metodos-pago', 'manage-cargos', 'manage-pagos', 'cancel-pagos',
+            'view-financial-reports', 'export-financial-reports', 'close-cash',
         ];
     }
 }

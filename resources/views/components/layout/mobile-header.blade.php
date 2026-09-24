@@ -52,6 +52,7 @@
                 <a href="{{ route('facturacion.estado-cuenta') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.estado-cuenta') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-file-invoice-dollar mr-3"></i>Estado de cuenta
                 </a>
+                @can('view-financial-reports')<a href="{{ route('facturacion.reportes') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.reportes*') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}"><i class="fas fa-chart-bar mr-3"></i>Reportes</a>@endcan
                 @can('manage-cargos')
                 <a href="{{ route('facturacion.cargos') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('facturacion.cargos') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}">
                     <i class="fas fa-receipt mr-3"></i>Cargos

@@ -13,6 +13,8 @@ use App\Http\Livewire\ShowPagos;
 use App\Http\Livewire\ShowCobranza;
 use App\Http\Livewire\EstadoCuenta;
 use App\Http\Livewire\ShowAuditoriaPagos;
+use App\Http\Livewire\ShowReportes;
+use App\Http\Controllers\ExportarReporteController;
 use App\Http\Controllers\DescargarArchivoPagoController;
 use App\Http\Controllers\DescargarComprobantePagoController;
 use App\Http\Controllers\VerComprobantePagoController;
@@ -153,6 +155,11 @@ Route::middleware([
     ->name('facturacion.pagos.index');
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:audit-payments'])
     ->get('/facturacion/auditoria', ShowAuditoriaPagos::class)->name('facturacion.auditoria');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:view-financial-reports'])
+    ->get('/facturacion/reportes', ShowReportes::class)->name('facturacion.reportes');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:export-financial-reports'])
+    ->get('/facturacion/reportes/exportar/{tipo}/{formato}', ExportarReporteController::class)
+    ->whereIn('formato', ['csv', 'xlsx'])->name('facturacion.reportes.exportar');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
