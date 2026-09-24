@@ -44,11 +44,13 @@ class ExportarReporteController extends Controller
     private function diario(ReporteFinancieroService $service,string $fecha,int $cajero): array
     {
         $r=$service->diario($fecha,$cajero);
-        $rows=[['RESUMEN POR MÉTODO Y MONEDA'],['Método','Moneda','Movimientos','Bruto','Ajustes','Neto']];
-        foreach($r['totales'] as $x)$rows[]=[$x['metodo'],$x['moneda'],$x['cantidad'],$x['bruto'],$x['ajustes'],$x['neto']];
-        $rows[]=[];$rows[]=['DETALLE DE MOVIMIENTOS'];$rows[]=['Tipo','ID','Folio','Fecha operación/evento','Método','Registró','Cajero/actor','Moneda','Bruto','Ajuste','Neto'];
-        foreach($r['pagos'] as $p)$rows[]=['Ingreso',$p->pago_id,$p->folio,$p->fecha_pago?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método',$p->createdBy?->name?:'Sin usuario registrado',$p->confirmedBy?->name?:'Sin cajero registrado',$p->moneda,$p->monto,'0.00',$p->monto];
-        foreach($r['eventos'] as $p)$rows[]=['Ajuste '.$p->estado,$p->pago_id,$p->folio,($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método','No aplica',$p->cancelledBy?->name?:'No registrado',$p->moneda,'0.00',$p->monto,'-'.$p->monto];
+        $rows=(function () use ($r) {
+            yield ['RESUMEN POR MÉTODO Y MONEDA']; yield ['Método','Moneda','Movimientos','Bruto','Ajustes','Neto'];
+            foreach($r['totales'] as $x) yield [$x['metodo'],$x['moneda'],$x['cantidad'],$x['bruto'],$x['ajustes'],$x['neto']];
+            yield []; yield ['DETALLE DE MOVIMIENTOS']; yield ['Tipo','ID','Folio','Fecha operación/evento','Método','Registró','Cajero/actor','Moneda','Bruto','Ajuste','Neto'];
+            foreach($r['pagos'] as $p) yield ['Ingreso',$p->pago_id,$p->folio,$p->fecha_pago?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método',$p->createdBy?->name?:'Sin usuario registrado',$p->confirmedBy?->name?:'Sin cajero registrado',$p->moneda,$p->monto,'0.00',$p->monto];
+            foreach($r['eventos'] as $p) yield ['Ajuste '.$p->estado,$p->pago_id,$p->folio,($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método','No aplica',$p->cancelledBy?->name?:'No registrado',$p->moneda,'0.00',$p->monto,'-'.$p->monto];
+        })();
         return [$rows,[['Fecha de operación',$fecha],['Cajero ID',$cajero],['Ventana','['.$r['inicio']->format('Y-m-d H:i:s').', '.$r['fin']->format('Y-m-d H:i:s').')']]];
     }
 
@@ -57,10 +59,19 @@ class ExportarReporteController extends Controller
         $cierre=CierreCaja::with(['cajero','cerradoPor'])->where('cajero_id',$cajero)->whereDate('fecha_operacion',$fecha)->first();
         if(!$cierre){ [$rows,$extra]=$this->diario($service,$fecha,$cajero); array_unshift($extra,['Estado','PRE-CIERRE, AÚN NO CERRADO']); return [$rows,$extra]; }
         $extra=[['Estado','CIERRE DEFINITIVO'],['Fecha de operación',$cierre->fecha_operacion->format('Y-m-d')],['Cajero',$cierre->cajero?->name?:'No registrado'],['Cerrado por',$cierre->cerradoPor?->name?:'No registrado'],['Cerrado en',$cierre->cerrado_en?->format('Y-m-d H:i:s')],['Ventana','['.$cierre->ventana_inicio->format('Y-m-d H:i:s').', '.$cierre->ventana_fin->format('Y-m-d H:i:s').')'],['Zona horaria del cierre',$cierre->zona_horaria]];
-        $rows=[['TOTALES GUARDADOS EN EL SNAPSHOT'],['Combinación','Esperado','Contado','Diferencia']];
-        foreach($cierre->totales_esperados as $clave=>$esperado)$rows[]=[$clave,$esperado,$cierre->importes_contados[$clave]??'No capturado',$cierre->diferencias[$clave]??'No disponible'];
-        $rows[]=[];$rows[]=['MOVIMIENTOS GUARDADOS EN EL SNAPSHOT'];
-        foreach(['pagos','eventos'] as $seccion){$rows[]=[strtoupper($seccion)]; foreach(($cierre->snapshot_movimientos[$seccion]??[]) as $mov)$rows[]=[json_encode($mov,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)];}
+        $rows=(function () use ($cierre) {
+            yield ['TOTALES GUARDADOS EN EL SNAPSHOT']; yield ['Combinación','Esperado','Contado','Diferencia'];
+            foreach($cierre->totales_esperados as $clave=>$esperado) yield [$clave,$esperado,$cierre->importes_contados[$clave]??'No capturado',$cierre->diferencias[$clave]??'No disponible'];
+            yield []; yield ['MOVIMIENTOS GUARDADOS EN EL SNAPSHOT'];
+            if (($cierre->snapshot_movimientos['version'] ?? null) === 2) {
+                yield ['Tipo','ID','Folio','Fecha','Método','Registró','Cajero/actor','Moneda','Importe'];
+                foreach ($cierre->movimientos()->lazy(max(1, (int) config('facturacion.export_chunk_size', 500))) as $mov)
+                    yield [$mov->tipo,$mov->pago_id,$mov->folio,$mov->fecha,$mov->metodo,$mov->registrado_por ?: 'No aplica',$mov->actor,$mov->moneda,$mov->importe];
+                return;
+            }
+            // Backward compatibility for closures created before child snapshot rows existed.
+            foreach(['pagos','eventos'] as $seccion){ yield [strtoupper($seccion)]; foreach(($cierre->snapshot_movimientos[$seccion]??[]) as $mov) yield [json_encode($mov,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]; }
+        })();
         return [$rows,$extra];
     }
 

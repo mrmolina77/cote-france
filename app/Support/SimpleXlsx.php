@@ -12,7 +12,11 @@ final class SimpleXlsx
     {
         $path = tempnam(sys_get_temp_dir(), 'reporte-xlsx-');
         $sheet = tempnam(sys_get_temp_dir(), 'reporte-sheet-');
-        if ($path === false || $sheet === false) throw new RuntimeException('No fue posible crear el archivo temporal XLSX.');
+        if ($path === false || $sheet === false) {
+            if (is_string($path)) @unlink($path);
+            if (is_string($sheet)) @unlink($sheet);
+            throw new RuntimeException('No fue posible crear el archivo temporal XLSX.');
+        }
 
         $stream = fopen($sheet, 'wb');
         $zip = new ZipArchive();
