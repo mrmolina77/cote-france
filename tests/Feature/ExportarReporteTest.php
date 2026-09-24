@@ -61,6 +61,25 @@ class ExportarReporteTest extends InscripcionesTestCase
         $this->assertStringContainsString('28.00', $sheet);
     }
 
+    public function test_csv_and_xlsx_preserve_the_same_headers_when_there_are_no_results(): void
+    {
+        $accountant = $this->user('contabilidad');
+        $csv = $this->actingAs($accountant)->get($this->url('csv'))->streamedContent();
+        $this->assertStringContainsString('Dimensión,"Tipo de usuario","Cantidad de pagos",Moneda,Monto', $csv);
+
+        $response = $this->actingAs($accountant)->get($this->url('xlsx'));
+        $path = $response->baseResponse->getFile()->getPathname();
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($path) === true);
+        $xml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+        $sheet = simplexml_load_string($xml);
+        $this->assertInstanceOf(\SimpleXMLElement::class, $sheet);
+        $sheet->registerXPathNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+        $values = array_map('strval', $sheet->xpath('//x:row[last()]/x:c/x:is/x:t'));
+        $this->assertSame(['Dimensión', 'Tipo de usuario', 'Cantidad de pagos', 'Moneda', 'Monto'], $values);
+    }
+
     private function url(string $format): string
     {
         return route('facturacion.reportes.exportar', ['tipo' => 'curso', 'formato' => $format]).'?'.http_build_query([

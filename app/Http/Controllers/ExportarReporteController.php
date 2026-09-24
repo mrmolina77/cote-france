@@ -49,7 +49,7 @@ class ExportarReporteController extends Controller
             foreach($r['totales'] as $x) yield [$x['metodo'],$x['moneda'],$x['cantidad'],$x['bruto'],$x['ajustes'],$x['neto']];
             yield []; yield ['DETALLE DE MOVIMIENTOS']; yield ['Tipo','ID','Folio','Fecha operación/evento','Método','Registró','Cajero/actor','Moneda','Bruto','Ajuste','Neto'];
             foreach($r['pagos'] as $p) yield ['Ingreso',$p->pago_id,$p->folio,$p->fecha_pago?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método',$p->createdBy?->name?:'Sin usuario registrado',$p->confirmedBy?->name?:'Sin cajero registrado',$p->moneda,$p->monto,'0.00',$p->monto];
-            foreach($r['eventos'] as $p) yield ['Ajuste '.$p->estado,$p->pago_id,$p->folio,($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método','No aplica',$p->cancelledBy?->name?:'No registrado',$p->moneda,'0.00',$p->monto,'-'.$p->monto];
+            foreach($r['eventos'] as $p) yield ['Ajuste '.$p->estado,$p->pago_id,$p->folio,($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),$p->metodoPago?->nombre?:'Sin método','No aplica',$p->estado==='cancelado'?($p->cancelledBy?->name?:'No registrado'):'No registrado',$p->moneda,'0.00',$p->monto,'-'.$p->monto];
         })();
         return [$rows,[['Fecha de operación',$fecha],['Cajero ID',$cajero],['Ventana','['.$r['inicio']->format('Y-m-d H:i:s').', '.$r['fin']->format('Y-m-d H:i:s').')']]];
     }
@@ -94,7 +94,7 @@ class ExportarReporteController extends Controller
             return;
         }
         yield ['Tipo', 'Folio', 'Alumno', 'Método', 'Fecha evento', 'Actor del evento', 'Moneda', 'Monto total del pago', 'Motivo'];
-        foreach ($items as $p) yield [$p->estado, $p->folio, trim(($p->inscripcion?->prospecto?->prospectos_nombres ?? '').' '.($p->inscripcion?->prospecto?->prospectos_apellidos ?? '')), $p->metodoPago?->nombre ?: 'Sin método', ($p->estado === 'cancelado' ? $p->fecha_cancelacion : $p->fecha_reembolso)?->format('Y-m-d H:i'), $p->cancelledBy?->name ?: 'No registrado', $p->moneda, $p->monto, $p->motivo_cancelacion ?: 'Sin motivo registrado'];
+        foreach ($items as $p) yield [$p->estado, $p->folio, trim(($p->inscripcion?->prospecto?->prospectos_nombres ?? '').' '.($p->inscripcion?->prospecto?->prospectos_apellidos ?? '')), $p->metodoPago?->nombre ?: 'Sin método', ($p->estado === 'cancelado' ? $p->fecha_cancelacion : $p->fecha_reembolso)?->format('Y-m-d H:i'), $p->estado === 'cancelado' ? ($p->cancelledBy?->name ?: 'No registrado') : 'No registrado', $p->moneda, $p->monto, $p->motivo_cancelacion ?: 'Sin motivo registrado'];
     }
 
     private function concat(iterable ...$parts): iterable

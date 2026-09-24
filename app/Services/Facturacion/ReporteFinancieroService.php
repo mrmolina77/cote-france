@@ -124,7 +124,10 @@ class ReporteFinancieroService
         });
         $this->filtrosDimensiones($query, $filtros);
         if ($filtros['cancelled_by'] ?? $filtros['usuario_id'] ?? null) {
-            $query->where('cancelled_by', $filtros['cancelled_by'] ?? $filtros['usuario_id']);
+            $actor = $filtros['cancelled_by'] ?? $filtros['usuario_id'];
+            // There is no refund-actor column. A nominal cashier report may only
+            // attribute cancellations whose actor is actually persisted.
+            $query->where('estado', Pago::ESTADO_CANCELADO)->where('cancelled_by', $actor);
         }
         return $query->orderByRaw('COALESCE(fecha_reembolso, fecha_cancelacion)')->orderBy('pago_id')->lazy($this->chunkSize());
     }

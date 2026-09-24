@@ -3,6 +3,7 @@
 namespace App\Services\Facturacion;
 
 use App\Models\CierreCaja;
+use App\Models\Pago;
 use App\Models\User;
 use App\Support\FinancialPermissions;
 use Brick\Math\BigDecimal;
@@ -87,7 +88,9 @@ class CerrarCajaService
                 'fecha'=>($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),
                 'metodo_pago_id'=>$p->metodo_pago_id, 'metodo'=>$p->metodoPago?->nombre ?: 'Sin método',
                 'importe'=>(string) $p->monto, 'moneda'=>$p->moneda, 'registrado_por'=>null,
-                'actor'=>$p->cancelledBy?->name ?: 'No registrado'];
+                'actor'=>$p->estado === Pago::ESTADO_CANCELADO
+                    ? ($p->cancelledBy?->name ?: 'No registrado')
+                    : 'No registrado'];
             if (count($lote) >= $maximo) $insertar();
         }
         $insertar();
