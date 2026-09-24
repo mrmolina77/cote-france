@@ -142,6 +142,9 @@
                                  icon="fas fa-file-invoice-dollar text-emerald-400 hover:text-emerald-200">
                 Estado de cuenta
             </x-layout.aside-link>
+            @can('view-financial-reports')
+            <x-layout.aside-link href="{{ route('facturacion.reportes') }}" :active="request()->routeIs('facturacion.reportes*')" icon="fas fa-chart-bar text-emerald-400 hover:text-emerald-200">Reportes</x-layout.aside-link>
+            @endcan
             @can('manage-cargos')
             <x-layout.aside-link href="{{ route('facturacion.cargos') }}"
                                  :active="request()->routeIs('facturacion.cargos')"
