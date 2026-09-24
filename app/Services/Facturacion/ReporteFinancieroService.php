@@ -10,6 +10,7 @@ use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Validation\ValidationException;
 
 class ReporteFinancieroService
@@ -26,19 +27,21 @@ class ReporteFinancieroService
 
     public function pagosConfirmados(array $filtros): Collection
     {
-        $query = Pago::query()->confirmados()->with([
-            'inscripcion.cursos', 'inscripcion.grupo', 'metodoPago', 'createdBy', 'confirmedBy',
-            'aplicaciones.cargo.conceptoCobro',
-        ]);
-        $this->filtrarPagos($query, $filtros);
+        return $this->iterarPagosConfirmados($filtros)->collect();
+    }
 
-        return $query->orderBy('fecha_pago')->orderBy('pago_id')->get();
+    /** Iterate in stable export order while eager-loading only one bounded batch. */
+    public function iterarPagosConfirmados(array $filtros): LazyCollection
+    {
+        $query = $this->consultaPagosConfirmados($filtros);
+
+        return $query->orderBy('fecha_pago')->orderBy('pago_id')->lazy($this->chunkSize());
     }
 
     public function agrupacion(string $tipo, array $filtros): Collection
     {
         $filas = collect();
-        foreach ($this->pagosConfirmados($filtros) as $pago) {
+        foreach ($this->iterarPagosConfirmados($filtros) as $pago) {
             if ($tipo === 'periodo') {
                 $aplicado = '0.00';
                 foreach ($pago->aplicaciones as $aplicacion) {
@@ -75,6 +78,11 @@ class ReporteFinancieroService
 
     public function vencidos(array $filtros): Collection
     {
+        return $this->iterarVencidos($filtros)->collect();
+    }
+
+    public function iterarVencidos(array $filtros): LazyCollection
+    {
         $corte = $filtros['corte'];
         return Cargo::query()->with(['inscripcion.prospecto', 'inscripcion.cursos', 'inscripcion.grupo', 'conceptoCobro'])
             ->where('fecha_vencimiento', '<', $corte)->where('saldo_pendiente', '>', '0.00')
@@ -82,7 +90,7 @@ class ReporteFinancieroService
             ->when($filtros['moneda'] ?? null, fn ($q, $v) => $q->where('moneda', $v))
             ->when($filtros['curso_id'] ?? null, fn ($q, $v) => $q->whereHas('inscripcion', fn ($i) => $i->where('cursos_id', $v)))
             ->when($filtros['grupo_id'] ?? null, fn ($q, $v) => $q->whereHas('inscripcion', fn ($i) => $i->where('grupo_id', $v)))
-            ->orderBy('fecha_vencimiento')->orderBy('cargo_id')->get()->map(function ($cargo) use ($corte) {
+            ->orderBy('fecha_vencimiento')->orderBy('cargo_id')->lazy($this->chunkSize())->map(function ($cargo) use ($corte) {
                 $cargo->dias_vencidos = CarbonImmutable::parse($cargo->fecha_vencimiento)->diffInDays(CarbonImmutable::parse($corte));
                 $cargo->pagado = $this->sub((string) $cargo->total, (string) $cargo->saldo_pendiente);
                 return $cargo;
@@ -90,6 +98,11 @@ class ReporteFinancieroService
     }
 
     public function eventos(array $filtros): Collection
+    {
+        return $this->iterarEventos($filtros)->collect();
+    }
+
+    public function iterarEventos(array $filtros): LazyCollection
     {
         $query = Pago::query()->whereIn('estado', [Pago::ESTADO_CANCELADO, Pago::ESTADO_REEMBOLSADO])
             ->with(['inscripcion.prospecto', 'inscripcion.cursos', 'inscripcion.grupo', 'metodoPago', 'cancelledBy']);
@@ -111,7 +124,7 @@ class ReporteFinancieroService
         if ($filtros['cancelled_by'] ?? $filtros['usuario_id'] ?? null) {
             $query->where('cancelled_by', $filtros['cancelled_by'] ?? $filtros['usuario_id']);
         }
-        return $query->orderByRaw('COALESCE(fecha_reembolso, fecha_cancelacion)')->orderBy('pago_id')->get();
+        return $query->orderByRaw('COALESCE(fecha_reembolso, fecha_cancelacion)')->orderBy('pago_id')->lazy($this->chunkSize());
     }
 
     /** The daily register uses confirmed_by for receipts and cancelled_by for adjustments. */
@@ -157,6 +170,21 @@ class ReporteFinancieroService
         if ($filtros['created_by'] ?? null) $query->where('created_by', $filtros['created_by']);
         if (array_key_exists('confirmed_by', $filtros) && $filtros['confirmed_by'] !== null) $query->where('confirmed_by', $filtros['confirmed_by']);
         elseif ($filtros['usuario_id'] ?? null) $query->where('created_by', $filtros['usuario_id']);
+    }
+
+    private function consultaPagosConfirmados(array $filtros): Builder
+    {
+        $query = Pago::query()->confirmados()->with([
+            'inscripcion.cursos', 'inscripcion.grupo', 'metodoPago', 'createdBy', 'confirmedBy',
+            'aplicaciones.cargo.conceptoCobro',
+        ]);
+        $this->filtrarPagos($query, $filtros);
+        return $query;
+    }
+
+    private function chunkSize(): int
+    {
+        return max(1, (int) config('facturacion.export_chunk_size', 500));
     }
 
     private function filtrosDimensiones(Builder $query, array $filtros): void

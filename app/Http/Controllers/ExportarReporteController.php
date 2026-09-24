@@ -24,14 +24,16 @@ class ExportarReporteController extends Controller
         $data=$request->validate($rules);
 
         if(in_array($tipo,['diario','cierre'],true)) {
-            $cajero=(int)($data['usuario_id']??auth()->id());
+            $cajero=(int)($data['cajero_id']??$data['usuario_id']??auth()->id());
             abort_unless(User::whereKey($cajero)->exists(),422);
             [$rows,$extra]=$tipo==='diario'?$this->diario($service,$data['fecha'],$cajero):$this->cierre($service,$data['fecha'],$cajero);
             $data=['fecha'=>$data['fecha'],'cajero_id'=>$cajero];
         } else {
             $data['tipo']=$data['tipo_evento']??$data['tipo']??'todos';
             $data['created_by']=$data['usuario_id']??null; $data['confirmed_by']=$data['cajero_id']??null;
-            $items=in_array($tipo,['grupo','curso','periodo','metodo','usuario'],true)?$service->agrupacion($tipo,$data):($tipo==='vencidos'?$service->vencidos($data):$service->eventos($data));
+            $items=in_array($tipo,['grupo','curso','periodo','metodo','usuario'],true)
+                ? $service->agrupacion($tipo,$data)
+                : ($tipo==='vencidos'?$service->iterarVencidos($data):$service->iterarEventos($data));
             $rows=$this->rows($tipo,$items); $extra=[];
         }
         $generado=now(config('app.timezone'))->format('Y-m-d H:i:s').' '.config('app.timezone');
