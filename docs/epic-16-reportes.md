@@ -11,7 +11,7 @@
 - Un cierre guarda el resumen, los IDs/folios/importes incluidos y los valores contados. Es transaccional, tiene restricción única y es inmutable; no se ofrece reapertura porque no existe un permiso/regla de corrección aprobada.
 - Los importes contados aceptan únicamente decimales no negativos (máximo 12 enteros y dos decimales), sin exponentes ni valores especiales. Cada combinación con movimientos es obligatoria, incluso si su neto esperado resulta cero; las combinaciones de métodos activos y monedas configuradas también pueden capturarse con esperado cero. La diferencia se calcula por método y moneda con aritmética decimal, sin conversión ni suma entre monedas.
 - Las monedas permitidas para conteos sin movimientos se configuran en `FACTURACION_MONEDAS` (por defecto `MXN`). La clasificación depende únicamente del método del catálogo; en particular, un depósito no se infiere como efectivo.
-- CSV/XLSX de diario incluyen resumen y detalle completo. La descarga de un cierre definitivo usa exclusivamente el snapshot persistido; si aún no existe, se rotula **PRE-CIERRE, AÚN NO CERRADO**. El generador XLSX actual crea el documento en un archivo temporal y, por ello, el límite operativo debe ajustarse a la memoria disponible para construir las filas.
+- CSV/XLSX de diario incluyen resumen y detalle completo. La descarga de un cierre definitivo usa exclusivamente el snapshot persistido; si aún no existe, se rotula **PRE-CIERRE, AÚN NO CERRADO**. CSV escribe cada fila directamente en la respuesta y XLSX construye el XML de la hoja incrementalmente en un temporal, que se elimina tanto al terminar como ante una excepción. Ninguno de los dos formatos conserva una segunda copia completa de las filas en memoria.
 
 ## Permisos
 

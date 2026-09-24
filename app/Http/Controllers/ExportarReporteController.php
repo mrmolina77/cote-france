@@ -36,7 +36,7 @@ class ExportarReporteController extends Controller
         }
         $generado=now(config('app.timezone'))->format('Y-m-d H:i:s').' '.config('app.timezone');
         $meta=array_merge([['Reporte',$tipo],['Generado',$generado],['Zona horaria',config('app.timezone')],['Filtros',json_encode($data,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]],$extra,[[]]);
-        return $this->download(array_merge($meta,$rows),'reporte-'.$tipo.'-'.now()->format('Ymd-His').'.'.$formato,$formato);
+        return $this->download($this->concat($meta, $rows),'reporte-'.$tipo.'-'.now()->format('Ymd-His').'.'.$formato,$formato);
     }
 
     private function diario(ReporteFinancieroService $service,string $fecha,int $cajero): array
@@ -62,16 +62,30 @@ class ExportarReporteController extends Controller
         return [$rows,$extra];
     }
 
-    private function download(array $rows,string $name,string $formato)
+    private function download(iterable $rows,string $name,string $formato)
     {
         if($formato==='xlsx'){ $path=SimpleXlsx::create($rows); return response()->download($path,$name,['Content-Type'=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend(true); }
         return new StreamedResponse(function()use($rows){$out=fopen('php://output','wb'); fwrite($out,"\xEF\xBB\xBF"); foreach($rows as $row)fputcsv($out,array_map([SimpleXlsx::class,'safe'],$row)); fclose($out);},200,['Content-Type'=>'text/csv; charset=UTF-8','Content-Disposition'=>'attachment; filename="'.$name.'"']);
     }
 
-    private function rows(string $tipo,$items): array
+    private function rows(string $tipo, iterable $items): iterable
     {
-        if(in_array($tipo,['grupo','curso','periodo','metodo','usuario'],true)) return array_merge([['Dimensión','Tipo de usuario','Cantidad de pagos','Moneda','Monto']],$items->map(fn($r)=>[$r['dimension'],$r['tipo_usuario']??'', $r['cantidad'],$r['moneda'],$r['monto']])->all());
-        if($tipo==='vencidos') return array_merge([['Cargo','Alumno','Curso','Grupo','Concepto','Período','Vencimiento','Días vencidos','Moneda','Total','Pagado','Saldo']],$items->map(fn($c)=>[$c->cargo_id,trim(($c->inscripcion?->prospecto?->prospectos_nombres??'').' '.($c->inscripcion?->prospecto?->prospectos_apellidos??'')),$c->inscripcion?->cursos?->cursos_descripcion?:'Sin curso',$c->inscripcion?->grupo?->grupo_nombre?:'Sin grupo',$c->conceptoCobro?->nombre?:'Sin concepto',$c->periodo_anio&&$c->periodo_mes?sprintf('%04d-%02d',$c->periodo_anio,$c->periodo_mes):'Sin período',$c->fecha_vencimiento?->format('Y-m-d'),$c->dias_vencidos,$c->moneda,$c->total,$c->pagado,$c->saldo_pendiente])->all());
-        return array_merge([['Tipo','Folio','Alumno','Método','Fecha evento','Actor del evento','Moneda','Monto total del pago','Motivo']],$items->map(fn($p)=>[$p->estado,$p->folio,trim(($p->inscripcion?->prospecto?->prospectos_nombres??'').' '.($p->inscripcion?->prospecto?->prospectos_apellidos??'')),$p->metodoPago?->nombre?:'Sin método',($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i'),$p->cancelledBy?->name?:'No registrado',$p->moneda,$p->monto,$p->motivo_cancelacion?:'Sin motivo registrado'])->all());
+        if (in_array($tipo, ['grupo', 'curso', 'periodo', 'metodo', 'usuario'], true)) {
+            yield ['Dimensión', 'Tipo de usuario', 'Cantidad de pagos', 'Moneda', 'Monto'];
+            foreach ($items as $r) yield [$r['dimension'], $r['tipo_usuario'] ?? '', $r['cantidad'], $r['moneda'], $r['monto']];
+            return;
+        }
+        if ($tipo === 'vencidos') {
+            yield ['Cargo', 'Alumno', 'Curso', 'Grupo', 'Concepto', 'Período', 'Vencimiento', 'Días vencidos', 'Moneda', 'Total', 'Pagado', 'Saldo'];
+            foreach ($items as $c) yield [$c->cargo_id, trim(($c->inscripcion?->prospecto?->prospectos_nombres ?? '').' '.($c->inscripcion?->prospecto?->prospectos_apellidos ?? '')), $c->inscripcion?->cursos?->cursos_descripcion ?: 'Sin curso', $c->inscripcion?->grupo?->grupo_nombre ?: 'Sin grupo', $c->conceptoCobro?->nombre ?: 'Sin concepto', $c->periodo_anio && $c->periodo_mes ? sprintf('%04d-%02d', $c->periodo_anio, $c->periodo_mes) : 'Sin período', $c->fecha_vencimiento?->format('Y-m-d'), $c->dias_vencidos, $c->moneda, $c->total, $c->pagado, $c->saldo_pendiente];
+            return;
+        }
+        yield ['Tipo', 'Folio', 'Alumno', 'Método', 'Fecha evento', 'Actor del evento', 'Moneda', 'Monto total del pago', 'Motivo'];
+        foreach ($items as $p) yield [$p->estado, $p->folio, trim(($p->inscripcion?->prospecto?->prospectos_nombres ?? '').' '.($p->inscripcion?->prospecto?->prospectos_apellidos ?? '')), $p->metodoPago?->nombre ?: 'Sin método', ($p->estado === 'cancelado' ? $p->fecha_cancelacion : $p->fecha_reembolso)?->format('Y-m-d H:i'), $p->cancelledBy?->name ?: 'No registrado', $p->moneda, $p->monto, $p->motivo_cancelacion ?: 'Sin motivo registrado'];
+    }
+
+    private function concat(iterable ...$parts): iterable
+    {
+        foreach ($parts as $part) foreach ($part as $row) yield $row;
     }
 }
