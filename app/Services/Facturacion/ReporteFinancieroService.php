@@ -3,20 +3,25 @@
 namespace App\Services\Facturacion;
 
 use App\Models\Cargo;
+use App\Models\MetodoPago;
 use App\Models\Pago;
 use Carbon\CarbonImmutable;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class ReporteFinancieroService
 {
     public function ventana(string $fecha): array
     {
         $inicio = CarbonImmutable::createFromFormat('!Y-m-d', $fecha, config('app.timezone'));
+        if (! $inicio || $inicio->format('Y-m-d') !== $fecha) {
+            throw ValidationException::withMessages(['fechaCaja' => 'Indica una fecha real (AAAA-MM-DD).']);
+        }
 
-        return [$inicio, $inicio->addDay()]; // inicio inclusivo, fin exclusivo
+        return [$inicio, $inicio->addDay()];
     }
 
     public function pagosConfirmados(array $filtros): Collection
@@ -50,17 +55,22 @@ class ReporteFinancieroService
                 continue;
             }
 
+            if ($tipo === 'usuario') {
+                $this->sumar($filas, 'Registró: '.($pago->createdBy?->name ?: 'Sin usuario registrado'), $pago->moneda, $pago->pago_id, (string) $pago->monto, 'registrador');
+                $this->sumar($filas, 'Cajero confirmó: '.($pago->confirmedBy?->name ?: 'Sin cajero registrado'), $pago->moneda, $pago->pago_id, (string) $pago->monto, 'cajero');
+                continue;
+            }
+
             $dimension = match ($tipo) {
                 'grupo' => $pago->inscripcion?->grupo?->grupo_nombre ?: 'Sin grupo',
                 'curso' => $pago->inscripcion?->cursos?->cursos_descripcion ?: 'Sin curso',
                 'metodo' => $pago->metodoPago?->nombre ?: 'Sin método',
-                'usuario' => 'Registró: '.($pago->createdBy?->name ?: 'Sin usuario').' / Confirmó: '.($pago->confirmedBy?->name ?: 'Sin usuario'),
                 default => 'Sin dimensión',
             };
             $this->sumar($filas, $dimension, $pago->moneda, $pago->pago_id, (string) $pago->monto);
         }
 
-        return $filas->values()->sortBy([['dimension', 'asc'], ['moneda', 'asc']])->values();
+        return $filas->values()->sortBy([['tipo_usuario', 'asc'], ['dimension', 'asc'], ['moneda', 'asc']])->values();
     }
 
     public function vencidos(array $filtros): Collection
@@ -89,38 +99,64 @@ class ReporteFinancieroService
             if (($filtros['desde'] ?? '') !== '') {
                 [$inicio] = $this->ventana($filtros['desde']);
                 $q->where(fn ($x) => $x->where('estado', Pago::ESTADO_CANCELADO)->where('fecha_cancelacion', '>=', $inicio)
-                    ->orWhere('estado', Pago::ESTADO_REEMBOLSADO)->where('fecha_reembolso', '>=', $inicio));
+                    ->orWhere(fn ($x) => $x->where('estado', Pago::ESTADO_REEMBOLSADO)->where('fecha_reembolso', '>=', $inicio)));
             }
             if (($filtros['hasta'] ?? '') !== '') {
                 [, $fin] = $this->ventana($filtros['hasta']);
                 $q->where(fn ($x) => $x->where('estado', Pago::ESTADO_CANCELADO)->where('fecha_cancelacion', '<', $fin)
-                    ->orWhere('estado', Pago::ESTADO_REEMBOLSADO)->where('fecha_reembolso', '<', $fin));
+                    ->orWhere(fn ($x) => $x->where('estado', Pago::ESTADO_REEMBOLSADO)->where('fecha_reembolso', '<', $fin)));
             }
         });
         $this->filtrosDimensiones($query, $filtros);
-        if ($filtros['usuario_id'] ?? null) $query->where('cancelled_by', $filtros['usuario_id']);
+        if ($filtros['cancelled_by'] ?? $filtros['usuario_id'] ?? null) {
+            $query->where('cancelled_by', $filtros['cancelled_by'] ?? $filtros['usuario_id']);
+        }
         return $query->orderByRaw('COALESCE(fecha_reembolso, fecha_cancelacion)')->orderBy('pago_id')->get();
     }
 
+    /** The daily register uses confirmed_by for receipts and cancelled_by for adjustments. */
     public function diario(string $fecha, ?int $cajeroId = null): array
     {
         [$inicio, $fin] = $this->ventana($fecha);
-        $filtros = ['desde' => $fecha, 'hasta' => $fecha, 'usuario_id' => $cajeroId];
-        $pagos = $this->pagosConfirmados($filtros);
-        $eventos = $this->eventos(['desde' => $fecha, 'hasta' => $fecha, 'usuario_id' => $cajeroId, 'tipo' => 'todos']);
+        $pagos = $this->pagosConfirmados(['desde' => $fecha, 'hasta' => $fecha, 'confirmed_by' => $cajeroId]);
+        $eventos = $this->eventos(['desde' => $fecha, 'hasta' => $fecha, 'cancelled_by' => $cajeroId, 'tipo' => 'todos']);
         $grupos = [];
-        foreach ($pagos as $p) $this->acumular($grupos, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'bruto');
-        foreach ($eventos as $p) $this->acumular($grupos, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'ajustes');
-        foreach ($grupos as &$g) $g['neto'] = $this->sub($g['bruto'], $g['ajustes']);
-        return ['inicio' => $inicio, 'fin' => $fin, 'pagos' => $pagos, 'eventos' => $eventos, 'totales' => collect($grupos)->values()];
+        foreach ($pagos as $p) $this->acumular($grupos, $p->metodo_pago_id, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'bruto');
+        foreach ($eventos as $p) $this->acumular($grupos, $p->metodo_pago_id, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'ajustes');
+        foreach ($grupos as &$grupo) $grupo['neto'] = $this->sub($grupo['bruto'], $grupo['ajustes']);
+
+        return ['fecha' => $fecha, 'inicio' => $inicio, 'fin' => $fin, 'zona_horaria' => config('app.timezone'),
+            'cajero_id' => $cajeroId, 'pagos' => $pagos, 'eventos' => $eventos, 'totales' => collect($grupos)->values()];
     }
+
+    public function combinacionesContables(array $resumen): Collection
+    {
+        $monedas = collect(config('facturacion.monedas_permitidas', ['MXN']))
+            ->merge($resumen['pagos']->pluck('moneda'))->merge($resumen['eventos']->pluck('moneda'))
+            ->filter(fn ($m) => is_string($m) && preg_match('/^[A-Z]{3}$/D', $m))->unique()->sort()->values();
+        $metodos = MetodoPago::query()->activos()->ordenados()->get(['metodo_pago_id', 'nombre']);
+        $existentes = $resumen['totales']->keyBy(fn ($r) => self::claveCombinacion((int) $r['metodo_id'], $r['moneda']));
+        $combinaciones = collect();
+        foreach ($metodos as $metodo) foreach ($monedas as $moneda) {
+            $clave = self::claveCombinacion($metodo->metodo_pago_id, $moneda);
+            $fila = $existentes->get($clave, ['metodo_id' => $metodo->metodo_pago_id, 'metodo' => $metodo->nombre,
+                'moneda' => $moneda, 'bruto' => '0.00', 'ajustes' => '0.00', 'neto' => '0.00', 'cantidad' => 0]);
+            $combinaciones->put($clave, $fila);
+        }
+        foreach ($existentes as $clave => $fila) $combinaciones->put($clave, $fila);
+        return $combinaciones;
+    }
+
+    public static function claveCombinacion(int $metodoId, string $moneda): string { return $metodoId.'|'.$moneda; }
 
     private function filtrarPagos(Builder $query, array $filtros): void
     {
         if (($filtros['desde'] ?? '') !== '') { [$inicio] = $this->ventana($filtros['desde']); $query->where('fecha_pago', '>=', $inicio); }
         if (($filtros['hasta'] ?? '') !== '') { [, $fin] = $this->ventana($filtros['hasta']); $query->where('fecha_pago', '<', $fin); }
         $this->filtrosDimensiones($query, $filtros);
-        if ($filtros['usuario_id'] ?? null) $query->where('created_by', $filtros['usuario_id']);
+        if ($filtros['created_by'] ?? null) $query->where('created_by', $filtros['created_by']);
+        if (array_key_exists('confirmed_by', $filtros) && $filtros['confirmed_by'] !== null) $query->where('confirmed_by', $filtros['confirmed_by']);
+        elseif ($filtros['usuario_id'] ?? null) $query->where('created_by', $filtros['usuario_id']);
     }
 
     private function filtrosDimensiones(Builder $query, array $filtros): void
@@ -130,15 +166,17 @@ class ReporteFinancieroService
         if ($filtros['grupo_id'] ?? null) $query->whereHas('inscripcion', fn ($q) => $q->where('grupo_id', $filtros['grupo_id']));
     }
 
-    private function sumar(Collection $filas, string $dimension, string $moneda, int $pagoId, string $monto): void
+    private function sumar(Collection $filas, string $dimension, string $moneda, int $pagoId, string $monto, ?string $tipoUsuario = null): void
     {
-        $key = $dimension.'|'.$moneda; $fila = $filas->get($key, ['dimension'=>$dimension, 'moneda'=>$moneda, 'pagos'=>[], 'monto'=>'0.00']);
+        $key = ($tipoUsuario ?? '').'|'.$dimension.'|'.$moneda;
+        $fila = $filas->get($key, ['dimension'=>$dimension, 'tipo_usuario'=>$tipoUsuario, 'moneda'=>$moneda, 'pagos'=>[], 'monto'=>'0.00']);
         $fila['pagos'][$pagoId] = true; $fila['monto'] = $this->add($fila['monto'], $monto); $fila['cantidad'] = count($fila['pagos']); $filas->put($key, $fila);
     }
 
-    private function acumular(array &$grupos, string $metodo, string $moneda, string $monto, string $campo): void
+    private function acumular(array &$grupos, int $metodoId, string $metodo, string $moneda, string $monto, string $campo): void
     {
-        $k=$metodo.'|'.$moneda; $grupos[$k] ??= ['metodo'=>$metodo,'moneda'=>$moneda,'bruto'=>'0.00','ajustes'=>'0.00','cantidad'=>0];
+        $k = self::claveCombinacion($metodoId, $moneda);
+        $grupos[$k] ??= ['metodo_id'=>$metodoId, 'metodo'=>$metodo, 'moneda'=>$moneda, 'bruto'=>'0.00', 'ajustes'=>'0.00', 'cantidad'=>0];
         $grupos[$k][$campo]=$this->add($grupos[$k][$campo],$monto); $grupos[$k]['cantidad']++;
     }
 
