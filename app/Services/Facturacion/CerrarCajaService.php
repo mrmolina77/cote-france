@@ -44,17 +44,16 @@ class CerrarCajaService
                     $esperados[$clave] = $esperado;
                     $diferencias[$clave] = (string) BigDecimal::of($normalizados[$clave])->minus($esperado)->toScale(2, RoundingMode::UNNECESSARY);
                 }
-                return CierreCaja::query()->create([
+                $cierre = CierreCaja::query()->create([
                     'cajero_id'=>$cajeroId, 'fecha_operacion'=>$fecha,
                     'ventana_inicio'=>$resumen['inicio'], 'ventana_fin'=>$resumen['fin'], 'zona_horaria'=>config('app.timezone'),
                     'totales_esperados'=>$esperados, 'importes_contados'=>$normalizados, 'diferencias'=>$diferencias,
-                    'snapshot_movimientos'=>[
-                        'pagos'=>$resumen['pagos']->map(fn ($p) => ['pago_id'=>$p->pago_id,'folio'=>$p->folio,'fecha'=>$p->fecha_pago?->format('Y-m-d H:i:s'),'metodo_id'=>$p->metodo_pago_id,'metodo'=>$p->metodoPago?->nombre ?: 'Sin método','monto'=>(string)$p->monto,'moneda'=>$p->moneda,'registrado_por'=>$p->createdBy?->name ?: 'Sin usuario registrado','cajero'=>$p->confirmedBy?->name ?: 'Sin cajero registrado'])->all(),
-                        'eventos'=>$resumen['eventos']->map(fn ($p) => ['pago_id'=>$p->pago_id,'folio'=>$p->folio,'tipo'=>$p->estado,'fecha'=>($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),'metodo_id'=>$p->metodo_pago_id,'metodo'=>$p->metodoPago?->nombre ?: 'Sin método','monto'=>(string)$p->monto,'moneda'=>$p->moneda,'actor'=>$p->cancelledBy?->name ?: 'No registrado'])->all(),
-                        'totales'=>$resumen['totales']->all(),
-                    ],
+                    // Keep the deployed JSON column readable while new snapshots live in bounded child rows.
+                    'snapshot_movimientos'=>['version'=>2, 'almacenamiento'=>'cierre_caja_movimientos', 'totales'=>$resumen['totales']->all()],
                     'cerrado_por'=>$actor->id, 'cerrado_en'=>now(), 'observaciones'=>$observaciones, 'estado'=>'cerrado',
                 ]);
+                $this->guardarMovimientos($cierre, $resumen);
+                return $cierre;
             }, 3);
         } catch (QueryException $e) {
             if (in_array((string) $e->getCode(), ['23000', '23505'], true)) {
@@ -62,6 +61,36 @@ class CerrarCajaService
             }
             throw $e;
         }
+    }
+
+    private function guardarMovimientos(CierreCaja $cierre, array $resumen): void
+    {
+        $lote = [];
+        $secuencia = 0;
+        $maximo = max(1, (int) config('facturacion.export_chunk_size', 500));
+        $insertar = function () use (&$lote): void {
+            if ($lote) DB::table('cierre_caja_movimientos')->insert($lote);
+            $lote = [];
+        };
+        foreach ($resumen['pagos'] as $p) {
+            $lote[] = ['cierre_caja_id'=>$cierre->getKey(), 'secuencia'=>++$secuencia, 'tipo'=>'ingreso',
+                'pago_id'=>$p->pago_id, 'folio'=>$p->folio, 'fecha'=>$p->fecha_pago?->format('Y-m-d H:i:s'),
+                'metodo_pago_id'=>$p->metodo_pago_id, 'metodo'=>$p->metodoPago?->nombre ?: 'Sin método',
+                'importe'=>(string) $p->monto, 'moneda'=>$p->moneda,
+                'registrado_por'=>$p->createdBy?->name ?: 'Sin usuario registrado',
+                'actor'=>$p->confirmedBy?->name ?: 'Sin cajero registrado'];
+            if (count($lote) >= $maximo) $insertar();
+        }
+        foreach ($resumen['eventos'] as $p) {
+            $lote[] = ['cierre_caja_id'=>$cierre->getKey(), 'secuencia'=>++$secuencia, 'tipo'=>$p->estado,
+                'pago_id'=>$p->pago_id, 'folio'=>$p->folio,
+                'fecha'=>($p->estado==='cancelado'?$p->fecha_cancelacion:$p->fecha_reembolso)?->format('Y-m-d H:i:s'),
+                'metodo_pago_id'=>$p->metodo_pago_id, 'metodo'=>$p->metodoPago?->nombre ?: 'Sin método',
+                'importe'=>(string) $p->monto, 'moneda'=>$p->moneda, 'registrado_por'=>null,
+                'actor'=>$p->cancelledBy?->name ?: 'No registrado'];
+            if (count($lote) >= $maximo) $insertar();
+        }
+        $insertar();
     }
 
     public function validarContados(array $contados, array $clavesPermitidas): array

@@ -24,4 +24,5 @@ class CierreCaja extends Model
 
     public function cajero() { return $this->belongsTo(User::class, 'cajero_id'); }
     public function cerradoPor() { return $this->belongsTo(User::class, 'cerrado_por'); }
+    public function movimientos() { return $this->hasMany(CierreCajaMovimiento::class, 'cierre_caja_id')->orderBy('secuencia'); }
 }

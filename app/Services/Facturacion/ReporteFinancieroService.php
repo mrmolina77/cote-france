@@ -44,23 +44,25 @@ class ReporteFinancieroService
         foreach ($this->iterarPagosConfirmados($filtros) as $pago) {
             if ($tipo === 'periodo') {
                 $aplicado = '0.00';
+                $periodosDelPago = [];
                 foreach ($pago->aplicaciones as $aplicacion) {
                     $cargo = $aplicacion->cargo;
                     $periodo = $cargo && $cargo->periodo_anio && $cargo->periodo_mes
                         ? sprintf('%04d-%02d', $cargo->periodo_anio, $cargo->periodo_mes) : 'Sin período de cargo';
-                    $this->sumar($filas, $periodo, $pago->moneda, $pago->pago_id, (string) $aplicacion->importe_aplicado);
+                    $periodosDelPago[$periodo] = $this->add($periodosDelPago[$periodo] ?? '0.00', (string) $aplicacion->importe_aplicado);
                     $aplicado = $this->add($aplicado, (string) $aplicacion->importe_aplicado);
                 }
                 $anticipo = $this->sub((string) $pago->monto, $aplicado);
                 if (BigDecimal::of($anticipo)->isPositive()) {
-                    $this->sumar($filas, 'Anticipo / sin asignación', $pago->moneda, $pago->pago_id, $anticipo);
+                    $periodosDelPago['Anticipo / sin asignación'] = $this->add($periodosDelPago['Anticipo / sin asignación'] ?? '0.00', $anticipo);
                 }
+                foreach ($periodosDelPago as $periodo => $monto) $this->sumar($filas, $periodo, $pago->moneda, $monto);
                 continue;
             }
 
             if ($tipo === 'usuario') {
-                $this->sumar($filas, 'Registró: '.($pago->createdBy?->name ?: 'Sin usuario registrado'), $pago->moneda, $pago->pago_id, (string) $pago->monto, 'registrador');
-                $this->sumar($filas, 'Cajero confirmó: '.($pago->confirmedBy?->name ?: 'Sin cajero registrado'), $pago->moneda, $pago->pago_id, (string) $pago->monto, 'cajero');
+                $this->sumar($filas, 'Registró: '.($pago->createdBy?->name ?: 'Sin usuario registrado'), $pago->moneda, (string) $pago->monto, 'registrador');
+                $this->sumar($filas, 'Cajero confirmó: '.($pago->confirmedBy?->name ?: 'Sin cajero registrado'), $pago->moneda, (string) $pago->monto, 'cajero');
                 continue;
             }
 
@@ -70,7 +72,7 @@ class ReporteFinancieroService
                 'metodo' => $pago->metodoPago?->nombre ?: 'Sin método',
                 default => 'Sin dimensión',
             };
-            $this->sumar($filas, $dimension, $pago->moneda, $pago->pago_id, (string) $pago->monto);
+            $this->sumar($filas, $dimension, $pago->moneda, (string) $pago->monto);
         }
 
         return $filas->values()->sortBy([['tipo_usuario', 'asc'], ['dimension', 'asc'], ['moneda', 'asc']])->values();
@@ -131,21 +133,25 @@ class ReporteFinancieroService
     public function diario(string $fecha, ?int $cajeroId = null): array
     {
         [$inicio, $fin] = $this->ventana($fecha);
-        $pagos = $this->pagosConfirmados(['desde' => $fecha, 'hasta' => $fecha, 'confirmed_by' => $cajeroId]);
-        $eventos = $this->eventos(['desde' => $fecha, 'hasta' => $fecha, 'cancelled_by' => $cajeroId, 'tipo' => 'todos']);
+        $filtrosPagos = ['desde' => $fecha, 'hasta' => $fecha, 'confirmed_by' => $cajeroId];
+        $filtrosEventos = ['desde' => $fecha, 'hasta' => $fecha, 'cancelled_by' => $cajeroId, 'tipo' => 'todos'];
         $grupos = [];
-        foreach ($pagos as $p) $this->acumular($grupos, $p->metodo_pago_id, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'bruto');
-        foreach ($eventos as $p) $this->acumular($grupos, $p->metodo_pago_id, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'ajustes');
+        foreach ($this->iterarPagosConfirmados($filtrosPagos) as $p) $this->acumular($grupos, $p->metodo_pago_id, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'bruto');
+        foreach ($this->iterarEventos($filtrosEventos) as $p) $this->acumular($grupos, $p->metodo_pago_id, $p->metodoPago?->nombre ?: 'Sin método', $p->moneda, (string) $p->monto, 'ajustes');
         foreach ($grupos as &$grupo) $grupo['neto'] = $this->sub($grupo['bruto'], $grupo['ajustes']);
 
         return ['fecha' => $fecha, 'inicio' => $inicio, 'fin' => $fin, 'zona_horaria' => config('app.timezone'),
-            'cajero_id' => $cajeroId, 'pagos' => $pagos, 'eventos' => $eventos, 'totales' => collect($grupos)->values()];
+            'cajero_id' => $cajeroId,
+            // Each lazy collection owns a query factory, so multiple consumers get a fresh batched traversal.
+            'pagos' => LazyCollection::make(fn () => yield from $this->iterarPagosConfirmados($filtrosPagos)),
+            'eventos' => LazyCollection::make(fn () => yield from $this->iterarEventos($filtrosEventos)),
+            'totales' => collect($grupos)->values()];
     }
 
     public function combinacionesContables(array $resumen): Collection
     {
         $monedas = collect(config('facturacion.monedas_permitidas', ['MXN']))
-            ->merge($resumen['pagos']->pluck('moneda'))->merge($resumen['eventos']->pluck('moneda'))
+            ->merge($resumen['totales']->pluck('moneda'))
             ->filter(fn ($m) => is_string($m) && preg_match('/^[A-Z]{3}$/D', $m))->unique()->sort()->values();
         $metodos = MetodoPago::query()->activos()->ordenados()->get(['metodo_pago_id', 'nombre']);
         $existentes = $resumen['totales']->keyBy(fn ($r) => self::claveCombinacion((int) $r['metodo_id'], $r['moneda']));
@@ -194,11 +200,11 @@ class ReporteFinancieroService
         if ($filtros['grupo_id'] ?? null) $query->whereHas('inscripcion', fn ($q) => $q->where('grupo_id', $filtros['grupo_id']));
     }
 
-    private function sumar(Collection $filas, string $dimension, string $moneda, int $pagoId, string $monto, ?string $tipoUsuario = null): void
+    private function sumar(Collection $filas, string $dimension, string $moneda, string $monto, ?string $tipoUsuario = null): void
     {
         $key = ($tipoUsuario ?? '').'|'.$dimension.'|'.$moneda;
-        $fila = $filas->get($key, ['dimension'=>$dimension, 'tipo_usuario'=>$tipoUsuario, 'moneda'=>$moneda, 'pagos'=>[], 'monto'=>'0.00']);
-        $fila['pagos'][$pagoId] = true; $fila['monto'] = $this->add($fila['monto'], $monto); $fila['cantidad'] = count($fila['pagos']); $filas->put($key, $fila);
+        $fila = $filas->get($key, ['dimension'=>$dimension, 'tipo_usuario'=>$tipoUsuario, 'moneda'=>$moneda, 'cantidad'=>0, 'monto'=>'0.00']);
+        $fila['cantidad']++; $fila['monto'] = $this->add($fila['monto'], $monto); $filas->put($key, $fila);
     }
 
     private function acumular(array &$grupos, int $metodoId, string $metodo, string $moneda, string $monto, string $campo): void
