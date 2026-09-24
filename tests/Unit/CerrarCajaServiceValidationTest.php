@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Services\Facturacion\CerrarCajaService;
 use App\Services\Facturacion\ReporteFinancieroService;
 use Illuminate\Validation\ValidationException;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class CerrarCajaServiceValidationTest extends TestCase
 {

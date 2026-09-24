@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Http\Livewire\ShowReportes;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ShowReportesMoneyTest extends TestCase
 {

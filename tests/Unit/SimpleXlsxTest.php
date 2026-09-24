@@ -52,11 +52,20 @@ class SimpleXlsxTest extends TestCase
 
         $this->assertNotFalse($xml);
         $sheet = simplexml_load_string($xml);
+        $this->assertInstanceOf(\SimpleXMLElement::class, $sheet);
         $sheet->registerXPathNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
         $this->assertCount(1206, $sheet->xpath('//x:sheetData/x:row'));
-        $this->assertStringContainsString('José 1', $xml);
-        $this->assertStringContainsString("'=2+2", $xml);
-        $this->assertStringContainsString('José 1205', $xml);
+
+        $firstName = $sheet->xpath('//x:c[@r="A2"]/x:is/x:t');
+        $formula = $sheet->xpath('//x:c[@r="B502"]/x:is/x:t');
+        $lastName = $sheet->xpath('//x:c[@r="A1206"]/x:is/x:t');
+
+        $this->assertCount(1, $firstName);
+        $this->assertCount(1, $formula);
+        $this->assertCount(1, $lastName);
+        $this->assertSame('José 1', (string) $firstName[0]);
+        $this->assertSame("'=2+2", (string) $formula[0]);
+        $this->assertSame('José 1205', (string) $lastName[0]);
         $this->assertSame([], glob(sys_get_temp_dir().'/reporte-sheet-*'));
 
         unlink($path);
