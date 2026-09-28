@@ -8,9 +8,11 @@ use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
 use App\Models\MetodoPago;
 use App\Models\Pago;
+use App\Models\PerfilFiscal;
 use App\Models\ResponsablePago;
 use App\Models\User;
 use App\Services\Facturacion\AplicarPagoService;
+use App\Services\Facturacion\PerfilFiscalService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
@@ -126,6 +128,9 @@ class RegistrarPagoTest extends InscripcionesTestCase
 
         $pago = Pago::query()->sole();
         $this->assertSame(Pago::ESTADO_CONFIRMADO, $pago->estado);
+        $this->assertFalse($pago->solicita_factura);
+        $this->assertNull($pago->perfil_fiscal_id);
+        $this->assertNull($pago->perfil_fiscal_snapshot);
         $this->assertNotEmpty($pago->folio);
         $this->assertDatabaseHas('pago_aplicaciones', [
             'pago_id' => $pago->getKey(),
@@ -206,6 +211,56 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertDatabaseCount('pagos', 0);
         $this->assertDatabaseCount('pago_aplicaciones', 0);
         $this->assertDatabaseCount('consecutivos_pago', 0);
+    }
+
+    public function test_invoice_request_persists_current_student_profile_and_immutable_snapshot(): void
+    {
+        $admin = $this->user('admin');
+        $perfil = $this->perfilFiscal($admin);
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        Livewire::actingAs($admin)->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())->set('solicitaFactura', true)->set('perfilFiscalId', $perfil->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)->call('confirmarPago')->assertHasNoErrors();
+
+        $pago = Pago::query()->sole();
+        $snapshot = json_decode(json_encode($perfil->snapshot(), JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertTrue($pago->solicita_factura);
+        $this->assertTrue($pago->perfilFiscal->is($perfil));
+        $this->assertSame($snapshot, $pago->perfil_fiscal_snapshot);
+
+        app(PerfilFiscalService::class)->guardar($this->datosPerfil(['nombre_razon_social' => 'Receptor posterior']), $admin->id, $perfil);
+        $this->assertSame($snapshot, $pago->fresh()->perfil_fiscal_snapshot);
+    }
+
+    public function test_profile_is_revalidated_after_review_without_financial_side_effects(): void
+    {
+        $admin = $this->user('admin'); $perfil = $this->perfilFiscal($admin); $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = Livewire::actingAs($admin)->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())->set('solicitaFactura', true)->set('perfilFiscalId', $perfil->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+
+        app(PerfilFiscalService::class)->cambiarEstado($perfil, false, $admin->id);
+        $component->call('confirmarPago')->assertHasErrors(['perfilFiscalId', 'confirmacion']);
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+        $this->assertDatabaseCount('auditoria_pagos', 0);
+    }
+
+    public function test_changing_invoice_selection_after_review_invalidates_confirmation_fingerprint(): void
+    {
+        $admin = $this->user('admin'); $perfil = $this->perfilFiscal($admin); $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        Livewire::actingAs($admin)->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())->set('solicitaFactura', true)->set('perfilFiscalId', $perfil->getKey())
+            ->call('prepararPago')->assertSet('mostrarConfirmacion', true)
+            ->set('solicitaFactura', false)->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null)
+            ->call('confirmarPago')->assertHasErrors('confirmacion');
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
     }
 
     public function test_transfer_requires_server_configured_fields_and_temporary_receipt(): void
@@ -1630,6 +1685,20 @@ class RegistrarPagoTest extends InscripcionesTestCase
             'subtotal' => '100.00', 'descuento' => '0.00', 'recargo' => '0.00', 'impuestos' => '0.00',
             'total' => '100.00', 'saldo_pendiente' => '100.00', 'estado' => 'pendiente', 'origen' => 'manual',
         ], $overrides));
+    }
+
+    private function perfilFiscal(User $actor): PerfilFiscal
+    {
+        return app(PerfilFiscalService::class)->guardar($this->datosPerfil(), $actor->id);
+    }
+
+    private function datosPerfil(array $changes = []): array
+    {
+        return array_merge(['prospectos_id'=>$this->inscripcion->prospectos_id, 'tipo_persona'=>'fisica', 'rfc'=>'AAAA010101AA1',
+            'nombre_razon_social'=>'Receptor original', 'codigo_postal_fiscal'=>'01000', 'regimen_fiscal'=>'605', 'uso_cfdi'=>'D10',
+            'correo_facturacion'=>'factura@example.test', 'relacion_alumno'=>'Madre', 'curp'=>'AAAA010101MDFBBB01',
+            'nivel_educativo'=>'Licenciatura', 'rvoe'=>'RVOE-1', 'predeterminado'=>true, 'activo'=>true,
+            'fecha_validacion'=>'2026-09-09'], $changes);
     }
 
     private function validPdfUpload(string $name): UploadedFile

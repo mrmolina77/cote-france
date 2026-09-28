@@ -36,6 +36,7 @@ class PerfilFiscal extends Model
     public function pagos() { return $this->hasMany(Pago::class, 'perfil_fiscal_id', 'perfil_fiscal_id'); }
     public function createdBy() { return $this->belongsTo(User::class, 'created_by'); }
     public function updatedBy() { return $this->belongsTo(User::class, 'updated_by'); }
+    public function auditorias() { return $this->hasMany(AuditoriaPerfilFiscal::class, 'perfil_fiscal_id', 'perfil_fiscal_id'); }
 
     public function snapshot(): array
     {
