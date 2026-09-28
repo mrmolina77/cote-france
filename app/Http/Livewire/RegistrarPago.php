@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Cargo;
 use App\Models\Inscripcion;
 use App\Models\Pago;
+use App\Models\PerfilFiscal;
 use App\Services\Facturacion\AplicarPagoService;
 use App\Services\Facturacion\MetodoPagoBehaviorService;
 use App\Services\Facturacion\GeneradorComprobantePagoService;
@@ -36,6 +37,8 @@ class RegistrarPago extends Component
     public $comprobante;
     public $mostrarConfirmacion = false;
     public $confirmacionFingerprint;
+    public $solicitaFactura = false;
+    public $perfilFiscalId;
 
     public function mount($inscripcion = null): void
     {
@@ -55,7 +58,7 @@ class RegistrarPago extends Component
     {
         Gate::authorize('register-payments');
         if (in_array($name, ['inscripcionSeleccionadaId', 'cargosSeleccionados', 'importesAplicar', 'metodoPagoId', 'datosMetodo', 'fechaPago', 'montoRecibido', 'comprobante', 'observaciones'], true)
-            || str_starts_with($name, 'importesAplicar.') || str_starts_with($name, 'datosMetodo.')) {
+            || in_array($name, ['solicitaFactura', 'perfilFiscalId'], true) || str_starts_with($name, 'importesAplicar.') || str_starts_with($name, 'datosMetodo.')) {
             $this->mostrarConfirmacion = false;
             $this->confirmacionFingerprint = null;
         }
@@ -99,6 +102,8 @@ class RegistrarPago extends Component
     }
     public function updatedObservaciones(): void { Gate::authorize('register-payments'); $this->invalidarConfirmacion(); }
     public function updatedComprobante(): void { Gate::authorize('register-payments'); $this->invalidarConfirmacion(); }
+    public function updatedSolicitaFactura($value): void { Gate::authorize('select-fiscal-profile'); $this->solicitaFactura = filter_var($value, FILTER_VALIDATE_BOOLEAN); if (! $this->solicitaFactura) $this->perfilFiscalId = null; $this->invalidarConfirmacion(); }
+    public function updatedPerfilFiscalId(): void { Gate::authorize('select-fiscal-profile'); $this->invalidarConfirmacion(); }
 
     public function seleccionarInscripcion($inscripcionId): void
     {
@@ -243,6 +248,8 @@ class RegistrarPago extends Component
             $this->addError('inscripcionSeleccionadaId', 'La inscripción no tiene un responsable de pago activo.');
             return;
         }
+        $perfilFiscal = $this->validarPerfilFiscal($inscripcion);
+        if ($this->solicitaFactura && ! $perfilFiscal) return;
         $this->reconciliarSeleccion();
         $resumen = $this->resumenSeleccion();
         if ($resumen['cantidad'] === 0) {
@@ -332,6 +339,8 @@ class RegistrarPago extends Component
         $datosPago['zona_horaria'] = config('app.timezone');
         $datosPago['monto'] = $this->montoRecibido;
         $datosPago['observaciones'] = $this->observaciones;
+        $datosPago['solicita_factura'] = (bool) $this->solicitaFactura;
+        $datosPago['perfil_fiscal_id'] = $this->solicitaFactura ? $this->perfilFiscalId : null;
 
         try {
             $pago = app(AplicarPagoService::class)->confirmar(
@@ -415,8 +424,9 @@ class RegistrarPago extends Component
                 ? $this->crearResumenConfirmacion($inscripcion, $resumenSeleccion)
                 : null;
         $advertenciaDuplicidad = $this->advertenciaDuplicidad();
+        $perfilesFiscales = $inscripcion ? PerfilFiscal::query()->where('prospectos_id', $inscripcion->prospectos_id)->where('activo', true)->orderByDesc('predeterminado')->orderBy('nombre_razon_social')->get() : collect();
 
-        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen', 'resumenSeleccion', 'metodosPago', 'configuracionMetodo', 'resumenConfirmacion', 'advertenciaDuplicidad'));
+        return view('livewire.registrar-pago', compact('resultados', 'inscripcion', 'cargos', 'resumen', 'resumenSeleccion', 'metodosPago', 'configuracionMetodo', 'resumenConfirmacion', 'advertenciaDuplicidad', 'perfilesFiscales'));
     }
 
     private function consultaBusqueda(string $termino): Builder
@@ -479,6 +489,8 @@ class RegistrarPago extends Component
         $this->inscripcionSeleccionadaId = null;
         $this->limpiarSeleccionCargosInterno();
         $this->mostrarConfirmacion = false;
+        $this->solicitaFactura = false;
+        $this->perfilFiscalId = null;
     }
 
     private function normalizarId($value): ?int
@@ -728,6 +740,8 @@ class RegistrarPago extends Component
         $this->montoRecibido = null;
         $this->observaciones = null;
         $this->comprobante = null;
+        $this->solicitaFactura = false;
+        $this->perfilFiscalId = null;
         $this->confirmacionFingerprint = null;
         $this->mostrarConfirmacion = false;
         $this->fechaPago = now()->format('Y-m-d\TH:i');
@@ -788,6 +802,8 @@ class RegistrarPago extends Component
             'moneda' => $inscripcion->moneda, 'metodo' => $resultado['metodo']->nombre,
             'datos' => $resultado['datos'], 'fecha' => $this->fechaPago,
             'zonaHoraria' => config('app.timezone'), 'comprobante' => $resultado['metodo']->requiere_comprobante && $this->comprobante !== null,
+            'solicitaFactura' => (bool) $this->solicitaFactura,
+            'perfilFiscal' => $this->solicitaFactura ? $this->validarPerfilFiscal($inscripcion, false)?->nombre_razon_social : null,
         ];
     }
 
@@ -806,7 +822,8 @@ class RegistrarPago extends Component
         $estado = [
             $this->inscripcionSeleccionadaId, $this->cargosSeleccionados, $this->importesAplicar,
             $this->fechaPago, $this->metodoPagoId, $this->montoRecibido, $this->datosMetodo,
-            $this->observaciones, $archivo,
+            $this->observaciones, (bool) $this->solicitaFactura, $this->solicitaFactura ? $this->perfilFiscalId : null,
+            $this->solicitaFactura ? $this->perfilFiscalActual()?->snapshot() : null, $archivo,
         ];
 
         return hash_hmac('sha256', serialize($estado), (string) config('app.key'));
@@ -851,5 +868,22 @@ class RegistrarPago extends Component
             'cantidadCargosVencidos' => 0,
             'proximoVencimiento' => null,
         ];
+    }
+
+    private function perfilFiscalActual(): ?PerfilFiscal
+    {
+        $id = $this->normalizarId($this->perfilFiscalId);
+        return $id ? PerfilFiscal::find($id) : null;
+    }
+
+    private function validarPerfilFiscal(Inscripcion $inscripcion, bool $error = true): ?PerfilFiscal
+    {
+        if (! $this->solicitaFactura) { $this->perfilFiscalId = null; return null; }
+        $perfil = $this->perfilFiscalActual();
+        if (! $perfil || ! $perfil->activo || (int) $perfil->prospectos_id !== (int) $inscripcion->prospectos_id) {
+            if ($error) $this->addError('perfilFiscalId', 'Selecciona un perfil fiscal activo del alumno.');
+            return null;
+        }
+        return $perfil;
     }
 }

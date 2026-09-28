@@ -23,6 +23,7 @@ class AuditoriaPagoService
         'anticipo_relacionado_id', 'identificador_transaccion_externa', 'fecha_movimiento', 'estado',
         'created_by', 'confirmed_by', 'cancelled_by', 'fecha_confirmacion', 'fecha_cancelacion',
         'motivo_cancelacion', 'fecha_reembolso',
+        'solicita_factura', 'perfil_fiscal_id',
     ];
 
     private const CAMPOS_RECIBO = ['comprobante_pago_id', 'folio', 'hash_sha256', 'tamano_bytes', 'generado_en', 'estado'];

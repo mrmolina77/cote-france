@@ -167,6 +167,14 @@
                     <div><x-forms.label value="Importe recibido" /><x-forms.input type="text" inputmode="decimal" wire:model.lazy="montoRecibido" class="w-full mt-1" />@error('montoRecibido')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
                     <div><x-forms.label value="Observaciones" /><textarea wire:model.lazy="observaciones" maxlength="2000" rows="3" class="w-full mt-1 rounded border-gray-300"></textarea>@error('observaciones')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
                 </div>
+                <div class="border rounded p-4 space-y-3">
+                    <label class="font-medium"><input type="checkbox" wire:model="solicitaFactura"> Solicita factura</label>
+                    <p class="text-xs text-gray-500">Esta selección solo registra una solicitud; no genera ni promete un CFDI.</p>
+                    @if($solicitaFactura)
+                        <div><x-forms.label value="Perfil fiscal activo del alumno" /><select wire:model="perfilFiscalId" class="w-full mt-1 rounded border-gray-300"><option value="">Selecciona un perfil</option>@foreach($perfilesFiscales as $perfil)<option value="{{ $perfil->getKey() }}">{{ $perfil->nombre_razon_social }} · {{ $perfil->rfcEnmascarado() }}{{ $perfil->predeterminado ? ' · Predeterminado' : '' }}</option>@endforeach</select>@error('perfilFiscalId')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                        @if($perfilesFiscales->isEmpty())<p class="text-sm text-amber-700">El alumno no tiene perfiles fiscales activos.</p>@endif
+                    @endif
+                </div>
                 @if($advertenciaDuplicidad)<p class="p-3 rounded bg-yellow-50 text-yellow-800">{{ $advertenciaDuplicidad }}</p>@endif
                 <button type="button" wire:click="prepararPago" @disabled($resumenSeleccion['cantidad'] === 0) class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50">Revisar pago</button>
             </section>
@@ -180,6 +188,7 @@
                         <div><dt class="text-gray-500">Total recibido</dt><dd>{{ $resumenConfirmacion['moneda'] }} ${{ $resumenConfirmacion['totalRecibido'] }}</dd></div><div><dt class="text-gray-500">Total aplicado</dt><dd>{{ $resumenConfirmacion['moneda'] }} ${{ $resumenConfirmacion['totalAplicado'] }}</dd></div>
                         <div><dt class="text-gray-500">Saldo restante estimado</dt><dd>{{ $resumenConfirmacion['moneda'] }} ${{ $resumenConfirmacion['saldoRestante'] }}</dd></div><div><dt class="text-gray-500">Método</dt><dd>{{ $resumenConfirmacion['metodo'] }}</dd></div>
                         <div><dt class="text-gray-500">Fecha</dt><dd>{{ $resumenConfirmacion['fecha'] }} ({{ $resumenConfirmacion['zonaHoraria'] }})</dd></div><div><dt class="text-gray-500">Comprobante</dt><dd>{{ $resumenConfirmacion['comprobante'] ? 'Adjunto' : 'No requerido' }}</dd></div>
+                        <div><dt class="text-gray-500">Solicita factura</dt><dd>{{ $resumenConfirmacion['solicitaFactura'] ? 'Sí' : 'No' }}</dd></div>@if($resumenConfirmacion['solicitaFactura'])<div><dt class="text-gray-500">Perfil fiscal</dt><dd>{{ $resumenConfirmacion['perfilFiscal'] }}</dd></div>@endif
                         @foreach($resumenConfirmacion['datos'] as $campo => $valor)<div><dt class="text-gray-500">{{ $configuracionMetodo['campos'][$campo]['etiqueta'] ?? ($campo === 'forma_pago_sat' ? 'Forma de pago SAT' : ucfirst(str_replace('_', ' ', $campo))) }}</dt><dd>{{ $valor }}</dd></div>@endforeach
                     </dl>
                     @if($advertenciaDuplicidad)<p class="mt-4 p-3 rounded bg-yellow-100 text-yellow-900">{{ $advertenciaDuplicidad }}</p>@endif

@@ -185,6 +185,9 @@
                 Métodos de pago
             </x-layout.aside-link>
             @endcan
+            @can('manage-fiscal-profiles')
+            <x-layout.aside-link href="{{ route('configuracion.perfiles-fiscales') }}" :active="request()->routeIs('configuracion.perfiles-fiscales')" icon="fas fa-address-card text-cyan-400 hover:text-cyan-200">Perfiles fiscales</x-layout.aside-link>
+            @endcan
         @endcan
     </nav>
 </aside>

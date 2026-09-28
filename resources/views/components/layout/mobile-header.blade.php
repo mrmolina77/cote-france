@@ -79,6 +79,9 @@
                     <i class="fas fa-credit-card mr-3"></i>Métodos de pago
                 </a>
                 @endcan
+                @can('manage-fiscal-profiles')
+                <a href="{{ route('configuracion.perfiles-fiscales') }}" class="flex items-center text-white py-2 pl-4 nav-item {{ request()->routeIs('configuracion.perfiles-fiscales') ? 'active-nav-link' : 'opacity-75 hover:opacity-100' }}"><i class="fas fa-address-card mr-3"></i>Perfiles fiscales</a>
+                @endcan
             @endcan
             <form method="POST" action="{{ route('logout') }}" x-data>
                 @csrf
