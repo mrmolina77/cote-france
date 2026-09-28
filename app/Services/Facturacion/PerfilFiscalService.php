@@ -2,6 +2,7 @@
 
 namespace App\Services\Facturacion;
 
+use App\Models\AuditoriaPerfilFiscal;
 use App\Models\PerfilFiscal;
 use App\Models\Prospecto;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class PerfilFiscalService
 {
+    public function __construct(private AuditoriaPerfilFiscalService $auditoria) {}
+
     public function guardar(array $datos, int $usuarioId, ?PerfilFiscal $perfil = null): PerfilFiscal
     {
         $datos = $this->normalizar($datos);
@@ -17,16 +20,32 @@ class PerfilFiscalService
         $validados = Validator::make($datos, $this->reglas($datos['tipo_persona'] ?? null, $datos['prospectos_id'] ?? null, $id))->validate();
         return DB::transaction(function () use ($validados, $usuarioId, $perfil) {
             Prospecto::query()->whereKey($validados['prospectos_id'])->lockForUpdate()->firstOrFail();
-            $perfil ??= new PerfilFiscal();
+            $perfil = $perfil?->exists ? PerfilFiscal::query()->lockForUpdate()->findOrFail($perfil->getKey()) : new PerfilFiscal();
             if ($perfil->exists && (int) $perfil->prospectos_id !== (int) $validados['prospectos_id']) abort(404);
+            $nuevo = ! $perfil->exists;
+            $antes = $perfil->getAttributes();
             if (! $validados['activo']) $validados['predeterminado'] = false;
             if ($validados['predeterminado']) {
-                PerfilFiscal::query()->where('prospectos_id', $validados['prospectos_id'])->where('perfil_fiscal_id', '!=', $perfil->getKey() ?: 0)->update(['predeterminado' => false, 'updated_by' => $usuarioId]);
+                PerfilFiscal::query()->where('prospectos_id', $validados['prospectos_id'])->where('perfil_fiscal_id', '!=', $perfil->getKey() ?: 0)
+                    ->where('predeterminado', true)->lockForUpdate()->get()->each(function (PerfilFiscal $anterior) use ($usuarioId) {
+                        $anterior->forceFill(['predeterminado' => false, 'updated_by' => $usuarioId])->save();
+                        $this->auditoria->registrar($anterior, AuditoriaPerfilFiscal::PREDETERMINAR, $usuarioId, ['predeterminado']);
+                    });
             }
             $perfil->fill($validados);
             $perfil->created_by ??= $usuarioId;
             $perfil->updated_by = $usuarioId;
             $perfil->save();
+            $cambios = $nuevo ? array_keys($validados) : array_keys(array_filter($perfil->getChanges(),
+                fn ($valor, $campo) => ! in_array($campo, ['updated_at', 'updated_by'], true) && ($antes[$campo] ?? null) != $valor,
+                ARRAY_FILTER_USE_BOTH));
+            $this->auditoria->registrar($perfil, $nuevo ? AuditoriaPerfilFiscal::CREAR : AuditoriaPerfilFiscal::ACTUALIZAR, $usuarioId, $cambios);
+            if (! $nuevo && in_array('predeterminado', $cambios, true)) {
+                $this->auditoria->registrar($perfil, AuditoriaPerfilFiscal::PREDETERMINAR, $usuarioId, ['predeterminado']);
+            }
+            if (! $nuevo && in_array('activo', $cambios, true)) {
+                $this->auditoria->registrar($perfil, $perfil->activo ? AuditoriaPerfilFiscal::ACTIVAR : AuditoriaPerfilFiscal::DESACTIVAR, $usuarioId, ['activo']);
+            }
             return $perfil->fresh();
         });
     }
@@ -35,7 +54,12 @@ class PerfilFiscalService
     {
         return DB::transaction(function () use ($perfil, $activo, $usuarioId) {
             Prospecto::query()->whereKey($perfil->prospectos_id)->lockForUpdate()->firstOrFail();
+            $perfil = PerfilFiscal::query()->lockForUpdate()->findOrFail($perfil->getKey());
+            if ((bool) $perfil->activo === $activo) return $perfil;
+            $campos = ['activo'];
+            if (! $activo && $perfil->predeterminado) $campos[] = 'predeterminado';
             $perfil->forceFill(['activo' => $activo, 'predeterminado' => $activo ? $perfil->predeterminado : false, 'updated_by' => $usuarioId])->save();
+            $this->auditoria->registrar($perfil, $activo ? AuditoriaPerfilFiscal::ACTIVAR : AuditoriaPerfilFiscal::DESACTIVAR, $usuarioId, $campos);
             return $perfil;
         });
     }
