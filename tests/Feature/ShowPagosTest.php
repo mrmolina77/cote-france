@@ -575,7 +575,7 @@ class ShowPagosTest extends InscripcionesTestCase
         $inscripcion = $this->enroll($prospecto, $curso, $grupo); $inscripcion->update(['responsable_pago_id' => $responsable->getKey()]);
         $attributes = array_merge(['folio' => uniqid('PAG-'), 'inscripciones_id' => $inscripcion->getKey(), 'prospectos_id' => $prospecto->getKey(), 'responsable_pago_id' => $responsable->getKey(), 'fecha_pago' => '2026-09-09 12:00:00', 'zona_horaria' => 'UTC', 'monto' => '100.00', 'metodo_pago_id' => MetodoPago::query()->firstOrFail()->getKey()], $changes);
         $state = $attributes['estado'] ?? Pago::ESTADO_CONFIRMADO; unset($attributes['estado']);
-        $pago = Pago::create($attributes);
+        $pago = Pago::forceCreate($attributes);
         DB::table('pagos')->where('pago_id', $pago->getKey())->update(['estado' => $state, 'confirmed_by' => $usuario->getKey(), 'fecha_confirmacion' => '2026-09-09 12:00:00']);
         return $pago->fresh();
     }

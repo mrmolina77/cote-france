@@ -404,7 +404,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         Notification::fake();
         $admin = $this->user('admin');
         $profile = $this->perfilFiscal($admin);
-        $snapshot = $profile->snapshot();
+        $snapshot = json_decode(json_encode($profile->snapshot(), JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
         $cargo = $this->cargo();
         $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
         $component = Livewire::actingAs($admin)->test(RegistrarPago::class)
