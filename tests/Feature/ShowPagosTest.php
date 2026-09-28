@@ -295,6 +295,44 @@ class ShowPagosTest extends InscripcionesTestCase
             ->assertDontSee('Cancelación</strong>', false);
     }
 
+    public function test_fiscal_detail_masks_rfc_and_never_exposes_curp_without_fiscal_permission(): void
+    {
+        $admin = $this->user('admin');
+        $rfc = 'PRIV010101AB1';
+        $curp = 'PRIV010101MDFXYZ09';
+        $maskedRfc = 'PRI*******AB1';
+        $payment = $this->pago($admin, [
+            'folio' => 'PRIVACY-FISCAL-DETAIL',
+            'solicita_factura' => true,
+            'perfil_fiscal_snapshot' => [
+                'nombre_razon_social' => 'Receptor privacidad',
+                'rfc' => $rfc,
+                'curp' => $curp,
+                'codigo_postal_fiscal' => '01000',
+                'regimen_fiscal' => '605',
+                'uso_cfdi' => 'D10',
+            ],
+        ]);
+
+        foreach (['caja', 'venta'] as $role) {
+            $html = Livewire::actingAs($this->user($role))->test(ShowPagos::class)
+                ->call('verDetalle', $payment->getKey())->lastResponse->json('effects.html');
+            $this->assertStringContainsString($maskedRfc, $html);
+            $this->assertStringNotContainsString($rfc, $html);
+            $this->assertStringNotContainsString($curp, $html);
+        }
+
+        foreach (['admin', 'contabilidad'] as $role) {
+            $component = Livewire::actingAs($this->user($role))->test(ShowPagos::class)
+                ->call('verDetalle', $payment->getKey());
+            $component->assertSee($rfc)->assertSee($curp);
+        }
+
+        foreach (['profe', 'alum'] as $role) {
+            Livewire::actingAs($this->user($role))->test(ShowPagos::class)->assertForbidden();
+        }
+    }
+
     public function test_cancelled_detail_shows_cancellation_audit(): void
     {
         $admin = $this->user('admin');

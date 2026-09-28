@@ -235,6 +235,29 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertSame($snapshot, $pago->fresh()->perfil_fiscal_snapshot);
     }
 
+    public function test_admin_and_cashier_only_receive_masked_profiles_for_selected_student(): void
+    {
+        $admin = $this->user('admin');
+        $profile = $this->perfilFiscal($admin);
+        [$otherStudent] = $this->catalogs();
+        $foreign = app(PerfilFiscalService::class)->guardar($this->datosPerfil([
+            'prospectos_id' => $otherStudent->getKey(), 'rfc' => 'ZZZZ010101ZZ1',
+            'nombre_razon_social' => 'Perfil de otra alumna',
+        ]), $admin->id);
+
+        foreach (['admin', 'caja'] as $role) {
+            $component = Livewire::actingAs($this->user($role))->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+                ->set('solicitaFactura', true)
+                ->assertSee($profile->rfcEnmascarado())
+                ->assertDontSee($profile->rfc)
+                ->assertDontSee($profile->curp)
+                ->assertDontSee($foreign->rfc)
+                ->assertDontSee('Perfil de otra alumna');
+            $this->assertStringNotContainsString($profile->rfc, $component->lastResponse->getContent());
+        }
+    }
+
     public function test_profile_is_revalidated_after_review_without_financial_side_effects(): void
     {
         $admin = $this->user('admin'); $perfil = $this->perfilFiscal($admin); $cargo = $this->cargo();
@@ -261,6 +284,152 @@ class RegistrarPagoTest extends InscripcionesTestCase
             ->set('solicitaFactura', false)->assertSet('mostrarConfirmacion', false)->assertSet('confirmacionFingerprint', null)
             ->call('confirmarPago')->assertHasErrors('confirmacion');
         $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+    }
+
+    /** @dataProvider invalidFiscalProfileIds */
+    public function test_invoice_request_rejects_invalid_profile_ids_without_any_side_effect($profileId): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        Livewire::actingAs($this->user('admin'))->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+            ->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())
+            ->set('solicitaFactura', true)
+            ->set('perfilFiscalId', $profileId)
+            ->call('prepararPago')
+            ->assertHasErrors('perfilFiscalId')
+            ->assertSet('mostrarConfirmacion', false)
+            ->call('confirmarPago')
+            ->assertHasErrors('confirmacion');
+
+        $this->assertRejectedInvoiceRequestHasNoEffects($cargo);
+    }
+
+    public static function invalidFiscalProfileIds(): array
+    {
+        return [
+            'vacío' => [''],
+            'malformado' => ['1 OR 1=1'],
+            'no escalar' => [['perfil' => 1]],
+            'inexistente' => [999999],
+        ];
+    }
+
+    public function test_foreign_and_inactive_profiles_are_rejected_by_livewire_and_real_service(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $admin = $this->user('admin');
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        [$otherStudent] = $this->catalogs();
+        $foreign = app(PerfilFiscalService::class)->guardar(
+            $this->datosPerfil(['prospectos_id' => $otherStudent->getKey(), 'rfc' => 'BBBB010101BB1']),
+            $admin->id
+        );
+        $inactive = $this->perfilFiscal($admin);
+        app(PerfilFiscalService::class)->cambiarEstado($inactive, false, $admin->id);
+
+        foreach ([$foreign, $inactive] as $profile) {
+            Livewire::actingAs($admin)->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())
+                ->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())
+                ->set('solicitaFactura', true)
+                ->set('perfilFiscalId', $profile->getKey())
+                ->call('prepararPago')->assertHasErrors('perfilFiscalId');
+
+            try {
+                app(AplicarPagoService::class)->confirmar($this->inscripcion->getKey(), $cash->getKey(), [
+                    'fecha_pago' => '2026-09-09T12:00', 'zona_horaria' => config('app.timezone'),
+                    'monto' => '100.00', 'solicita_factura' => true,
+                    'perfil_fiscal_id' => $profile->getKey(),
+                ], [$cargo->getKey() => '100.00'], $admin->id);
+                $this->fail('El servicio aceptó un perfil fiscal ajeno o inactivo.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('perfil_fiscal_id', $exception->errors());
+            }
+        }
+
+        $this->assertRejectedInvoiceRequestHasNoEffects($cargo);
+    }
+
+    public function test_profile_changes_after_review_never_confirm_stale_fiscal_data(): void
+    {
+        $admin = $this->user('admin');
+        $first = $this->perfilFiscal($admin);
+        $second = app(PerfilFiscalService::class)->guardar($this->datosPerfil([
+            'rfc' => 'CCCC010101CC1', 'nombre_razon_social' => 'Segundo receptor', 'predeterminado' => false,
+        ]), $admin->id);
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+
+        foreach (['selection', 'external-edit', 'foreign'] as $case) {
+            $cargo = $this->cargo();
+            $component = Livewire::actingAs($admin)->test(RegistrarPago::class)
+                ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+                ->set('metodoPagoId', $cash->getKey())->set('solicitaFactura', true)
+                ->set('perfilFiscalId', $first->getKey())->call('prepararPago')->assertSet('mostrarConfirmacion', true);
+
+            if ($case === 'selection') {
+                $component->set('perfilFiscalId', $second->getKey())->assertSet('mostrarConfirmacion', false);
+            } elseif ($case === 'external-edit') {
+                app(PerfilFiscalService::class)->guardar($this->datosPerfil([
+                    'nombre_razon_social' => 'Datos cambiados externamente',
+                ]), $admin->id, $first);
+            } else {
+                [$otherStudent] = $this->catalogs();
+                $foreign = app(PerfilFiscalService::class)->guardar($this->datosPerfil([
+                    'prospectos_id' => $otherStudent->getKey(), 'rfc' => 'DDDD010101DD1',
+                ]), $admin->id);
+                // Simulates a forged Livewire payload while retaining the old review flags.
+                $component->set('perfilFiscalId', $foreign->getKey());
+            }
+
+            $component->call('confirmarPago')->assertHasErrors('confirmacion');
+            $this->assertSame('100.00', $cargo->fresh()->saldo_pendiente);
+        }
+
+        $this->assertDatabaseCount('pagos', 0);
+        $this->assertDatabaseCount('pago_aplicaciones', 0);
+        $this->assertDatabaseCount('consecutivos_pago', 0);
+    }
+
+    public function test_invoice_confirmation_is_idempotent_and_keeps_internal_receipt_only(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $admin = $this->user('admin');
+        $profile = $this->perfilFiscal($admin);
+        $snapshot = $profile->snapshot();
+        $cargo = $this->cargo();
+        $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
+        $component = Livewire::actingAs($admin)->test(RegistrarPago::class)
+            ->call('seleccionarInscripcion', $this->inscripcion->getKey())->call('seleccionarCargo', $cargo->getKey())
+            ->set('metodoPagoId', $cash->getKey())->set('solicitaFactura', true)
+            ->set('perfilFiscalId', $profile->getKey())->call('prepararPago')->call('confirmarPago')->assertHasNoErrors();
+
+        $payment = Pago::query()->sole();
+        $component->call('confirmarPago')->assertHasErrors('confirmacion');
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertDatabaseCount('pago_aplicaciones', 1);
+        $this->assertDatabaseCount('consecutivos_pago', 1);
+        $this->assertDatabaseCount('comprobantes_pago', 1);
+        $this->assertDatabaseCount('consecutivos_comprobante_pago', 1);
+        $this->assertLessThanOrEqual(1, DB::table('notificaciones_pago')->count());
+        $this->assertSame('0.00', $cargo->fresh()->saldo_pendiente);
+        $this->assertSame($profile->getKey(), $payment->perfil_fiscal_id);
+        $this->assertSame($snapshot, $payment->perfil_fiscal_snapshot);
+        $receipt = DB::table('comprobantes_pago')->where('pago_id', $payment->getKey())->first();
+        $bytes = Storage::disk('local')->get($receipt->ruta_pdf);
+        $this->assertStringContainsString('Este documento no constituye un CFDI.', $bytes);
+        $this->assertStringNotContainsString($profile->rfc, $bytes);
+        $this->assertStringNotContainsString($profile->curp, $bytes);
+        $this->assertFalse(Schema::hasTable('cfdis'));
+        $this->assertFalse(Schema::hasTable('facturas'));
     }
 
     public function test_transfer_requires_server_configured_fields_and_temporary_receipt(): void
@@ -1666,6 +1835,18 @@ class RegistrarPagoTest extends InscripcionesTestCase
             $this->assertSame($status, $cargo->fresh()->estado);
         }
         $this->assertNull(session('pago_confirmado'));
+    }
+
+    private function assertRejectedInvoiceRequestHasNoEffects(Cargo $cargo): void
+    {
+        $this->assertNoFinancialWrites($cargo, '100.00', Cargo::ESTADO_PENDIENTE);
+        $this->assertDatabaseCount('archivos_pago', 0);
+        $this->assertDatabaseCount('comprobantes_pago', 0);
+        $this->assertDatabaseCount('consecutivos_comprobante_pago', 0);
+        $this->assertDatabaseCount('notificaciones_pago', 0);
+        $this->assertDatabaseCount('auditoria_pagos', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles());
+        Notification::assertNothingSent();
     }
 
     private function componentWithSelectedCharge(Cargo $cargo)
