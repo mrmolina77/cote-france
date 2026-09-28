@@ -14,6 +14,8 @@ final class FinancialPermissions
     public const VIEW_REPORTS = 'view-financial-reports';
     public const EXPORT_REPORTS = 'export-financial-reports';
     public const CLOSE_CASH = 'close-cash';
+    public const MANAGE_FISCAL_PROFILES = 'manage-fiscal-profiles';
+    public const SELECT_FISCAL_PROFILE = 'select-fiscal-profile';
 
     private const ROLES = [
         self::VIEW => ['admin', 'caja', 'contabilidad', 'venta'],
@@ -24,6 +26,8 @@ final class FinancialPermissions
         self::VIEW_REPORTS => ['admin', 'caja', 'contabilidad'],
         self::EXPORT_REPORTS => ['admin', 'contabilidad'],
         self::CLOSE_CASH => ['admin', 'caja'],
+        self::MANAGE_FISCAL_PROFILES => ['admin', 'contabilidad'],
+        self::SELECT_FISCAL_PROFILE => ['admin', 'caja'],
         'manage-inscripciones' => ['admin'],
         'manage-conceptos-cobro' => ['admin'],
         'manage-metodos-pago' => ['admin'],

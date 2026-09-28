@@ -62,6 +62,11 @@ class Prospecto extends Model
         return $this->hasMany(Pago::class, 'prospectos_id', 'prospectos_id');
     }
 
+    public function perfilesFiscales()
+    {
+        return $this->hasMany(PerfilFiscal::class, 'prospectos_id', 'prospectos_id');
+    }
+
     public function evaluaciones()
     {
         return $this->hasMany(Evaluacion::class, 'prospectos_id', 'prospectos_id');

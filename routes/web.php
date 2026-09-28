@@ -7,6 +7,7 @@ use App\Http\Livewire\ShowHorarios;
 use App\Http\Livewire\ShowInscripciones;
 use App\Http\Livewire\ShowConceptosCobro;
 use App\Http\Livewire\ShowMetodosPago;
+use App\Http\Livewire\ShowPerfilesFiscales;
 use App\Http\Livewire\ShowCargos;
 use App\Http\Livewire\RegistrarPago;
 use App\Http\Livewire\ShowPagos;
@@ -131,6 +132,8 @@ Route::middleware([
     'can:manage-metodos-pago',
 ])->get('/configuracion/metodos-pago', ShowMetodosPago::class)
     ->name('configuracion.metodos-pago');
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified', 'can:manage-fiscal-profiles'])
+    ->get('/configuracion/perfiles-fiscales', ShowPerfilesFiscales::class)->name('configuracion.perfiles-fiscales');
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),

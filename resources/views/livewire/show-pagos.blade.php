@@ -77,6 +77,15 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2"><div><strong>Banco:</strong> {{ $detalle->banco ?: '—' }}</div><div><strong>Referencia:</strong> {{ $detalle->referencia ?: '—' }}</div><div><strong>Rastreo SPEI:</strong> {{ $detalle->rastreo_spei ?: '—' }}</div><div><strong>Cheque:</strong> {{ $detalle->numero_cheque ?: '—' }}</div><div><strong>Autorización:</strong> {{ $detalle->numero_autorizacion ?: '—' }}</div><div><strong>Transacción externa:</strong> {{ $detalle->identificador_transaccion_externa ?: '—' }}</div></div>
             <div><strong>Observaciones:</strong><p class="whitespace-pre-wrap">{{ $detalle->observaciones ?: '—' }}</p></div>
+            <div class="rounded bg-slate-50 p-3"><strong>Solicita factura:</strong> {{ $detalle->solicita_factura ? 'Sí' : 'No' }}
+                @if($detalle->solicita_factura && is_array($detalle->perfil_fiscal_snapshot))
+                    @php($fiscal = $detalle->perfil_fiscal_snapshot)
+                    <div class="mt-1"><strong>Perfil elegido:</strong> {{ $fiscal['nombre_razon_social'] ?? '—' }} ·
+                        @can('manage-fiscal-profiles'){{ $fiscal['rfc'] ?? '—' }}@else{{ isset($fiscal['rfc']) ? substr($fiscal['rfc'], 0, 3).str_repeat('*', max(0, strlen($fiscal['rfc']) - 6)).substr($fiscal['rfc'], -3) : '—' }}@endcan
+                    </div>
+                    @can('manage-fiscal-profiles')<div><strong>CURP:</strong> {{ $fiscal['curp'] ?? '—' }}</div>@endcan
+                @endif
+            </div>
             @if($detalle->estado === \App\Models\Pago::ESTADO_CANCELADO)<div class="rounded bg-red-50 p-3"><strong>Cancelación</strong><p class="whitespace-pre-wrap">{{ $detalle->motivo_cancelacion }}</p><p>{{ $detalle->cancelledBy?->name ?: '—' }} / {{ optional($detalle->fecha_cancelacion)->format('Y-m-d H:i:s') ?: '—' }}</p></div>@endif
             @can('view-payment-documents')
             <div><strong>Recibo interno</strong><div class="mt-2">@if($detalle->comprobantePago)<span class="font-mono">{{ $detalle->comprobantePago->folio }}</span> · <a class="text-indigo-700 hover:underline" href="{{ route('facturacion.comprobantes.descargar', ['pago'=>$detalle, 'comprobante'=>$detalle->comprobantePago]) }}">Descargar recibo</a> @can('register-payments')<button type="button" wire:click="generarRecibo({{ $detalle->pago_id }})" class="ml-3 text-indigo-700 hover:underline">Regenerar recibo</button>@endcan@elseif($detalle->estado === \App\Models\Pago::ESTADO_CONFIRMADO)@can('register-payments')<button type="button" wire:click="generarRecibo({{ $detalle->pago_id }})" class="text-indigo-700 hover:underline">Generar recibo</button>@endcan@else<span>Sin recibo</span>@endif</div></div>

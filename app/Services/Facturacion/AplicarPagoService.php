@@ -6,6 +6,7 @@ use App\Models\Cargo;
 use App\Models\Inscripcion;
 use App\Models\Pago;
 use App\Models\PagoAplicacion;
+use App\Models\PerfilFiscal;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -44,6 +45,17 @@ class AplicarPagoService
                 || ($inscripcion->responsablePago->prospectos_id !== null
                     && (int) $inscripcion->responsablePago->prospectos_id !== (int) $inscripcion->prospectos_id)) {
                 throw ValidationException::withMessages(['inscripcion_id' => 'La inscripción no tiene un responsable de pago activo.']);
+            }
+
+            $solicitaFactura = filter_var($datosPago['solicita_factura'] ?? false, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($solicitaFactura === null) throw ValidationException::withMessages(['solicita_factura' => 'La solicitud de factura no es válida.']);
+            $perfilFiscal = null;
+            if ($solicitaFactura) {
+                $perfilId = filter_var($datosPago['perfil_fiscal_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $perfilFiscal = $perfilId ? PerfilFiscal::query()->lockForUpdate()->find($perfilId) : null;
+                if (! $perfilFiscal || ! $perfilFiscal->activo || (int) $perfilFiscal->prospectos_id !== (int) $inscripcion->prospectos_id) {
+                    throw ValidationException::withMessages(['perfil_fiscal_id' => 'Selecciona un perfil fiscal activo del alumno.']);
+                }
             }
 
             $resultadoMetodo = $this->metodos->validarYNormalizarParaNuevoPago($metodoPagoId, $datosPago);
@@ -127,6 +139,9 @@ class AplicarPagoService
                 'metodo_pago_id' => $metodo->getKey(),
                 'forma_pago_sat' => $dinamicos['forma_pago_sat'] ?? $metodo->clave_forma_pago_sat,
                 'observaciones' => isset($base['observaciones']) ? trim($base['observaciones']) : null,
+                'solicita_factura' => $solicitaFactura,
+                'perfil_fiscal_id' => $perfilFiscal?->getKey(),
+                'perfil_fiscal_snapshot' => $perfilFiscal?->snapshot(),
                 'fecha_movimiento' => $base['fecha_movimiento'] ?? null,
                 'identificador_transaccion_externa' => $base['identificador_transaccion_externa'] ?? null,
                 'estado' => Pago::ESTADO_CONFIRMADO,

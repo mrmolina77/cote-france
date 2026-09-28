@@ -41,6 +41,8 @@ class Pago extends Model
         'fecha_reembolso' => 'datetime',
         'monto' => 'decimal:2',
         'tipo_cambio' => 'decimal:6',
+        'solicita_factura' => 'boolean',
+        'perfil_fiscal_snapshot' => 'array',
     ];
 
     protected static function booted(): void
@@ -70,6 +72,7 @@ class Pago extends Model
     public function comprobantePago() { return $this->hasOne(ComprobantePago::class, 'pago_id', 'pago_id'); }
     public function notificacionesPago() { return $this->hasMany(NotificacionPago::class, 'pago_id', 'pago_id'); }
     public function auditorias() { return $this->hasMany(AuditoriaPago::class, 'pago_id', 'pago_id'); }
+    public function perfilFiscal() { return $this->belongsTo(PerfilFiscal::class, 'perfil_fiscal_id', 'perfil_fiscal_id'); }
 
     public function scopeBorradores(Builder $query): Builder { return $query->where('estado', self::ESTADO_BORRADOR); }
     public function scopeConfirmados(Builder $query): Builder { return $query->where('estado', self::ESTADO_CONFIRMADO); }
