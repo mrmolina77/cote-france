@@ -721,6 +721,7 @@ class RegistrarPago extends Component
             elseif ($campo === 'monto') $destino = 'montoRecibido';
             elseif ($campo === 'aplicaciones' || $campo === 'importe aplicado') $destino = 'cargosSeleccionados';
             elseif ($campo === 'comprobante') $destino = 'comprobante';
+            elseif ($campo === 'perfil_fiscal_id') $destino = 'perfilFiscalId';
             elseif (str_starts_with($campo, 'datosMetodo.')) $destino = $campo;
             elseif (in_array($campo, array_column($this->servicioMetodos()->catalogoCampos(), 'campo'), true)) $destino = 'datosMetodo.'.$campo;
             elseif ($campo === 'fecha_pago' || $campo === 'zona_horaria') $destino = 'fechaPago';

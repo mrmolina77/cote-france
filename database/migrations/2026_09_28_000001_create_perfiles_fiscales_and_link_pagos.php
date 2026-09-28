@@ -47,13 +47,17 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::getDriverName() !== 'sqlite' && Schema::hasTable('pagos')) {
+        if (Schema::hasTable('pagos')) {
             Schema::table('pagos', function (Blueprint $table) {
-                $table->dropForeign(['perfil_fiscal_id']);
+                if (DB::getDriverName() !== 'sqlite') {
+                    $table->dropForeign(['perfil_fiscal_id']);
+                }
                 $table->dropIndex(['perfil_fiscal_id']);
             });
+            Schema::table('pagos', function (Blueprint $table) {
+                $table->dropColumn(['solicita_factura', 'perfil_fiscal_id', 'perfil_fiscal_snapshot']);
+            });
         }
-        Schema::table('pagos', fn (Blueprint $table) => $table->dropColumn(['solicita_factura', 'perfil_fiscal_id', 'perfil_fiscal_snapshot']));
         Schema::dropIfExists('perfiles_fiscales');
     }
 };

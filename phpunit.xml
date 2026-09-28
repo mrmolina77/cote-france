@@ -27,5 +27,10 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="EPIC17_MYSQL_HOST" value="127.0.0.1"/>
+        <env name="EPIC17_MYSQL_PORT" value="3306"/>
+        <env name="EPIC17_MYSQL_DATABASE" value="cote_france_epic17_test"/>
+        <env name="EPIC17_MYSQL_USERNAME" value="USUARIO_DE_PRUEBAS"/>
+        <env name="EPIC17_MYSQL_PASSWORD" value="CLAVE_DE_PRUEBAS"/>
     </php>
 </phpunit>
