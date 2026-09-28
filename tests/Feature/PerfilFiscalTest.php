@@ -30,7 +30,7 @@ class PerfilFiscalTest extends TestCase
             $this->assertFalse(Gate::forUser($user)->allows('manage-fiscal-profiles'));
             $this->actingAs($user)->get('/configuracion/perfiles-fiscales')->assertForbidden();
         }
-        $withoutRole = User::factory()->create(['roles_id' => null]);
+        $withoutRole = $this->user('sin-rol');
         $this->actingAs($withoutRole)->get('/configuracion/perfiles-fiscales')->assertForbidden();
         $this->app['auth']->forgetGuards(); $this->get('/configuracion/perfiles-fiscales')->assertRedirect('/login');
     }
