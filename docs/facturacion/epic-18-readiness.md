@@ -1,7 +1,8 @@
 # EPIC 18 — Informe de preparación y puerta fiscal para CFDI 4.0
 
 **Fecha de auditoría:** 2026-09-29<br>
-**Rama auditada:** `work`<br>
+**Rama de proyecto auditada:** `fracturacion`<br>
+**Checkout temporal de Codex:** `work` (apunta al commit `933f9ae`; no sustituye la identificación de la rama de proyecto)<br>
 **Resultado de la puerta:** **BLOQUEADA**
 
 ## 1. Conclusión ejecutiva
@@ -124,15 +125,27 @@ Cada etapa debe poder desplegarse sin activar timbrado. La habilitación de prod
 
 ## 8. Pruebas y verificaciones de esta auditoría
 
-Las pruebas específicas se intentaron **antes de editar**. El entorno no contenía `vendor/autoload.php`.
+El checkout temporal de Codex se identificó como `work`, en el commit `933f9ae`; la rama objetivo del proyecto es `fracturacion`. Antes de editar se comprobó un árbol limpio. El PHP predeterminado era 8.5.7-dev, incompatible con paquetes fijados en el lock; también estaba disponible PHP 8.3.31-dev, que sí satisface `composer.json` y `composer.lock`.
+
+Se confirmó la presencia de los 17 archivos de prueba solicitados. Sin embargo, el checkout no contenía `vendor/autoload.php` y la instalación con el runtime compatible no pudo completarse por el bloqueo de red descrito abajo. Por tanto, no fue posible iniciar Laravel ni ejecutar ninguna prueba PHP.
 
 | Momento | Comando | Resultado exacto |
 |---|---|---|
-| Antes de cambios | `php artisan test --testsuite=Feature --filter='(PerfilFiscal|RegistrarPago|AplicarPago|CancelarPago|ComprobantePago|ReenvioRecibo|PagoRecibidoNotification|PagoCanceladoNotification|FinancialRoleSecurity|ArchivoPagoDetalleCancelacion|PagosMigration|PagoAplicacionesMigration)'` | **No ejecutada (0 pruebas):** código de salida 255; `vendor/autoload.php` no existe. |
-| Antes de cambios | `composer install --no-interaction --prefer-dist` | **Falló:** código 2; PHP del entorno es 8.5.7-dev y el lock limita `nette/schema` a PHP 8.1–8.3 y `nette/utils` a `<8.4`. No se actualizó el lock. |
-| Antes de cambios | `composer install --no-interaction --prefer-dist --ignore-platform-req=php` | **Falló/interrumpido:** las descargas desde GitHub recibieron `CONNECT tunnel failed, response 403`; no fue posible construir `vendor`. |
+| Antes de cambios | `git branch --show-current` | **PASS:** devolvió `work` (rama temporal del entorno Codex, no la rama de proyecto). |
+| Antes de cambios | `git status --short` | **PASS:** sin salida; árbol limpio. |
+| Antes de cambios | `git log -1 --oneline` | **PASS:** `933f9ae Merge pull request #294 from mrmolina77/codex/realizar-auditoria-del-estado-actual`. |
+| Antes de cambios | `php -v` | **PASS (comprobación):** PHP 8.5.7-dev; no compatible con todo el lock. |
+| Antes de cambios | `composer --version` | **PASS (comprobación):** Composer 2.9.7 ejecutándose con PHP 8.5.7-dev. |
+| Preparación | `PHPENV_VERSION=8.3snapshot php -v` | **PASS:** PHP 8.3.31-dev disponible. |
+| Preparación | `PHPENV_VERSION=8.3snapshot composer --version` | **PASS:** Composer 2.9.7 ejecutándose con PHP 8.3.31-dev. |
+| Preparación | `PHPENV_VERSION=8.3snapshot composer validate --no-check-publish --no-interaction` | **PASS:** `./composer.json is valid`. |
+| Preparación | `PHPENV_VERSION=8.3snapshot composer install --no-interaction --prefer-dist` | **FAIL de entorno:** Composer verificó que el lock era instalable con PHP 8.3.31-dev e inició 133 instalaciones, pero las descargas de distribución desde `api.github.com` fallaron repetidamente con `curl error 56: CONNECT tunnel failed, response 403`; los intentos alternativos desde source tampoco permitieron completar la instalación. Se interrumpió el intento, se eliminó el `vendor/` parcial y no se modificó `composer.lock`. |
+| Regresión solicitada | `PHPENV_VERSION=8.3snapshot php artisan test tests/Feature/PerfilFiscalTest.php tests/Feature/PerfilFiscalMigrationTest.php tests/Feature/AuditoriaPerfilFiscalTest.php tests/Feature/RegistrarPagoTest.php tests/Feature/AplicarPagoServiceTest.php tests/Feature/CancelarPagoServiceTest.php tests/Feature/ComprobantePagoMigrationTest.php tests/Feature/GeneradorComprobantePagoServiceTest.php tests/Feature/DescargarComprobantePagoTest.php tests/Feature/VerComprobantePagoTest.php tests/Feature/ReenvioReciboTest.php tests/Feature/PagoRecibidoNotificationTest.php tests/Feature/PagoCanceladoNotificationTest.php tests/Feature/FinancialRoleSecurityTest.php tests/Feature/PagosMigrationTest.php tests/Feature/PagoAplicacionesMigrationTest.php` | **SKIPPED / no ejecutada (16 archivos, 0 pruebas):** falta `vendor/autoload.php` porque la red impidió completar `composer install`; el comando no se invocó para no presentar un fallo de arranque como resultado de las pruebas. |
+| Concurrencia MySQL | `PHPENV_VERSION=8.3snapshot php artisan test tests/Feature/PerfilFiscalConcurrencyTest.php` | **SKIPPED / no ejecutada (1 archivo, 0 pruebas):** además de faltar `vendor/autoload.php`, no hay credenciales verificadas para una base MySQL aislada cuyo nombre contenga `test`; el propio test exige `EPIC17_MYSQL_HOST`, `EPIC17_MYSQL_PORT`, `EPIC17_MYSQL_DATABASE`, `EPIC17_MYSQL_USERNAME` y `EPIC17_MYSQL_PASSWORD`. No se sustituyó con SQLite. |
 
-En consecuencia quedaron **omitidas por limitación del entorno**, no aprobadas: las pruebas funcionales de perfiles, pagos, aplicaciones, cancelaciones, recibos, notificaciones, autorización y migraciones, incluidas sus variantes de concurrencia. El único cambio de esta entrega es documental y no modifica el comportamiento ejecutable.
+**Balance:** 17 archivos de prueba solicitados quedaron no ejecutados; se ejecutaron 0 pruebas y 0 assertions. Para ejecutarlos se necesita una máquina con PHP 8.3 compatible, acceso normal a los paquetes bloqueados por `composer.lock` y, para concurrencia, una base MySQL dedicada de pruebas con las cinco variables `EPIC17_MYSQL_*`. Los otros 16 archivos deben usar la configuración SQLite de pruebas del proyecto. No se usó `--ignore-platform-req`, no se regeneró el lock y no se conservaron dependencias parciales.
+
+La falta de ejecución no cambia la conclusión: **EPIC 18 continúa BLOQUEADA** por las siete decisiones fiscales y operativas pendientes de la sección 3. La corrección documental y una futura regresión exitosa no equivalen a implementar CFDI 4.0 ni a autorizar producción.
 
 ## 9. Criterio para reabrir implementación
 
