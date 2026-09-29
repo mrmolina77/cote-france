@@ -439,10 +439,15 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertFalse(Schema::hasTable('cfdis'));
         $this->assertFalse(Schema::hasTable('facturas'));
 
-        $delivery = NotificacionPago::query()->where('pago_id', $payment->getKey())->sole();
+        $delivery = $payment->notificacionesPago()->sole();
         $this->assertSame(NotificacionPago::ESTADO_PENDIENTE, $delivery->estado);
+        $this->assertSame(NotificacionPago::TIPO_RECIBIDO, $delivery->tipo);
+        $this->assertSame(NotificacionPago::SOLICITUD_INICIAL, $delivery->tipo_solicitud);
+        $this->assertSame('payer@example.com', $delivery->destinatario);
+        $this->assertTrue($delivery->comprobantePago->is($receipt));
         Queue::assertPushed(EnviarNotificacionPago::class,
             fn (EnviarNotificacionPago $job) => $job->notificacionPagoId === $delivery->getKey());
+        Queue::assertPushed(EnviarNotificacionPago::class, 1);
 
         (new EnviarNotificacionPago($delivery->getKey()))->handle(app(NotificacionPagoService::class));
 
@@ -465,6 +470,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
                 $this->assertCount(0, $mail->attachments);
                 $this->assertCount(1, $mail->rawAttachments);
                 $this->assertSame($receipt->folio.'.pdf', $mail->rawAttachments[0]['name']);
+                $this->assertStringEndsWith('.pdf', $mail->rawAttachments[0]['name']);
                 $this->assertSame(ComprobantePago::MIME_PDF, $mail->rawAttachments[0]['options']['mime']);
                 $this->assertSame($bytes, $mail->rawAttachments[0]['data']);
 
@@ -474,6 +480,7 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $delivery->fresh()->estado);
         $this->assertSame(1, $delivery->fresh()->intentos);
         $this->assertNotNull($delivery->fresh()->enviado_en);
+        Queue::assertPushed(EnviarNotificacionPago::class, 1);
         $this->assertDatabaseCount('pagos', 1);
         $this->assertDatabaseCount('comprobantes_pago', 1);
         $this->assertDatabaseCount('notificaciones_pago', 1);
