@@ -3,15 +3,20 @@
 namespace Tests\Feature;
 
 use App\Http\Livewire\RegistrarPago;
+use App\Jobs\EnviarNotificacionPago;
 use App\Models\Cargo;
+use App\Models\ComprobantePago;
 use App\Models\ConceptoCobro;
 use App\Models\Inscripcion;
 use App\Models\MetodoPago;
+use App\Models\NotificacionPago;
 use App\Models\Pago;
 use App\Models\PerfilFiscal;
 use App\Models\ResponsablePago;
 use App\Models\User;
+use App\Notifications\PagoRecibidoNotification;
 use App\Services\Facturacion\AplicarPagoService;
+use App\Services\Facturacion\NotificacionPagoService;
 use App\Services\Facturacion\PerfilFiscalService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
@@ -20,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
@@ -401,9 +407,11 @@ class RegistrarPagoTest extends InscripcionesTestCase
     public function test_invoice_confirmation_is_idempotent_and_keeps_internal_receipt_only(): void
     {
         Storage::fake('local');
+        Queue::fake();
         Notification::fake();
         $admin = $this->user('admin');
         $profile = $this->perfilFiscal($admin);
+        $this->inscripcion->responsablePago->update(['correo' => 'payer@example.com']);
         $snapshot = json_decode(json_encode($profile->snapshot(), JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
         $cargo = $this->cargo();
         $cash = MetodoPago::where('clave', MetodoPago::EFECTIVO)->firstOrFail();
@@ -419,17 +427,56 @@ class RegistrarPagoTest extends InscripcionesTestCase
         $this->assertDatabaseCount('consecutivos_pago', 1);
         $this->assertDatabaseCount('comprobantes_pago', 1);
         $this->assertDatabaseCount('consecutivos_comprobante_pago', 1);
-        $this->assertLessThanOrEqual(1, DB::table('notificaciones_pago')->count());
+        $this->assertDatabaseCount('notificaciones_pago', 1);
         $this->assertSame('0.00', $cargo->fresh()->saldo_pendiente);
         $this->assertSame($profile->getKey(), $payment->perfil_fiscal_id);
         $this->assertSame($snapshot, $payment->perfil_fiscal_snapshot);
-        $receipt = DB::table('comprobantes_pago')->where('pago_id', $payment->getKey())->first();
+        $receipt = ComprobantePago::query()->where('pago_id', $payment->getKey())->sole();
         $bytes = Storage::disk('local')->get($receipt->ruta_pdf);
         $this->assertStringContainsString('Este documento no constituye un CFDI.', $bytes);
         $this->assertStringNotContainsString($profile->rfc, $bytes);
         $this->assertStringNotContainsString($profile->curp, $bytes);
         $this->assertFalse(Schema::hasTable('cfdis'));
         $this->assertFalse(Schema::hasTable('facturas'));
+
+        $delivery = NotificacionPago::query()->where('pago_id', $payment->getKey())->sole();
+        $this->assertSame(NotificacionPago::ESTADO_PENDIENTE, $delivery->estado);
+        Queue::assertPushed(EnviarNotificacionPago::class,
+            fn (EnviarNotificacionPago $job) => $job->notificacionPagoId === $delivery->getKey());
+
+        (new EnviarNotificacionPago($delivery->getKey()))->handle(app(NotificacionPagoService::class));
+
+        Notification::assertSentOnDemand(PagoRecibidoNotification::class,
+            function (PagoRecibidoNotification $notification) use ($bytes, $payment, $profile, $receipt) {
+                $mail = $notification->toMail(null);
+                $body = implode(' ', array_filter(array_merge(
+                    [$mail->greeting], $mail->introLines, $mail->outroLines
+                )));
+
+                $this->assertSame('Pago recibido - '.$receipt->folio, $mail->subject);
+                $this->assertStringContainsString('Folio: '.$receipt->folio, $body);
+                $this->assertStringContainsString('Fecha: '.$payment->fecha_pago->format('Y-m-d H:i'), $body);
+                $this->assertStringContainsString('Alumno: Marie Claire Dupont Martin', $body);
+                $this->assertStringContainsString('Importe: '.$payment->moneda.' $'.$payment->monto, $body);
+                $this->assertStringContainsString('Método: '.$payment->metodoPago->nombre, $body);
+                $this->assertStringContainsString('Comprobante interno de pago. Este documento no constituye un CFDI.', $body);
+                $this->assertStringNotContainsString($profile->rfc, $body);
+                $this->assertStringNotContainsString($profile->curp, $body);
+                $this->assertCount(0, $mail->attachments);
+                $this->assertCount(1, $mail->rawAttachments);
+                $this->assertSame($receipt->folio.'.pdf', $mail->rawAttachments[0]['name']);
+                $this->assertSame(ComprobantePago::MIME_PDF, $mail->rawAttachments[0]['options']['mime']);
+                $this->assertSame($bytes, $mail->rawAttachments[0]['data']);
+
+                return true;
+            });
+        Notification::assertCount(1);
+        $this->assertSame(NotificacionPago::ESTADO_ENVIADO, $delivery->fresh()->estado);
+        $this->assertSame(1, $delivery->fresh()->intentos);
+        $this->assertNotNull($delivery->fresh()->enviado_en);
+        $this->assertDatabaseCount('pagos', 1);
+        $this->assertDatabaseCount('comprobantes_pago', 1);
+        $this->assertDatabaseCount('notificaciones_pago', 1);
     }
 
     public function test_transfer_requires_server_configured_fields_and_temporary_receipt(): void
