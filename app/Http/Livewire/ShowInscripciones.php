@@ -141,6 +141,10 @@ class ShowInscripciones extends Component
                 $inscripcion->responsable_pago_id = $this->resolveResponsable((int) $inscripcion->prospectos_id)->getKey();
             }
             $inscripcion->save();
+
+            if (Inscripcion::query()->whereKey($inscripcion->getKey())->financieramenteConfiguradas()->exists()) {
+                app(\App\Services\Facturacion\GeneradorCargosService::class)->generarParaInscripcion($inscripcion, \Illuminate\Support\Facades\Auth::id());
+            }
         });
         $this->reset(['open_edit', 'responsable_pago_id', 'responsable_nombre', 'responsable_telefono', 'responsable_correo']);
         $this->emit('alert', 'La inscripción fue modificada satisfactoriamente.');
