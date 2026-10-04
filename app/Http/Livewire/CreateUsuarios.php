@@ -16,13 +16,18 @@ class CreateUsuarios extends Component
 
     public $name,$email,$password,$password_confirmation,$roles_id,$relacionados,$rolesid,$relacionados_id;
 
-    protected $rules = [
-        'name'=>'required|min:10|max:250',
-        'email'=>'required|unique:users|email',
-        'password'=>'required|min:8|max:512|confirmed',
-        'rolesid'=>'required',
-        'relacionados_id'=>'required',
-    ];
+    protected function rules()
+    {
+        return [
+            'name' => 'required|min:10|max:250',
+            'email' => 'required|unique:users|email',
+            'password' => 'required|min:8|max:512|confirmed',
+            'rolesid' => 'required',
+            'relacionados_id' => Rule::requiredIf(function () {
+                return in_array($this->rolesid, [3, 4]);
+            }),
+        ];
+    }
 
     public function updated($propertyName)
     {
@@ -47,7 +52,7 @@ class CreateUsuarios extends Component
             'email' =>$this->email,
             'password' => Hash::make($this->password),
             'roles_id' =>$this->rolesid,
-            'relacionados_id' =>$this->relacionados_id
+            'relacionados_id' => empty($this->relacionados_id) ? null : $this->relacionados_id
         ]);
         $this->reset(['open','name','email','password','roles_id','relacionados_id']);
         $this->emitTo('show-usuarios','render');

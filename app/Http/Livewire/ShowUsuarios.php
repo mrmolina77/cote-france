@@ -27,13 +27,18 @@ class ShowUsuarios extends Component
 
     public $name,$email,$password,$password_confirmation,$rolesid,$relacionados,$relacionados_id;
 
-    protected $rules = [
-        'name'=>'required|min:10|max:250',
-        'email'=>'required|unique:posts|email',
-        'password'=>'required|min:10|max:512|confirmed',
-        'rolesid'=>'required',
-        'relacionados_id'=>'required',
-    ];
+    protected function rules()
+    {
+        return [
+            'name' => 'required|min:10|max:250',
+            'email' => 'required|email|unique:users,email,' . ($this->user ? $this->user->id : ''),
+            'password' => 'nullable|min:8|max:512|confirmed',
+            'rolesid' => 'required',
+            'relacionados_id' => Rule::requiredIf(function () {
+                return in_array($this->rolesid, [3, 4]);
+            }),
+        ];
+    }
 
     public function updated($propertyName)
     {
@@ -116,14 +121,12 @@ class ShowUsuarios extends Component
     }
 
     public function update(){
-        // $this->user->password = Hash::make($this->user->password);
-        // $this->user->save();
-        // $this->validate();
+        $this->validate();
         $data = [
             'name' => $this->name,
             'email' => $this->email,
             'roles_id' => $this->rolesid,
-            'relacionados_id' => $this->relacionados_id,
+            'relacionados_id' => empty($this->relacionados_id) ? null : $this->relacionados_id,
         ];
         if (filled($this->password)) {
             $data['password'] = Hash::make($this->password);
