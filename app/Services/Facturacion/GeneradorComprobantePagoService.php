@@ -55,8 +55,10 @@ class GeneradorComprobantePagoService
                 $urlQr = URL::signedRoute('facturacion.comprobantes.ver', [
                     'pago'=>$pago->getKey(), 'comprobante'=>$comprobante->getKey(),
                 ]);
+                $qrImage = (new \BaconQrCode\Writer(new \BaconQrCode\Renderer\ImageRenderer(new \BaconQrCode\Renderer\RendererStyle\RendererStyle(150, 1), new \BaconQrCode\Renderer\Image\SvgImageBackEnd())))->writeString($urlQr);
+                $qrBase64 = 'data:image/svg+xml;base64,' . base64_encode($qrImage);
                 $html = view('pdf.comprobante-pago', [
-                    'pago'=>$pago, 'comprobante'=>$comprobante, 'urlQr'=>$urlQr,
+                    'pago'=>$pago, 'comprobante'=>$comprobante, 'urlQr'=>$urlQr, 'qrBase64' => $qrBase64,
                     'importeLetras'=>$this->importeEnLetras->convertir((string) $pago->monto, (string) $pago->moneda),
                     'hashPresentacion'=>substr(hash('sha256', $comprobante->folio.'|'.$pago->getKey()), 0, 16),
                     'config'=>config('comprobantes'),

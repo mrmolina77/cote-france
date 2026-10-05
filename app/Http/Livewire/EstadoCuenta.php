@@ -103,10 +103,16 @@ class EstadoCuenta extends Component
         if (ctype_digit($termino) && (int) $termino > 0) {
             return $query->whereKey((int) $termino);
         }
-        $patron = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $termino).'%';
-        return $query->whereHas('prospecto', function (Builder $query) use ($patron) {
-            $query->whereRaw("prospectos_nombres LIKE ? ESCAPE '!'", [$patron])
-                ->orWhereRaw("prospectos_apellidos LIKE ? ESCAPE '!'", [$patron]);
+
+        $palabras = preg_split('/\s+/u', $termino, -1, PREG_SPLIT_NO_EMPTY);
+        return $query->whereHas('prospecto', function (Builder $prospectos) use ($palabras) {
+            foreach ($palabras as $palabra) {
+                $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $palabra).'%';
+                $prospectos->where(function (Builder $parte) use ($like) {
+                    $parte->whereRaw("prospectos_nombres LIKE ? ESCAPE '!'", [$like])
+                        ->orWhereRaw("prospectos_apellidos LIKE ? ESCAPE '!'", [$like]);
+                });
+            }
         })->orderBy('inscripciones_id');
     }
 
